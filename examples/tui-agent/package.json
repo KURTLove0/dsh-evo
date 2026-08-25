@@ -1,0 +1,7 @@
+{
+  "name": "tui-agent-example",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Interactive terminal UI over the SDK JSON-RPC runtime"
+}

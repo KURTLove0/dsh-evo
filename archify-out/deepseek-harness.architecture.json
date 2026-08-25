@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DeepSeek Harness 高层运行时架构",
+    "output": "archify-out/deepseek-harness-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [1620, 640],
+    "repository": {
+      "url": "https://github.com/deepseek-ai/deepseek-harness",
+      "revision": "47f943859bef60e4160492346772ded9b24f765a"
+    }
+  },
+  "components": [
+    { "id": "user-term", "type": "external", "label": "用户", "sublabel": "CLI 终端 / 浏览器", "pos": [36, 84], "size": [148, 68] },
+    { "id": "dsh-entry", "type": "frontend", "label": "dsh 入口", "sublabel": "CLI bin · Web server", "tag": "apps/cli · host/webserver", "pos": [300, 84], "size": [160, 68], "sources": [{ "path": "apps/cli/src/bin.ts" }] },
+    { "id": "boot", "type": "backend", "label": "Boot 组合层", "sublabel": "profile · bundle · patch", "tag": "packages/boot", "pos": [576, 84], "size": [160, 68], "sources": [{ "path": "packages/boot/app-boot/src/profile.ts" }] },
+    { "id": "agent-loop", "type": "backend", "label": "Agent Loop", "sublabel": "step 驱动 · ctx.agentLoop", "tag": "packages/core", "pos": [852, 76], "size": [180, 84], "sources": [{ "path": "packages/core/agent-loop/src/agent.ts" }] },
+    { "id": "llm-seam", "type": "backend", "label": "LLM 适配层", "sublabel": "ctx.llm · adapter seam", "tag": "packages/llm", "pos": [1148, 84], "size": [160, 68], "sources": [{ "path": "packages/llm/llm/src/index.ts" }] },
+    { "id": "deepseek-api", "type": "cloud", "label": "DeepSeek API", "sublabel": "SSE 流式推理", "pos": [1424, 84], "size": [160, 68], "sources": [{ "path": "packages/llm/llm-deepseek/src/adapter.ts" }] },
+    { "id": "session-log", "type": "database", "label": "Session 事件日志", "sublabel": "append-only · JSONL/SQLite", "tag": "packages/session", "pos": [852, 296], "size": [180, 76], "sources": [{ "path": "packages/core/session/src/index.ts" }] },
+    { "id": "tool-pipeline", "type": "backend", "label": "工具执行管线", "sublabel": "ctx.tools · waterfall", "tag": "packages/core", "pos": [576, 300], "size": [160, 68], "sources": [{ "path": "packages/core/tools/src/index.ts" }] },
+    { "id": "approval", "type": "security", "label": "审批与权限", "sublabel": "tools/pre-execute · ask-user", "tag": "packages/interaction", "pos": [300, 512], "size": [160, 68], "sources": [{ "path": "packages/interaction/user-approval/src/index.ts" }] },
+    { "id": "capability", "type": "backend", "label": "能力 Provider", "sublabel": "shell · fs · subprocess · terminal", "tag": "capability seams", "pos": [540, 512], "size": [180, 68] },
+    { "id": "sandbox", "type": "security", "label": "进程沙箱", "sublabel": "bwrap · Landlock · Seatbelt · ACL", "tag": "packages/sandbox", "pos": [800, 512], "size": [160, 68], "sources": [{ "path": "packages/sandbox/sandbox-local/src/index.ts" }] },
+    { "id": "local-os", "type": "external", "label": "本地系统", "sublabel": "文件系统 · 子进程 · DSH_HOME", "pos": [1040, 512], "size": [160, 68] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "本地机器 · 用户权限", "wraps": ["dsh-entry", "boot", "agent-loop", "llm-seam", "session-log", "tool-pipeline", "approval", "capability", "sandbox", "local-os"] },
+    { "kind": "security-group", "label": "dsh 宿主进程 · Cordis 插件树", "wraps": ["dsh-entry", "boot", "agent-loop", "llm-seam", "session-log", "tool-pipeline", "approval", "capability", "sandbox"] }
+  ],
+  "connections": [
+    { "id": "e-input", "from": "user-term", "to": "dsh-entry", "label": "输入 / 命令", "variant": "emphasis" },
+    { "id": "e-boot", "from": "dsh-entry", "to": "boot", "label": "boot()", "variant": "emphasis" },
+    { "id": "e-mount", "from": "boot", "to": "agent-loop", "label": "插件树挂载", "variant": "emphasis" },
+    { "id": "e-stream", "from": "agent-loop", "to": "llm-seam", "label": "llm/stream", "variant": "emphasis" },
+    { "id": "e-api", "from": "llm-seam", "to": "deepseek-api", "label": "HTTPS · SSE", "variant": "emphasis" },
+    { "id": "e-log", "from": "agent-loop", "to": "session-log", "label": "追加事件 / 派生历史", "labelAt": [942, 228] },
+    { "id": "e-result", "from": "tool-pipeline", "to": "session-log", "label": "tool/result 回写", "variant": "dashed", "labelDy": 20 },
+    { "id": "e-call", "from": "agent-loop", "to": "tool-pipeline", "label": "tool/call" },
+    { "id": "e-gate", "from": "tool-pipeline", "to": "approval", "label": "tools/pre-execute", "variant": "security", "fromSide": "bottom", "toSide": "top" },
+    { "id": "e-pass", "from": "approval", "to": "capability", "label": "放行执行" },
+    { "id": "e-confine", "from": "capability", "to": "sandbox", "label": "受限 argv" },
+    { "id": "e-exec", "from": "sandbox", "to": "local-os", "label": "受控执行" },
+    { "id": "e-ask", "from": "approval", "to": "user-term", "label": "ask-user 确认", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "主要路径 · 一次模型请求",
+      "items": [
+        "用户输入经 dsh 入口进入 Boot 按 profile/bundle 层叠组装的 Cordis 插件树",
+        "Agent Loop 从事件日志派生模型历史，经 LLM 适配层调用 DeepSeek API 并流式返回",
+        "响应含工具调用时进入下方执行链，结果以事件回写日志后进入下一个 step"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "信任边界",
+      "items": [
+        "宿主进程内没有特权核心，一切能力皆为可卸载插件（registration 即 effect）",
+        "模型输出必须穿过 tools/pre-execute 审批瀑布（含 ask-user）才能执行",
+        "子进程经沙箱降权（bwrap / Landlock / Seatbelt / Windows ACL）才触达本地系统",
+        "唯一互联网出口是 DeepSeek API，凭 DEEPSEEK_API_KEY 认证"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "外部依赖与关键事实",
+      "items": [
+        "外部依赖仅两类：DeepSeek API（云推理）与本地文件系统 / 子进程（工具效果落点）",
+        "Cordis 框架源码内联于 vendor/，运行时不引入第三方进程",
+        "Model-visible ⟺ logged：模型可见输入均可由事件日志重建",
+        "一个 step = 一次模型请求 + 其工具调用；换 Provider 即整体切换执行环境（本地 ↔ 远程沙箱）"
+      ]
+    }
+  ]
+}
