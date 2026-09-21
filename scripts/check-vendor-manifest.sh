@@ -4,7 +4,7 @@
 # (the manifest's local-modification log is the contract — see vendor/README.md).
 set -euo pipefail
 
-staged=$(git diff --cached --name-only)
+staged=$(git --no-pager diff --cached --name-only)
 
 vendor_src_changed=$(echo "$staged" | grep -E '^vendor/[^/]+/(src/|bin\.js)' || true)
 manifest_changed=$(echo "$staged" | grep -x 'vendor/README.md' || true)

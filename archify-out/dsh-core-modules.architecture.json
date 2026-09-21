@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DeepSeek Harness 核心模块架构",
+    "output": "dsh-core-modules-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/KURTLove0/dsh-evo",
+      "revision": "887941dfacf59a987a8469194994428bc7f26cc2"
+    },
+    "viewBox": [1500, 836],
+    "views": [
+      { "id": "main-drive-chain", "label": "主驱动链", "focus": ["entries", "appBoot", "agentLoop", "llm", "adapters", "deepseekApi"], "note": "一次 step 的完整驱动路径：入口装配插件树，loop 驱动，LLM 适配器抵达 DeepSeek API。" },
+      { "id": "spine-collaboration", "label": "脊柱协作", "focus": ["agentLoop", "agent", "session", "tools", "systemPrompt"], "note": "agent-loop 注入五个接口服务，围绕事件日志完成 turn/step 闭环。" },
+      { "id": "data-durability", "label": "数据耐久", "focus": ["session", "persistence", "apiProxy"], "note": "持久化插件订阅 session/event 写后、在 session/flush 排空；apiproxy 聚合域 API。" }
+    ]
+  },
+  "components": [
+    { "id": "entries", "type": "external", "label": "入口通道", "sublabel": "CLI · Web · SDK · ACP · Python", "pos": [70, 110], "size": [180, 72] },
+    { "id": "apiProxy", "type": "backend", "label": "host/apiproxy", "sublabel": "ctx.apiProxy 聚合域网关", "pos": [70, 560], "size": [200, 64], "sources": [{ "path": "packages/host/apiproxy/src/index.ts", "label": "API 网关" }] },
+    { "id": "appBoot", "type": "backend", "label": "boot/app-boot", "sublabel": "boot() · profile/bundle 层叠", "pos": [70, 340], "size": [180, 64], "sources": [{ "path": "packages/boot/app-boot/src/index.ts", "label": "启动时序" }] },
+    { "id": "agentLoop", "type": "backend", "label": "core/agent-loop", "sublabel": "ctx.agentLoop · turn/step 驱动", "tag": "唯一含 loop 逻辑", "pos": [330, 334], "size": [190, 76], "sources": [{ "path": "packages/core/agent-loop/src/agent.ts", "label": "loop 生命周期" }] },
+    { "id": "llm", "type": "backend", "label": "llm/llm", "sublabel": "ctx.llm · 适配器注册表 + stream", "pos": [620, 340], "size": [190, 64], "sources": [{ "path": "packages/llm/llm/src/types.ts", "label": "流式词汇" }] },
+    { "id": "adapters", "type": "backend", "label": "LLM 适配器", "sublabel": "llm-deepseek · llm-pi-ai", "pos": [890, 340], "size": [200, 64] },
+    { "id": "deepseekApi", "type": "cloud", "label": "DeepSeek API", "sublabel": "chat/completions · SSE", "pos": [1200, 340], "size": [170, 64] },
+    { "id": "agent", "type": "backend", "label": "core/agent", "sublabel": "ctx.agents · Agent 接口与注册表", "pos": [340, 560], "size": [190, 64] },
+    { "id": "session", "type": "database", "label": "core/session", "sublabel": "ctx.sessions · append-only 日志", "tag": "事实源", "pos": [590, 560], "size": [190, 64], "sources": [{ "path": "packages/core/session/src/types.ts", "label": "事件词汇" }] },
+    { "id": "tools", "type": "backend", "label": "core/tools", "sublabel": "ctx.tools · 五段执行管线", "pos": [840, 560], "size": [180, 64], "sources": [{ "path": "packages/core/tools/src/index.ts", "label": "注册表与管线" }] },
+    { "id": "systemPrompt", "type": "backend", "label": "core/system-prompt", "sublabel": "ctx.systemPrompt · 每步装配", "pos": [1080, 560], "size": [200, 64] },
+    { "id": "persistence", "type": "database", "label": "session/ 持久化", "sublabel": "JSONL (zstd) · SQLite 后端", "pos": [590, 720], "size": [210, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "dsh 宿主进程 · Cordis 插件树（一切皆插件）", "wraps": ["appBoot", "agentLoop", "llm", "adapters", "agent", "session", "tools", "systemPrompt", "persistence", "apiProxy"] }
+  ],
+  "connections": [
+    { "id": "entries-to-boot", "from": "entries", "to": "appBoot", "label": "boot() 装配插件树", "variant": "emphasis", "labelDy": 24 },
+    { "id": "boot-to-loop", "from": "appBoot", "to": "agentLoop", "label": "层叠后启动驱动", "variant": "emphasis" },
+    { "id": "loop-to-llm", "from": "agentLoop", "to": "llm", "label": "prepareCall · llm/stream", "variant": "emphasis", "labelDy": 62 },
+    { "id": "llm-to-adapters", "from": "llm", "to": "adapters", "label": "按 provider 路由", "variant": "emphasis", "labelDy": 56 },
+    { "id": "adapters-to-api", "from": "adapters", "to": "deepseekApi", "label": "HTTPS · SSE", "variant": "emphasis" },
+    { "id": "loop-implements-agent", "from": "agentLoop", "to": "agent", "label": "实现 · setFactory 注册", "fromSide": "bottom", "toSide": "top", "labelAt": [330, 500] },
+    { "id": "loop-appends-session", "from": "agentLoop", "to": "session", "label": "append · deriveMessages", "fromSide": "bottom", "toSide": "top" },
+    { "id": "loop-runs-tools", "from": "agentLoop", "to": "tools", "label": "tools/* 执行管线", "fromSide": "bottom", "toSide": "top" },
+    { "id": "loop-assembles-prompt", "from": "agentLoop", "to": "systemPrompt", "label": "每步 assemble", "fromSide": "bottom", "toSide": "top" },
+    { "id": "tools-feed-prompt", "from": "tools", "to": "systemPrompt", "label": "schema 自动喂入", "fromSide": "right", "toSide": "left", "labelDy": 56 },
+    { "id": "agent-carries-session", "from": "agent", "to": "session", "label": "agent.session 同一 id", "fromSide": "right", "toSide": "left", "labelDy": 56 },
+    { "id": "session-to-persistence", "from": "session", "to": "persistence", "label": "session/event 写后 · flush 屏障", "variant": "dashed", "fromSide": "bottom", "toSide": "top" },
+    { "id": "apiproxy-consumes-agent", "from": "apiProxy", "to": "agent", "label": "聚合 sessions/subagents 等域", "fromSide": "right", "toSide": "left", "labelDy": 56 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "dsh-scope 作用域原语", "items": ["注册可见性沿父链向下继承，就近遮蔽", "事件准入沿父链向上扩展", "tools / system-prompt 的分层存储基础", "路由可信同进程插件——非安全边界"] },
+    { "dot": "emerald", "title": "核心不变量", "items": ["模型可见 ⟺ 已落日志（运行时断言）", "prepare → enter → announce 分裂发布", "waterfall 监听器必须 next() 委托", "插件失败结束 turn，不结束 loop"] },
+    { "dot": "violet", "title": "事件三域", "items": ["session events：落日志的持久事实", "agent/*：携带活句柄的实时协调", "capability events：seam 上挂策略与适配器"] }]
+}
