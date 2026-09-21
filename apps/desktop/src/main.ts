@@ -9,12 +9,8 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, dialog, net } from 'electron'
-import { buildDshWebLaunch, parseWebUrlLine, stopHost } from './launcher.ts'
-
-/** Repository root: this package's src/ and lib/ both sit two directories under it. */
-const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
+import { buildDshWebLaunch, parseWebUrlLine, resolveRepoRoot, stopHost } from './launcher.ts'
 
 /** Bound for observing the settled-ready URL line (a source boot under tsx is seconds warm, tens cold). */
 const URL_LINE_TIMEOUT_MS = 60_000
@@ -42,10 +38,13 @@ let stderrTail = ''
 /** Routes host close events to the phase that owns them: boot rejection, ready-phase failure, or nothing while stopping. */
 let onHostClose: (code: number | null, signal: NodeJS.Signals | null) => void = () => {}
 
-/** Fail the shell: one dialog, a bounded host stop, and a nonzero exit. */
+/** Fail the shell: log, one dialog, a bounded host stop, and a nonzero exit. */
 async function fail(message: string): Promise<void> {
   if (failed || quitting) return
   failed = true
+  // stderr first: a dialog blocks until dismissed, and a headless launch
+  // (open-packaged smoke, CI) reads the reason from the captured stream.
+  console.error(`dsh desktop: ${message}`)
   dialog.showErrorBox('dsh desktop', `${message}\n\n${stderrTail.trim()}`)
   await stopHostIfAny()
   app.exit(1)
@@ -151,17 +150,25 @@ function createWindow(url: string): void {
 
 /** Boot the host child, wait for readiness, and open the window over it. */
 async function start(): Promise<void> {
-  const launch = buildDshWebLaunch(repoRoot)
+  const resolved = resolveRepoRoot({
+    envRoot: process.env.DSH_REPO_ROOT,
+    packaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    moduleUrl: import.meta.url,
+  })
+  if ('error' in resolved) throw new Error(resolved.error)
+  const launch = buildDshWebLaunch(resolved.root)
   const child = spawn(launch.command, launch.args, {
     cwd: launch.cwd,
     env: { ...process.env, ...launch.env },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   host = child
-  child.stdout?.setEncoding('utf8')
-  child.stderr?.setEncoding('utf8')
-  child.stdout?.on('data', (chunk: string) => { process.stdout.write(chunk) })
-  child.stderr?.on('data', (chunk: string) => {
+  // stdio pipes are pinned above, so stdout/stderr are non-null by type.
+  child.stdout.setEncoding('utf8')
+  child.stderr.setEncoding('utf8')
+  child.stdout.on('data', (chunk: string) => { process.stdout.write(chunk) })
+  child.stderr.on('data', (chunk: string) => {
     process.stderr.write(chunk)
     stderrTail = (stderrTail + chunk).slice(-STDERR_TAIL_LIMIT)
   })

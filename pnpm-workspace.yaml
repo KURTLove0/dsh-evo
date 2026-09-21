@@ -42,6 +42,9 @@ allowBuilds:
   lefthook: true
   # The desktop shell's Electron binary download (apps/desktop devDependency).
   electron: true
+  # Windows Squirrel installer payload, pulled in by electron-builder; the
+  # DMG distribution target never reaches it, so the download is denied.
+  electron-winstaller: false
   # Cross-platform boundary for the persistent PTY backend, including ConPTY on Windows.
   node-pty: true
   # Pulled in by @earendil-works/pi-ai (optional LLM API backend). pnpm lists

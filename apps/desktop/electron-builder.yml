@@ -1,0 +1,29 @@
+# electron-builder configuration for the DSH Desktop distribution build.
+# Driven by apps/desktop/scripts/dist.ts, which records the hosted-checkout
+# marker as an extra resource before invoking the builder (the same marker
+# contract pack.ts writes; the main process reads it through resolveRepoRoot).
+#
+# Code signing and notarization are environment-driven: with no Developer ID
+# certificate in the keychain the builder warns and produces an unsigned
+# bundle; a releaser exports CSC_NAME (plus APPLE_ID, APPLE_APP_SPECIFIC_
+# PASSWORD, APPLE_TEAM_ID for notarize: true) to sign and notarize.
+appId: com.deepseek-ai.dsh-desktop
+productName: DSH Desktop
+artifactName: dsh-desktop-${version}-${arch}.${ext}
+directories:
+  output: dist
+# The main process is the bundle's entire runtime surface: the Electron
+# build plus the manifest. Everything else under apps/desktop stays out.
+files:
+  - lib/main.js
+extraResources:
+  - from: build/repo-root
+    to: repo-root
+mac:
+  icon: build/icon.icns
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+dmg:
+  # The stock "drag to Applications" layout; no background image to maintain.
+  title: DSH Desktop ${version}

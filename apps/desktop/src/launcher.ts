@@ -6,11 +6,32 @@
  * @module @deepseek-ai/dsh-desktop/launcher
  */
 
-import type { ChildProcess } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/**
+ * The ChildProcess surface {@link stopHost} depends on, as a structural type:
+ * a `ChildProcess` satisfies it, and unit tests stub it to drive the
+ * escalation decisions without the vitest worker's grandchild-signal
+ * environment (the real signal chain is covered by the web-launch e2e).
+ */
+export interface StoppableChild {
+  /** The child's exit code, or null while it runs. */
+  readonly exitCode: number | null
+  /** The signal that killed the child, or null. */
+  readonly signalCode: NodeJS.Signals | null
+  /** Deliver one signal to the child. */
+  kill(signal: NodeJS.Signals): boolean
+  /** Subscribe to the terminal close event (fires for spawn failure too). */
+  once(event: 'close', listener: () => void): void
+}
 
 /** The dsh source launcher's entry, relative to the repository root (the root `dsh` script's target). */
 const DSH_SOURCE_BIN = 'apps/cli/src/bin.ts'
+
+/** File this shell's pack step drops beside the packaged bundle: the checkout the app hosts. */
+const PACKAGED_REPO_ROOT_FILE = 'repo-root'
 
 /**
  * The settled-ready line `dsh web` prints after its Loader tree settles. The
@@ -36,6 +57,59 @@ export interface DshWebLaunch {
 export interface StopHostOptions {
   /** Grace period before escalating from SIGTERM to SIGKILL. */
   graceMs: number
+}
+
+/** Inputs to {@link resolveRepoRoot}, one per resolution source. */
+export interface RepoRootInputs {
+  /** `DSH_REPO_ROOT` override from the launching environment, when set. */
+  envRoot: string | undefined
+  /** Whether the shell runs from a packaged application bundle (`app.isPackaged`). */
+  packaged: boolean
+  /** Packaged bundle's Resources directory (`process.resourcesPath`), when packaged. */
+  resourcesPath: string | undefined
+  /** Dev-mode anchor: the main-process module's URL, two directories under the repository root. */
+  moduleUrl: string
+}
+
+/** Resolution outcome: the checkout to host, or a user-actionable message. */
+export type RepoRootResolution = { root: string } | { error: string }
+
+/** Whether a directory is a repository checkout this shell can launch. */
+function isRepoRoot(dir: string): boolean {
+  return existsSync(join(dir, DSH_SOURCE_BIN))
+}
+
+/**
+ * Resolve the repository checkout this shell hosts. The environment override
+ * wins; a packaged bundle reads the marker its pack step recorded; a checkout
+ * run derives the root from its own module URL. Every accepted path is
+ * validated against the launch target, so a moved checkout fails loud instead
+ * of spawning from a stale path.
+ * @param inputs - the three resolution sources plus the dev-mode module URL.
+ * @returns the repository root, or a message naming the fix.
+ */
+export function resolveRepoRoot(inputs: RepoRootInputs): RepoRootResolution {
+  const validate = (dir: string, origin: string): RepoRootResolution =>
+    isRepoRoot(dir)
+      ? { root: dir }
+      : { error: `${origin} does not name a deepseek-harness checkout (missing ${DSH_SOURCE_BIN}): ${dir}` }
+  if (inputs.envRoot !== undefined) {
+    if (!inputs.envRoot.startsWith('/')) {
+      return { error: `DSH_REPO_ROOT must be an absolute path, got ${JSON.stringify(inputs.envRoot)}` }
+    }
+    return validate(inputs.envRoot, 'DSH_REPO_ROOT')
+  }
+  if (inputs.packaged) {
+    if (inputs.resourcesPath === undefined) {
+      return { error: 'packaged shell without a resources path; set DSH_REPO_ROOT to a deepseek-harness checkout' }
+    }
+    const marker = join(inputs.resourcesPath, PACKAGED_REPO_ROOT_FILE)
+    if (!existsSync(marker)) {
+      return { error: 'this app was packed without a repository marker; set DSH_REPO_ROOT to a deepseek-harness checkout' }
+    }
+    return validate(readFileSync(marker, 'utf8').trim(), 'the repository recorded at pack time')
+  }
+  return validate(fileURLToPath(new URL('../../..', inputs.moduleUrl)), 'the checkout this shell runs from')
 }
 
 /**
@@ -90,9 +164,10 @@ export function parseWebUrlLine(stdout: string): string | undefined {
  * @param options - the grace period before forced termination.
  * @returns completion when the child has exited.
  */
-export async function stopHost(child: ChildProcess, options: StopHostOptions): Promise<void> {
-  // `close`, not `exit`: a spawn that failed before the process existed emits
-  // `close` alone, and `exitCode` carries the negative spawn errno.
+export async function stopHost(child: StoppableChild, options: StopHostOptions): Promise<void> {
+  // A close already observed (orderly exit, kill by another signal, or a
+  // failed spawn, where close alone fires and exitCode carries the errno)
+  // leaves nothing to stop.
   if (child.exitCode !== null || child.signalCode !== null) return
   const exited = new Promise<void>((resolve) => {
     child.once('close', () => { resolve() })

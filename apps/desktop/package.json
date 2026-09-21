@@ -2,6 +2,7 @@
   "name": "@deepseek-ai/dsh-desktop",
   "description": "Desktop shell for the dsh Web GUI: an Electron main process that hosts the real `dsh web` composition as a child process and loads its loopback URL in a BrowserWindow",
   "version": "0.1.1-rc.1",
+  "productName": "DSH Desktop",
   "publishConfig": {
     "access": "public"
   },
@@ -18,9 +19,13 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -b && tsdown",
-    "dev": "pnpm run build && electron ."
+    "dev": "pnpm run build && electron .",
+    "pack": "pnpm run build && node --import tsx/esm scripts/pack.ts",
+    "dist": "pnpm run build && node --import tsx/esm scripts/dist.ts"
   },
   "devDependencies": {
-    "electron": "^42.0.0"
+    "@electron/packager": "^18.3.6",
+    "electron": "^42.0.0",
+    "electron-builder": "^26.15.3"
   }
 }
