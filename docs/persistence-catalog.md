@@ -881,6 +881,64 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
 
 Source: [`packages/core/session/src/types.ts:295`](../packages/core/session/src/types.ts)
 
+### `tool-business-workflow/*`
+
+<a id="tool-business-workflowclarified--log-only"></a>
+
+#### `tool-business-workflow/clarified` — log-only
+
+```ts persistence-catalog
+/**
+ * Records one clarification analysis.
+ * @param data - the judged revision and its remaining gaps.
+ */
+'tool-business-workflow/clarified': ToolBusinessWorkflowClarifiedData
+```
+
+Source: [`packages/business/tool-business-workflow/src/types.ts:74`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowcomposed--log-only"></a>
+
+#### `tool-business-workflow/composed` — log-only
+
+```ts persistence-catalog
+/**
+ * Records one composition verdict.
+ * @param data - acceptance or the draft's structural issues.
+ */
+'tool-business-workflow/composed': ToolBusinessWorkflowComposedData
+```
+
+Source: [`packages/business/tool-business-workflow/src/types.ts:79`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowstart--log-only"></a>
+
+#### `tool-business-workflow/start` — log-only
+
+```ts persistence-catalog
+/**
+ * Opens one business-workflow record.
+ * @param data - the record identity, summary, stage, and revision.
+ */
+'tool-business-workflow/start': ToolBusinessWorkflowStartData
+```
+
+Source: [`packages/business/tool-business-workflow/src/types.ts:69`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowverified--log-only"></a>
+
+#### `tool-business-workflow/verified` — log-only
+
+```ts persistence-catalog
+/**
+ * Settles one verification.
+ * @param data - the report headline and every case's outcome.
+ */
+'tool-business-workflow/verified': ToolBusinessWorkflowVerifiedData
+```
+
+Source: [`packages/business/tool-business-workflow/src/types.ts:84`](../packages/business/tool-business-workflow/src/types.ts)
+
 ### `tool-workflow/*`
 
 <a id="tool-workflowagent-end--log-only"></a>

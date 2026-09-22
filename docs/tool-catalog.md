@@ -40,6 +40,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-experimental-tool-agent-team` | `followup_task`, `interrupt_agent`, `list_agents`, `send_message`, `spawn_teammate`, `team_task_create`, `team_task_get`, `team_task_list`, `team_task_update`, `wait_agent` | `ctx.tools`, `ctx.systemPrompt`, `ctx.agentTeams`, `an exact live Team member Agent` | `tool/call`, `team/member`, `team/message/queued`, `team/message/delivered`, `team/task`, `tool/result` | - | All ten tools are scoped to implicit Team Leads and durable teammates. The shipped dsh-base bundle keeps the package disabled; the documented Agent Teams profile patch enables it while disabling the legacy continuable-child control names. |
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`, `owning Agent session` | `tool/call`, `todo/write`, `tool/result` | - | todo_write is session-owned state; UIs render the latest todo/write event as a checklist. `allowParallelInProgress` is required with no default, so the catalog states its choice: `true`, whose description invites several `in_progress` items. A deployment choosing `false` receives the same tool with a description asking for exactly one active task. |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`, `ctx.workflowEngine`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents the script children)` | `tool/call`, `tool/result` | - | - |
+| `@deepseek-ai/dsh-tool-business-workflow` | `business_workflow_clarify`, `business_workflow_compose`, `business_workflow_verify` | `ctx.tools`, `ctx.businessWorkflows`, `ctx.systemPrompt`, `ctx.subagents plus a calling Agent for the verify dry-run` | `tool/call`, `tool/result` | - | The three tools carry the business-workflow pipeline: submit the requirement draft, submit the step orchestration, then verify through acceptance-case dry-runs that delegate each step to a fresh subagent. |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`, `web_search` | `ctx.tools`, `ctx.web`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps. |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
@@ -2168,6 +2169,351 @@ Constraints: concurrency and total-agent caps apply; no filesystem, network, tim
 ```
 
 Source: [`packages/workflow/tool-workflow/src/index.ts`](../packages/workflow/tool-workflow/src/index.ts)
+
+<a id="deepseek-aidsh-tool-business-workflow"></a>
+
+## `@deepseek-ai/dsh-tool-business-workflow`
+
+### `business_workflow_clarify`
+
+Submit a business-workflow requirement draft for deterministic gap analysis — the first step of building a business workflow. The submission is always the complete requirement: summary, objectives (id + statement each), inputs and outputs (name + description each), optional constraints, and acceptance cases (name, given input values, expect assertion: nonEmpty or contains a substring).
+
+The tool reports the requirement's stage: gaps list every missing aspect as an actionable question — resolve them with the user or your own analysis and resubmit; when no gaps remain the requirement is complete (stage ready) and composition can begin. Provide workflow_id to update an existing workflow (a revision discards its composition); omit it to create a new one.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "Existing workflow id to update; omit to create a new workflow."
+    },
+    "requirement": {
+      "type": "object",
+      "description": "The complete requirement draft.",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "One-sentence summary of the business need."
+        },
+        "objectives": {
+          "type": "array",
+          "description": "Business objectives the workflow must achieve.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable objective id steps reference."
+              },
+              "statement": {
+                "type": "string",
+                "description": "One-sentence outcome statement."
+              }
+            },
+            "required": [
+              "id",
+              "statement"
+            ]
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Named input fields the workflow consumes.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Input field name."
+              },
+              "description": {
+                "type": "string",
+                "description": "The field's business meaning."
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "description": "Named output fields the workflow produces.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Output field name."
+              },
+              "description": {
+                "type": "string",
+                "description": "The field's business meaning."
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "description": "Optional business constraints.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance_cases": {
+          "type": "array",
+          "description": "Acceptance cases verification runs.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Case display name."
+              },
+              "given": {
+                "type": "object",
+                "description": "Sample input values keyed by requirement input field name.",
+                "additionalProperties": true
+              },
+              "expect": {
+                "type": "object",
+                "description": "The assertion the case outputs must satisfy.",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "nonEmpty",
+                      "contains"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Substring a contains expectation requires."
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "given",
+              "expect"
+            ]
+          }
+        }
+      },
+      "required": [
+        "summary",
+        "objectives",
+        "inputs",
+        "outputs",
+        "acceptance_cases"
+      ]
+    }
+  },
+  "required": [
+    "requirement"
+  ]
+}
+```
+
+Source: [`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+### `business_workflow_compose`
+
+Submit a business-workflow orchestration for structural validation — the second step of building a business workflow. Requires a workflow whose requirement is complete (stage ready or later).
+
+An orchestration is steps plus final output bindings. Each step: id, title, instruction (a self-contained instruction for one delegated worker), depends_on (step ids it waits for), inputs (named values sourced from requirement inputs or step outputs — every step output source must also appear in depends_on), and objectives (requirement objective ids this step serves). final_outputs binds each requirement output field to a requirement input or a step output.
+
+The tool validates structure deterministically (identity, dependency closure, acyclicity, source resolvability, objective coverage, output binding completeness). A rejected draft returns its issues with remedies and replaces nothing; an accepted draft records the composition (stage composed) and verification can begin.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "The workflow whose requirement is complete."
+    },
+    "steps": {
+      "type": "array",
+      "description": "The orchestration steps.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique step id."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short display title."
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Complete instruction for the step's worker."
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "Step ids this step waits for.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Named inputs this step consumes.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Input name the instruction refers to."
+                },
+                "source": {
+                  "type": "object",
+                  "description": "Where the value comes from.",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "requirement",
+                        "step"
+                      ]
+                    },
+                    "field": {
+                      "type": "string",
+                      "description": "Requirement input field name (kind requirement)."
+                    },
+                    "step": {
+                      "type": "string",
+                      "description": "Producing step id (kind step)."
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "source"
+              ]
+            }
+          },
+          "objectives": {
+            "type": "array",
+            "description": "Requirement objective ids this step serves.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "instruction",
+          "depends_on",
+          "inputs",
+          "objectives"
+        ]
+      }
+    },
+    "final_outputs": {
+      "type": "array",
+      "description": "One binding per requirement output field.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Requirement output field name."
+          },
+          "source": {
+            "type": "object",
+            "description": "Where the value comes from.",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "requirement",
+                  "step"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "description": "Requirement input field name (kind requirement)."
+              },
+              "step": {
+                "type": "string",
+                "description": "Producing step id (kind step)."
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "source"
+        ]
+      }
+    }
+  },
+  "required": [
+    "workflow_id",
+    "steps",
+    "final_outputs"
+  ]
+}
+```
+
+Source: [`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+### `business_workflow_verify`
+
+Verify a business workflow's effect through its acceptance cases — the third step of building a business workflow. Requires a workflow with an accepted composition (stage composed or later).
+
+For every acceptance case the tool runs the composed steps in dependency order, delegating each step to a fresh subagent with its resolved inputs, then asserts the bound final outputs against the case's expectation. The report lists static checks, each case's outcome with a step-by-step trace, and fix hints for every failure. A passing report promotes the workflow to stage verified; a failing one keeps or demotes it to composed — revise the composition (or the requirement) per the hints and verify again.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "The workflow with an accepted composition."
+    }
+  },
+  "required": [
+    "workflow_id"
+  ]
+}
+```
+
+Source: [`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+The three tools carry the business-workflow pipeline: submit the requirement draft, submit the step orchestration, then verify through acceptance-case dry-runs that delegate each step to a fresh subagent.
 
 <a id="deepseek-aidsh-tool-web"></a>
 

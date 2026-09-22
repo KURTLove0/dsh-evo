@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-09-21-business-workflow-seam.md
+2026-09-21-business-workflow-seam.md: 874423b480dd2c78c088150b8a8693ebc9878a76
+2026-09-21-business-workflow-seam.zh.md: 2573cbf258e4d21ef1f57481d810aef231785561

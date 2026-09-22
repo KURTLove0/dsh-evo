@@ -557,6 +557,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents.',
   },
   {
+    key: 'businessWorkflows',
+    pkg: 'business-workflow',
+    title: 'Business-workflow pipeline seam',
+    mode: 'seam',
+    implementations: ['business-workflow-local'],
+    consumers: ['tool-business-workflow'],
+    note: 'One runtime per context owning the clarify/compose/verify stage machine; the model authors requirement and orchestration drafts through the tools, and the verify dry-run delegates each step to a fresh subagent through ctx.subagents.',
+  },
+  {
     key: 'lsp',
     pkg: 'lsp',
     title: 'Language-server navigation seam',

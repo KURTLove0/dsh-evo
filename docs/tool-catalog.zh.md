@@ -44,6 +44,7 @@
 | `@deepseek-ai/dsh-experimental-tool-agent-team` | `followup_task`、`interrupt_agent`、`list_agents`、`send_message`、`spawn_teammate`、`team_task_create`、`team_task_get`、`team_task_list`、`team_task_update`、`wait_agent` | `ctx.tools`、`ctx.systemPrompt`、`ctx.agentTeams`、`an exact live Team member Agent` | `tool/call`、`team/member`、`team/message/queued`、`team/message/delivered`、`team/task`、`tool/result` | - | 这 10 个工具限定于隐式 Team Lead 与持久 teammate 作用域。随产品发布的 dsh-base bundle 默认禁用该包；文档中的 Agent Teams profile patch 会启用它，并禁用旧 continuable child 的同名控制工具。 |
 | `@deepseek-ai/dsh-tool-todo` | `todo_write` | `ctx.tools`、`owning Agent session` | `tool/call`、`todo/write`、`tool/result` | - | todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为检查清单。`allowParallelInProgress` 是没有默认值的必填项，因此本目录明确选择 `true`，对应描述允许同时存在多个 `in_progress` 项。选择 `false` 的部署会获得同一工具，但描述会要求只能有 1 个活动任务。 |
 | `@deepseek-ai/dsh-tool-workflow` | `workflow` | `ctx.tools`、`ctx.workflowEngine`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents the script children)` | `tool/call`、`tool/result` | - | - |
+| `@deepseek-ai/dsh-tool-business-workflow` | `business_workflow_clarify`、`business_workflow_compose`、`business_workflow_verify` | `ctx.tools`、`ctx.businessWorkflows`、`ctx.systemPrompt`、`ctx.subagents plus a calling Agent for the verify dry-run` | `tool/call`、`tool/result` | - | 三个工具承载业务工作流流水线：提交需求草稿、提交步骤编排，再经验收用例试运行验证，试运行把每个步骤委托给全新子代理。 |
 | `@deepseek-ai/dsh-tool-web` | `web_fetch`、`web_search` | `ctx.tools`、`ctx.web`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | web_search 和 web_fetch 将提供方选择置于 ctx.web 之后，使模型可见 schema 在更换后端时保持稳定。 |
 
 <a id="deepseek-aidsh-tool-ask-user"></a>
@@ -2176,6 +2177,351 @@ todo_write 是会话所有的状态；UI 将最新的 todo/write 事件渲染为
 ```
 
 来源：[`packages/workflow/tool-workflow/src/index.ts`](../packages/workflow/tool-workflow/src/index.ts)
+
+<a id="deepseek-aidsh-tool-business-workflow"></a>
+
+## `@deepseek-ai/dsh-tool-business-workflow`
+
+### `business_workflow_clarify`
+
+提交业务工作流需求草稿以进行确定性缺口分析 —— 构建业务工作流的第一步。提交的始终是完整需求：摘要、目标（每项为 id + 陈述）、输入与输出（每项为名称 + 说明）、可选约束，以及验收用例（名称、given 输入值、expect 断言：nonEmpty 或包含子串）。
+
+工具报告需求所处阶段：缺口以可执行问题列出每个缺失要素 —— 与用户一起或经自行分析解决后重新提交；缺口清零后需求即完整（阶段 ready），可以开始编排。提供 workflow_id 更新既有工作流（一次修订会丢弃其编排）；省略则创建新工作流。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "Existing workflow id to update; omit to create a new workflow."
+    },
+    "requirement": {
+      "type": "object",
+      "description": "The complete requirement draft.",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "One-sentence summary of the business need."
+        },
+        "objectives": {
+          "type": "array",
+          "description": "Business objectives the workflow must achieve.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Stable objective id steps reference."
+              },
+              "statement": {
+                "type": "string",
+                "description": "One-sentence outcome statement."
+              }
+            },
+            "required": [
+              "id",
+              "statement"
+            ]
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Named input fields the workflow consumes.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Input field name."
+              },
+              "description": {
+                "type": "string",
+                "description": "The field's business meaning."
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "description": "Named output fields the workflow produces.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Output field name."
+              },
+              "description": {
+                "type": "string",
+                "description": "The field's business meaning."
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "description": "Optional business constraints.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance_cases": {
+          "type": "array",
+          "description": "Acceptance cases verification runs.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Case display name."
+              },
+              "given": {
+                "type": "object",
+                "description": "Sample input values keyed by requirement input field name.",
+                "additionalProperties": true
+              },
+              "expect": {
+                "type": "object",
+                "description": "The assertion the case outputs must satisfy.",
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "nonEmpty",
+                      "contains"
+                    ]
+                  },
+                  "value": {
+                    "type": "string",
+                    "description": "Substring a contains expectation requires."
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "given",
+              "expect"
+            ]
+          }
+        }
+      },
+      "required": [
+        "summary",
+        "objectives",
+        "inputs",
+        "outputs",
+        "acceptance_cases"
+      ]
+    }
+  },
+  "required": [
+    "requirement"
+  ]
+}
+```
+
+来源：[`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+### `business_workflow_compose`
+
+提交业务工作流编排以进行结构校验 —— 构建业务工作流的第二步。要求工作流的需求已完整（阶段 ready 或更高）。
+
+编排由步骤加最终输出绑定构成。每个步骤：id、标题、instruction（给单个受托 worker 的自足指令）、depends_on（它等待的步骤 id）、inputs（来自需求输入或步骤输出的具名值 —— 每个步骤输出来源必须同时出现在 depends_on 中），以及 objectives（该步骤服务的需求目标 id）。final_outputs 把每个需求输出字段绑定到需求输入或某个步骤输出。
+
+工具确定性地校验结构（标识唯一性、依赖闭包、无环、来源可解析、目标覆盖、输出绑定完整）。被拒绝的草稿携整改建议返回其缺陷且不替换任何内容；被接受的草稿记录编排（阶段 composed），可以开始验证。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "The workflow whose requirement is complete."
+    },
+    "steps": {
+      "type": "array",
+      "description": "The orchestration steps.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique step id."
+          },
+          "title": {
+            "type": "string",
+            "description": "Short display title."
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Complete instruction for the step's worker."
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "Step ids this step waits for.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inputs": {
+            "type": "array",
+            "description": "Named inputs this step consumes.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Input name the instruction refers to."
+                },
+                "source": {
+                  "type": "object",
+                  "description": "Where the value comes from.",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "requirement",
+                        "step"
+                      ]
+                    },
+                    "field": {
+                      "type": "string",
+                      "description": "Requirement input field name (kind requirement)."
+                    },
+                    "step": {
+                      "type": "string",
+                      "description": "Producing step id (kind step)."
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "source"
+              ]
+            }
+          },
+          "objectives": {
+            "type": "array",
+            "description": "Requirement objective ids this step serves.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "instruction",
+          "depends_on",
+          "inputs",
+          "objectives"
+        ]
+      }
+    },
+    "final_outputs": {
+      "type": "array",
+      "description": "One binding per requirement output field.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Requirement output field name."
+          },
+          "source": {
+            "type": "object",
+            "description": "Where the value comes from.",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "requirement",
+                  "step"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "description": "Requirement input field name (kind requirement)."
+              },
+              "step": {
+                "type": "string",
+                "description": "Producing step id (kind step)."
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "source"
+        ]
+      }
+    }
+  },
+  "required": [
+    "workflow_id",
+    "steps",
+    "final_outputs"
+  ]
+}
+```
+
+来源：[`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+### `business_workflow_verify`
+
+通过验收用例验证业务工作流的效果 —— 构建业务工作流的第三步。要求工作流已有被接受的编排（阶段 composed 或更高）。
+
+对每个验收用例，工具按依赖顺序运行编排的步骤，把每个步骤携其已解析输入委托给全新子代理，再对绑定的最终输出断言用例期望。报告列出静态检查、每个用例的结论与逐步 trace，以及每个失败的修复提示。通过的报告把工作流提升为阶段 verified；失败的报告保持或降级为 composed —— 按提示修订编排（或需求）后再次验证。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "workflow_id": {
+      "type": "string",
+      "description": "The workflow with an accepted composition."
+    }
+  },
+  "required": [
+    "workflow_id"
+  ]
+}
+```
+
+来源：[`packages/business/tool-business-workflow/src/index.ts`](../packages/business/tool-business-workflow/src/index.ts)
+
+三个工具承载业务工作流流水线：提交需求草稿、提交步骤编排，再经验收用例试运行验证，试运行把每个步骤委托给全新子代理。
 
 <a id="deepseek-aidsh-tool-web"></a>
 

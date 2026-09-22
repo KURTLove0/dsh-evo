@@ -496,6 +496,43 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'businessWorkflows',
+    summary: 'Business-workflow Service Definition contract.',
+    description: 'Business-workflow Service Definition contract. Implementations must honor these semantics:\n\n- Submissions are whole-value replacements: a requirement submission replaces the previous draft (revision increments) and discards any accepted composition; a composition submission replaces the accepted composition only when it passes validation. No call mutates a record partially.\n- Invalid input throws before any state change; a rejected composition draft leaves the previously accepted composition and stage untouched.\n- Stage transitions are exactly: `clarifying`→`ready` (a complete requirement), `ready`→`composed` (an accepted composition), `composed`/`verified`→`ready` (a requirement revision discarding the composition), and `composed`→`verified` (a passing verification). A passing verification of an already-`verified` record records the new report without a stage event.\n- Verification awaits its dry-run work, observes the caller signal between steps, and settles a report (never a throw) for assertion and execution failures; only invalid input and cancellation throw.\n- Snapshots are fresh objects; events carry identity data, never live records.',
+    methods: [
+      {
+        signature: 'abstract submitRequirement(request: RequirementSubmissionRequest): RequirementAnalysis',
+        description: 'Submit a requirement draft (clarification round) and return the fresh gap analysis. Creating a record and updating one take the same request; the analysis states whether the requirement is complete.',
+        parameters: [{ name: 'request', description: 'the full replacement draft and, for an update, the record id.' }],
+        returns: 'the record\'s stage, revision, remaining gaps, and recorded spec.',
+      },
+      {
+        signature: 'abstract compose(request: CompositionRequest): CompositionOutcome',
+        description: 'Submit a composition draft and validate its structure. Validation is deterministic (identity, dependency, source, binding, and coverage rules); a rejected draft returns its issues and changes nothing.',
+        parameters: [{ name: 'request', description: 'the record id and the orchestration draft.' }],
+        returns: 'the record\'s stage, the draft\'s issues, and its step count.',
+      },
+      {
+        signature: 'abstract verify(request: VerificationRequest): Promise<VerificationReport>',
+        description: 'Verify the accepted composition: static case checks always, plus a dry-run through the supplied runner that executes every step per acceptance case and asserts the bound final outputs. Assertion and execution failures settle into the report; only invalid input and cancellation throw.',
+        parameters: [{ name: 'request', description: 'the record id, an optional step runner, and an optional cancellation signal.' }],
+        returns: 'the complete verification report.',
+      },
+      {
+        signature: 'abstract get(id: BusinessWorkflowId): BusinessWorkflowSnapshot',
+        description: 'Return one record\'s snapshot.',
+        parameters: [{ name: 'id', description: 'the record to look up.' }],
+        returns: 'a fresh snapshot.',
+      },
+      {
+        signature: 'abstract list(): BusinessWorkflowSnapshot[]',
+        description: 'List every record\'s snapshot in creation order.',
+        parameters: [],
+        returns: 'fresh snapshots.',
+      },
+    ],
+  },
+  {
     key: 'clientModules',
     summary: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows.',
     description: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows. Construction runs the activation scan synchronously — a malformed declaration or missing bundle among the already-loaded entries aggregates into one loud throw (FAILED fiber; the boot activation audit reports it).',
@@ -2493,6 +2530,22 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
   },
   {
+    name: 'business-workflow/stage',
+    mode: 'emit',
+    signature: '\'business-workflow/stage\'(info: BusinessWorkflowInfo): void',
+    summary: 'One record\'s stage changed — clarification closed or reopened, a composition accepted, or verification promoted the record.',
+    description: 'One record\'s stage changed — clarification closed or reopened, a composition accepted, or verification promoted the record. Paired events carry the same BusinessWorkflowInfo#id; the stage is the value after the transition.',
+    parameters: [{ name: 'info', description: 'the record\'s identity and post-transition stage.' }],
+  },
+  {
+    name: 'business-workflow/verification',
+    mode: 'emit',
+    signature: '\'business-workflow/verification\'(info: BusinessWorkflowInfo, summary: VerificationSummary): void',
+    summary: 'One verification settled (pass or fail).',
+    description: 'One verification settled (pass or fail). Emitted after the report is recorded and any stage transition for it has been published, so an observer reading `stage` sees the promoted state. Paired with the record\'s earlier stage events by id.',
+    parameters: [{ name: 'info', description: 'the record\'s identity and current stage.' }, { name: 'summary', description: 'the report\'s headline.' }],
+  },
+  {
     name: 'commands/change',
     mode: 'emit',
     signature: '\'commands/change\'(): void',
@@ -2841,6 +2894,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
 /** Shapes of every exported type the Service and Event signatures reference (transitively), sorted by name. */
 export const TYPE_API: readonly TypeApiEntry[] = [
   {
+    name: 'AcceptanceCase',
+    declaration: 'export interface AcceptanceCase {\n    name: string;\n    given: Record<string, unknown>;\n    expect: AcceptanceExpectation;\n}',
+  },
+  {
+    name: 'AcceptanceExpectation',
+    declaration: 'export type AcceptanceExpectation = {\n    kind: \'nonEmpty\';\n} | {\n    kind: \'contains\';\n    value: string;\n};',
+  },
+  {
     name: 'AdapterRegistrationHandle',
     declaration: 'export interface AdapterRegistrationHandle {\n    (): void;\n    replace(providers: string[]): void;\n}',
   },
@@ -3017,8 +3078,36 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type Branded<B extends string> = string & {\n    readonly [BRAND]: B;\n};',
   },
   {
+    name: 'BusinessWorkflowId',
+    declaration: 'export type BusinessWorkflowId = Branded<\'BusinessWorkflowId\'>;',
+  },
+  {
+    name: 'BusinessWorkflowInfo',
+    declaration: 'export interface BusinessWorkflowInfo {\n    id: BusinessWorkflowId;\n    stage: BusinessWorkflowStage;\n}',
+  },
+  {
+    name: 'BusinessWorkflowSnapshot',
+    declaration: 'export interface BusinessWorkflowSnapshot {\n    id: BusinessWorkflowId;\n    stage: BusinessWorkflowStage;\n    revision: number;\n    summary: string;\n    stepCount?: number;\n    verifiedAt?: number;\n}',
+  },
+  {
+    name: 'BusinessWorkflowStage',
+    declaration: 'export type BusinessWorkflowStage = \'clarifying\' | \'ready\' | \'composed\' | \'verified\';',
+  },
+  {
+    name: 'BusinessWorkflowStepRunner',
+    declaration: 'export interface BusinessWorkflowStepRunner {\n    (step: WorkflowStep, inputs: Record<string, unknown>, context: {\n        signal: AbortSignal;\n    }): Promise<string>;\n}',
+  },
+  {
     name: 'CancelOptions',
     declaration: 'export interface CancelOptions {\n    keepInbox?: boolean | undefined;\n}',
+  },
+  {
+    name: 'CaseResult',
+    declaration: 'export interface CaseResult {\n    name: string;\n    status: \'passed\' | \'failed\' | \'skipped\';\n    detail?: string;\n    steps?: StepExecutionTrace[];\n}',
+  },
+  {
+    name: 'ClarificationGap',
+    declaration: 'export interface ClarificationGap {\n    topic: \'objectives\' | \'inputs\' | \'outputs\' | \'acceptance\';\n    question: string;\n}',
   },
   {
     name: 'ClientResponse',
@@ -3103,6 +3192,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CompactionTrigger',
     declaration: 'export type CompactionTrigger = \'pressure\' | \'context-overflow\';',
+  },
+  {
+    name: 'CompositionIssue',
+    declaration: 'export interface CompositionIssue {\n    code: CompositionIssueCode;\n    ref?: string;\n    message: string;\n    remedy: string;\n}',
+  },
+  {
+    name: 'CompositionIssueCode',
+    declaration: 'export type CompositionIssueCode = \'STEPS_EMPTY\' | \'STEP_ID_EMPTY\' | \'STEP_ID_DUPLICATE\' | \'DEPENDENCY_UNKNOWN\' | \'DEPENDENCY_CYCLE\' | \'IMPLICIT_DEPENDENCY\' | \'INPUT_NAME_DUPLICATE\' | \'INPUT_SOURCE_UNKNOWN\' | \'OBJECTIVE_UNKNOWN\' | \'OBJECTIVE_UNCOVERED\' | \'OUTPUT_UNBOUND\' | \'OUTPUT_NAME_UNKNOWN\' | \'OUTPUT_DUPLICATE\' | \'OUTPUT_SOURCE_UNKNOWN\';',
+  },
+  {
+    name: 'CompositionOutcome',
+    declaration: 'export interface CompositionOutcome {\n    id: BusinessWorkflowId;\n    stage: \'ready\' | \'composed\' | \'verified\';\n    issues: CompositionIssue[];\n    stepCount: number;\n}',
+  },
+  {
+    name: 'CompositionRequest',
+    declaration: 'export interface CompositionRequest {\n    id: BusinessWorkflowId;\n    composition: WorkflowComposition;\n}',
   },
   {
     name: 'ConfinedArgv',
@@ -3349,6 +3454,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface FileReferenceCandidate {\n    path: string;\n    kind: \'file\' | \'directory\';\n}',
   },
   {
+    name: 'FinalOutputBinding',
+    declaration: 'export interface FinalOutputBinding {\n    name: string;\n    source: InputSource;\n}',
+  },
+  {
     name: 'FinishReason',
     declaration: 'export type FinishReason = FinishReasonMap[keyof FinishReasonMap];',
   },
@@ -3479,6 +3588,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'IndexInjectionPlacement',
     declaration: 'export type IndexInjectionPlacement = \'head\' | \'body\';',
+  },
+  {
+    name: 'InputSource',
+    declaration: 'export type InputSource = {\n    kind: \'requirement\';\n    field: string;\n} | {\n    kind: \'step\';\n    step: string;\n};',
   },
   {
     name: 'InvariantFailure',
@@ -3919,6 +4032,30 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RequestRunOutcome',
     declaration: 'export type RequestRunOutcome = \'approved\' | \'completed\' | \'rejected\' | \'cancelled\' | \'failed\';',
+  },
+  {
+    name: 'RequirementAnalysis',
+    declaration: 'export interface RequirementAnalysis {\n    id: BusinessWorkflowId;\n    stage: BusinessWorkflowStage;\n    revision: number;\n    ready: boolean;\n    gaps: ClarificationGap[];\n    spec?: RequirementSpec;\n}',
+  },
+  {
+    name: 'RequirementDataItem',
+    declaration: 'export interface RequirementDataItem {\n    name: string;\n    description: string;\n}',
+  },
+  {
+    name: 'RequirementObjective',
+    declaration: 'export interface RequirementObjective {\n    id: string;\n    statement: string;\n}',
+  },
+  {
+    name: 'RequirementSpec',
+    declaration: 'export interface RequirementSpec {\n    summary: string;\n    objectives: RequirementObjective[];\n    inputs: RequirementDataItem[];\n    outputs: RequirementDataItem[];\n    constraints: string[];\n    acceptanceCases: AcceptanceCase[];\n}',
+  },
+  {
+    name: 'RequirementSubmission',
+    declaration: 'export interface RequirementSubmission {\n    summary: string;\n    objectives: RequirementObjective[];\n    inputs: RequirementDataItem[];\n    outputs: RequirementDataItem[];\n    constraints?: string[];\n    acceptanceCases: AcceptanceCase[];\n}',
+  },
+  {
+    name: 'RequirementSubmissionRequest',
+    declaration: 'export interface RequirementSubmissionRequest {\n    id?: BusinessWorkflowId;\n    submission: RequirementSubmission;\n}',
   },
   {
     name: 'ResolvedAlwaysRetryPolicy',
@@ -4429,6 +4566,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface SpillSource {\n    toolName: string;\n    callId: CallId;\n    label: string;\n}',
   },
   {
+    name: 'StaticCheck',
+    declaration: 'export interface StaticCheck {\n    name: \'case-input-coverage\';\n    passed: boolean;\n    detail?: string;\n}',
+  },
+  {
+    name: 'StepExecutionTrace',
+    declaration: 'export interface StepExecutionTrace {\n    stepId: string;\n    status: \'completed\' | \'failed\';\n    detail: string;\n}',
+  },
+  {
+    name: 'StepInput',
+    declaration: 'export interface StepInput {\n    name: string;\n    source: InputSource;\n}',
+  },
+  {
     name: 'StorageBackend',
     declaration: 'export interface StorageBackend {\n    readonly kv?: KvFacet;\n    close(): Promise<void>;\n}',
   },
@@ -4921,6 +5070,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface UserQuestionProvider {\n    ask(request: AskUserQuestionRequest): Promise<AskUserQuestionAnswer>;\n}',
   },
   {
+    name: 'VerificationReport',
+    declaration: 'export interface VerificationReport {\n    id: BusinessWorkflowId;\n    passed: boolean;\n    staticChecks: StaticCheck[];\n    caseResults: CaseResult[];\n    fixHints: string[];\n    dryRun: boolean;\n}',
+  },
+  {
+    name: 'VerificationRequest',
+    declaration: 'export interface VerificationRequest {\n    id: BusinessWorkflowId;\n    runStep: BusinessWorkflowStepRunner;\n    signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'VerificationSummary',
+    declaration: 'export interface VerificationSummary {\n    passed: boolean;\n    caseCount: number;\n    dryRun: boolean;\n}',
+  },
+  {
     name: 'WebBootEntry',
     declaration: 'export interface WebBootEntry {\n    id: string;\n    url: string;\n    rev: string;\n    inject?: string[];\n    immediately?: boolean;\n    external?: string[];\n}',
   },
@@ -5001,6 +5162,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type WorkflowAgentOutcome = \'completed\' | \'failed\' | \'cancelled\';',
   },
   {
+    name: 'WorkflowComposition',
+    declaration: 'export interface WorkflowComposition {\n    steps: WorkflowStep[];\n    finalOutputs: FinalOutputBinding[];\n}',
+  },
+  {
     name: 'WorkflowMeta',
     declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
   },
@@ -5031,6 +5196,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowStartRequest',
     declaration: 'export interface WorkflowStartRequest {\n    script: string;\n    meta: WorkflowMeta;\n    args?: unknown;\n    subagentProvider?: string;\n    maxTotalAgents?: number;\n    parent: Agent;\n    signal?: AbortSignal;\n}',
+  },
+  {
+    name: 'WorkflowStep',
+    declaration: 'export interface WorkflowStep {\n    id: string;\n    title: string;\n    instruction: string;\n    dependsOn: string[];\n    inputs: StepInput[];\n    objectives: string[];\n}',
   },
   {
     name: 'WorkflowStopReason',

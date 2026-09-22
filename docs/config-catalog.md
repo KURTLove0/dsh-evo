@@ -389,6 +389,22 @@ Depends on: [`LocalConfig`](#deepseek-aidsh-bash-local)
 
 Source: [`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
 
+<a id="deepseek-aidsh-business-workflow-local"></a>
+
+## `@deepseek-ai/dsh-business-workflow-local`
+
+```ts config-catalog
+/** Configuration for the process-local business-workflow runtime. */
+export interface Config {
+  /** Maximum records the runtime keeps; a further create fails (default 200). */
+  maxWorkflows?: number
+  /** Per-step trace detail ceiling in verification reports (default 2000). */
+  maxTraceChars?: number
+}
+```
+
+Source: [`packages/business/business-workflow-local/src/index.ts:45`](../packages/business/business-workflow-local/src/index.ts)
+
 <a id="deepseek-aidsh-client-connection"></a>
 
 ## `@deepseek-ai/dsh-client-connection`
@@ -2510,6 +2526,26 @@ export interface Config {
 
 Source: [`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-business-workflow"></a>
+
+## `@deepseek-ai/dsh-tool-business-workflow`
+
+Requires: `tools` · `businessWorkflows` · `systemPrompt`
+
+```ts config-catalog
+/** Config: the model-facing tool name prefix, the dry-run subagent provider, and result rendering caps. */
+export interface Config {
+  /** The prefix for the three model-facing tool names (default `business_workflow`). */
+  toolNamePrefix?: string
+  /** The subagent provider name the dry-run delegates steps to (default `spawn`). */
+  subagentProvider?: string
+  /** Rendered-result ceiling, in characters: longer text is truncated with a notice (default 50000). */
+  maxResultChars?: number
+}
+```
+
+Source: [`packages/business/tool-business-workflow/src/index.ts:36`](../packages/business/tool-business-workflow/src/index.ts)
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -3265,6 +3301,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 Abstract service classes — a deployment loads a concrete implementation package instead ([capability seams](../.agents/notes/implemented/architecture/2026-06-13-capability-seams.md)).
 
 - `@deepseek-ai/dsh-attachment` — abstract `AttachmentStore` ([`packages/attachment/attachment/src/index.ts`](../packages/attachment/attachment/src/index.ts))
+- `@deepseek-ai/dsh-business-workflow` — abstract `BusinessWorkflowRuntime` ([`packages/business/business-workflow/src/index.ts`](../packages/business/business-workflow/src/index.ts))
 - `@deepseek-ai/dsh-code-runtime` — abstract `CodeRuntime` ([`packages/code-runtime/code-runtime/src/index.ts`](../packages/code-runtime/code-runtime/src/index.ts))
 - `@deepseek-ai/dsh-compaction` — abstract `CompactionEngine` ([`packages/compaction/compaction/src/index.ts`](../packages/compaction/compaction/src/index.ts))
 - `@deepseek-ai/dsh-credentials` — abstract `CredentialProvider` ([`packages/credentials/credentials/src/index.ts`](../packages/credentials/credentials/src/index.ts))

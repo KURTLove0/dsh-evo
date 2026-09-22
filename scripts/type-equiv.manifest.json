@@ -1411,6 +1411,26 @@
       "source": "packages/workflow/workflow/src/runtime-types.ts"
     },
     {
+      "doc": "docs/subsystems/business-workflow.md",
+      "symbol": "BusinessWorkflowStage",
+      "source": "packages/business/business-workflow/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/business-workflow.md",
+      "symbol": "RequirementSubmission",
+      "source": "packages/business/business-workflow/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/business-workflow.md",
+      "symbol": "WorkflowComposition",
+      "source": "packages/business/business-workflow/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/business-workflow.md",
+      "symbol": "VerificationReport",
+      "source": "packages/business/business-workflow/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/workflow.md",
       "symbol": "WorkflowMeta",
       "source": "packages/workflow/workflow/src/types.ts"

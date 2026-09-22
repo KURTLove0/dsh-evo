@@ -1,0 +1,105 @@
+.root {
+  width: 100%;
+  min-width: 0;
+}
+
+.row {
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-module-platform);
+}
+
+.title {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 14px;
+  font-weight: 510;
+}
+
+.summary {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status,
+.steps {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 8px 10px 32px;
+}
+
+.meta {
+  display: flex;
+  gap: 8px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.metaLabel {
+  flex: none;
+}
+
+.metaValue {
+  margin: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sectionLabel {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  font-weight: 510;
+  line-height: 18px;
+}
+
+.entry {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.entryTag {
+  flex: none;
+  max-width: 30%;
+  overflow: hidden;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--dsw-alias-bg-fill-secondary);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entryText {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

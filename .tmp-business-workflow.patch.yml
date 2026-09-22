@@ -1,0 +1,11 @@
+# Business-workflow mount overlay: adds the three-package capability family
+# (the local provider registers ctx.businessWorkflows; the tool package exposes
+# business_workflow_clarify/_compose/_verify and delegates the verify dry-run
+# to the spawn subagent provider already mounted in the web profile) plus the
+# durable Conversation-Node UI card over the tool's session events.
+- insert:
+    - id: business-workflow-local
+      name: '@deepseek-ai/dsh-business-workflow-local'
+
+    - id: tool-business-workflow
+      name: '@deepseek-ai/dsh-tool-business-workflow'

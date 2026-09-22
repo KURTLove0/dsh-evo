@@ -32,6 +32,7 @@ import WebRuntime from '@deepseek-ai/dsh-web'
 import * as WebSearchExa from '@deepseek-ai/dsh-web-search-exa'
 import * as WebFetchLocal from '@deepseek-ai/dsh-web-fetch-http'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
+import LocalBusinessWorkflowRuntime from '@deepseek-ai/dsh-business-workflow-local'
 import type { SubagentProvider, SubagentReportDelivery } from '@deepseek-ai/dsh-subagent'
 import * as ToolSubagentControl from '@deepseek-ai/dsh-tool-subagent-control'
 import * as ToolSubagentListAgents from '@deepseek-ai/dsh-tool-subagent-control/list-agents'
@@ -66,6 +67,7 @@ import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
+import * as ToolBusinessWorkflow from '@deepseek-ai/dsh-tool-business-workflow'
 import { githubSlug } from './verify-md-links.ts'
 
 /** Attachment seam marker that makes the attachments-conditional `read_image` schema harvestable. */
@@ -588,6 +590,23 @@ const TOOL_PACKAGES: ToolPackage[] = [
       await ctx.plugin(VmWorkflowEngine, { provider: 'mock' })
       await ctx.plugin(ToolWorkflow)
     },
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-business-workflow',
+    dir: 'tool-business-workflow',
+    source: 'packages/business/tool-business-workflow/src/index.ts',
+    requires: ['ctx.tools', 'ctx.businessWorkflows', 'ctx.systemPrompt', 'ctx.subagents plus a calling Agent for the verify dry-run'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // The tools register from the seam alone; boot the local runtime over a
+      // scripted subagent provider so the schemas catalog without live models.
+      await ctx.plugin(SubagentRuntime)
+      registerCatalogSubagentProvider(ctx, 'mock')
+      await ctx.plugin(LocalBusinessWorkflowRuntime)
+      await ctx.plugin(ToolBusinessWorkflow, { subagentProvider: 'mock' })
+    },
+    note:
+      'The three tools carry the business-workflow pipeline: submit the requirement draft, submit the step orchestration, then verify through acceptance-case dry-runs that delegate each step to a fresh subagent.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-web',

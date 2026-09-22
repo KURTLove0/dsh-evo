@@ -1,0 +1,81 @@
+/** `businessWorkflow` namespace dictionaries. */
+
+/** Dictionary namespace owned by this plugin. */
+export const NS = 'businessWorkflow'
+
+/** Simplified Chinese dictionary (the key-set source of truth). */
+export const zh = {
+  'node.title': '业务工作流',
+  'node.revision': '第 {revision} 版',
+  'status.clarifying': '澄清需求中',
+  'status.composed': '已编排',
+  'status.verified': '已验证',
+  'section.gaps': '待澄清',
+  'section.issues': '结构问题',
+  'section.verification': '验证报告',
+  'section.steps': '{count} 个步骤',
+  'verification.passed': '通过（{count} 个用例）',
+  'verification.failed': '未通过（{count} 个用例）',
+  'verification.skipped': '静态检查未过，试运行已跳过',
+  'case.passed': '通过',
+  'case.failed': '失败',
+  'case.skipped': '跳过',
+  'status.ready': '需求已就绪',
+  'action.entry': '业务工作流',
+  'action.new': '新建工作流',
+  'action.placeholder': '用一句话描述业务需求，例如：每周一汇总销售数据并邮件发送给管理层…',
+  'action.start': '开始澄清',
+  'action.continue': '继续澄清',
+  'action.compose': '生成编排',
+  'action.verify': '验证效果',
+  'action.reverify': '重新验证',
+  'action.list': '本会话的工作流',
+  'action.empty': '当前会话还没有业务工作流，从上方新建一个。',
+  'send.failed': '发送失败，请重试',
+  'sidebar.hint.current': '发送至当前会话：{title}',
+  'sidebar.hint.new': '当前没有打开的会话，开始后将自动创建新会话。',
+  'prompt.start': '请为以下业务需求创建业务工作流：调用 business_workflow_clarify 工具提交需求分析（覆盖目标、输入、输出、约束与验收方向）。信息有缺口时列出澄清问题；信息充足时直接标记 ready。\n\n业务需求：{requirement}',
+  'prompt.continue': '请调用 business_workflow_clarify 工具继续推进业务工作流 {id} 的需求澄清：结合对话中的补充说明提交递增 revision 的需求修订；若缺口已清零，请标记 ready。',
+  'prompt.compose': '请调用 business_workflow_compose 工具为业务工作流 {id} 生成工作流编排：覆盖全部需求目标，声明步骤依赖与最终输出绑定，并为关键验收点设计验收用例。',
+  'prompt.verify': '请调用 business_workflow_verify 工具验证业务工作流 {id}：执行结构检查与验收用例试运行，并报告每个用例的结论。',
+} as const
+
+/** English dictionary, key-identical to the Chinese source of truth. */
+export const en: Record<BusinessWorkflowKey, string> = {
+  'node.title': 'Business workflow',
+  'node.revision': 'revision {revision}',
+  'status.clarifying': 'clarifying requirement',
+  'status.composed': 'composed',
+  'status.verified': 'verified',
+  'section.gaps': 'Open questions',
+  'section.issues': 'Structural issues',
+  'section.verification': 'Verification',
+  'section.steps': '{count} steps',
+  'verification.passed': 'passed ({count} cases)',
+  'verification.failed': 'failed ({count} cases)',
+  'verification.skipped': 'static checks failed; dry-run skipped',
+  'case.passed': 'passed',
+  'case.failed': 'failed',
+  'case.skipped': 'skipped',
+  'status.ready': 'requirement ready',
+  'action.entry': 'Business workflow',
+  'action.new': 'New workflow',
+  'action.placeholder': 'Describe the business requirement in one sentence, e.g. every Monday, aggregate sales data and email it to management…',
+  'action.start': 'Start clarifying',
+  'action.continue': 'Continue clarifying',
+  'action.compose': 'Compose',
+  'action.verify': 'Verify',
+  'action.reverify': 'Re-verify',
+  'action.list': 'Workflows in this session',
+  'action.empty': 'No business workflow in this session yet — start one above.',
+  'send.failed': 'Send failed; please retry',
+  'sidebar.hint.current': 'Send to the current session: {title}',
+  'sidebar.hint.new': 'No session is open; starting will create a new one.',
+  'prompt.start': 'Create a business workflow for the following requirement: call the business_workflow_clarify tool to submit the requirement analysis (covering goals, inputs, outputs, constraints, and acceptance directions). List clarification questions when information is missing; mark ready when the requirement is complete.\n\nRequirement: {requirement}',
+  'prompt.continue': 'Call the business_workflow_clarify tool to continue clarifying business workflow {id}: submit an incremented revision incorporating the supplementary details from our conversation; mark ready when no gaps remain.',
+  'prompt.compose': 'Call the business_workflow_compose tool to compose business workflow {id}: cover every requirement goal, declare step dependencies and final-output bindings, and design acceptance cases for the key acceptance points.',
+  'prompt.verify': 'Call the business_workflow_verify tool to verify business workflow {id}: run the structural checks and the acceptance-case dry-run, and report each case outcome.',
+}
+
+/** Key domain of the `businessWorkflow` namespace (zh is the source of truth). */
+export type BusinessWorkflowKey = keyof typeof zh

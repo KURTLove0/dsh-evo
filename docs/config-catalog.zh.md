@@ -391,6 +391,22 @@ export type Config = LocalConfig
 
 来源：[`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
 
+<a id="deepseek-aidsh-business-workflow-local"></a>
+
+## `@deepseek-ai/dsh-business-workflow-local`
+
+```ts config-catalog
+/** Configuration for the process-local business-workflow runtime. */
+export interface Config {
+  /** Maximum records the runtime keeps; a further create fails (default 200). */
+  maxWorkflows?: number
+  /** Per-step trace detail ceiling in verification reports (default 2000). */
+  maxTraceChars?: number
+}
+```
+
+来源：[`packages/business/business-workflow-local/src/index.ts:45`](../packages/business/business-workflow-local/src/index.ts)
+
 <a id="deepseek-aidsh-client-connection"></a>
 
 ## `@deepseek-ai/dsh-client-connection`
@@ -2513,6 +2529,26 @@ export interface Config {
 
 来源：[`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
 
+<a id="deepseek-aidsh-tool-business-workflow"></a>
+
+## `@deepseek-ai/dsh-tool-business-workflow`
+
+Requires: `tools` · `businessWorkflows` · `systemPrompt`
+
+```ts config-catalog
+/** Config: the model-facing tool name prefix, the dry-run subagent provider, and result rendering caps. */
+export interface Config {
+  /** The prefix for the three model-facing tool names (default `business_workflow`). */
+  toolNamePrefix?: string
+  /** The subagent provider name the dry-run delegates steps to (default `spawn`). */
+  subagentProvider?: string
+  /** Rendered-result ceiling, in characters: longer text is truncated with a notice (default 50000). */
+  maxResultChars?: number
+}
+```
+
+来源：[`packages/business/tool-business-workflow/src/index.ts:36`](../packages/business/tool-business-workflow/src/index.ts)
+
 <a id="deepseek-aidsh-tool-fs"></a>
 
 ## `@deepseek-ai/dsh-tool-fs`
@@ -3268,6 +3304,8 @@ export interface Config {
 抽象服务类——部署时应改为加载具体的实现包（参见[能力 seam](../.agents/notes/implemented/architecture/2026-06-13-capability-seams.zh.md)）。
 
 - `@deepseek-ai/dsh-attachment` — 抽象 `AttachmentStore`（[`packages/attachment/attachment/src/index.ts`](../packages/attachment/attachment/src/index.ts)）
+- `@deepseek-ai/dsh-business-workflow` — 抽象 `BusinessWorkflowRuntime`（[`packages/business/business-workflow/src/index.ts`](../packages/business/business-workflow/src/index.ts)）
+
 - `@deepseek-ai/dsh-code-runtime` — 抽象 `CodeRuntime`（[`packages/code-runtime/code-runtime/src/index.ts`](../packages/code-runtime/code-runtime/src/index.ts)）
 - `@deepseek-ai/dsh-compaction` — 抽象 `CompactionEngine`（[`packages/compaction/compaction/src/index.ts`](../packages/compaction/compaction/src/index.ts)）
 - `@deepseek-ai/dsh-credentials` — 抽象 `Credentials`（[`packages/credentials/credentials/src/index.ts`](../packages/credentials/credentials/src/index.ts)）
