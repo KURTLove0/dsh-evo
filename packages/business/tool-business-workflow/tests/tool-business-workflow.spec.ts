@@ -142,7 +142,7 @@ describe('durable session records', () => {
     expect(second.value).toMatchObject({ revision: 2 })
     const types = recordedEvents(session).map(entry => entry.type)
     expect(types).toEqual(['tool-business-workflow/start', 'tool-business-workflow/clarified', 'tool-business-workflow/clarified'])
-    const start = session.events[0]?.data as { workflowId: string; summary: string; stage: string; revision: number }
+    const start = session.events[0]?.data as unknown as { workflowId: string; summary: string; stage: string; revision: number }
     expect(start).toEqual({ workflowId: id, summary: 'Rank inbound leads', stage: 'ready', revision: 1 })
   })
 
