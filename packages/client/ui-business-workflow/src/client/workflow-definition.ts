@@ -13,7 +13,7 @@ import type {
 } from '@deepseek-ai/dsh-business-workflow/types'
 // Declaration merge only: adds the four tool-business-workflow session events
 // this Definition matches on to the client-side SessionEventMap union.
-import type {} from '@deepseek-ai/dsh-tool-business-workflow/types'
+import type { ToolBusinessWorkflowBoardStep } from '@deepseek-ai/dsh-tool-business-workflow/types'
 
 /** Stage names a node carries, shared with the panel's status vocabulary. */
 export type BusinessWorkflowNodeStatus = Extract<BusinessWorkflowStage, 'clarifying' | 'composed' | 'verified'>
@@ -33,6 +33,8 @@ export interface BusinessWorkflowChatData {
   readonly issues: readonly CompositionIssue[]
   /** The accepted composition's step count; `0` before one is accepted. */
   readonly stepCount: number
+  /** The accepted composition's board projection (node + edge data); empty before acceptance. */
+  readonly steps: readonly ToolBusinessWorkflowBoardStep[]
   /** The latest verification report; absent before one ran. */
   readonly verification?: {
     readonly passed: boolean
@@ -59,6 +61,7 @@ interface WorkflowState {
   readonly gaps: readonly ClarificationGap[]
   readonly issues: readonly CompositionIssue[]
   readonly stepCount: number
+  readonly steps: readonly ToolBusinessWorkflowBoardStep[]
   readonly verification?: BusinessWorkflowChatData['verification']
 }
 
@@ -94,6 +97,7 @@ export const businessWorkflowDefinition: ConversationNodeDefinition<WorkflowStat
       gaps: [],
       issues: [],
       stepCount: 0,
+      steps: [],
     }
   },
   update: (context, match) => {
@@ -110,6 +114,9 @@ export const businessWorkflowDefinition: ConversationNodeDefinition<WorkflowStat
         status: nodeStatus(data.stage),
         issues: data.issues,
         stepCount: data.stepCount,
+        // The verdict's board mirrors its stepCount: accepted drafts replace the
+        // board, rejected ones clear it (logs predating the field read as empty).
+        steps: data.steps ?? [],
         // A re-composition after a requirement revision invalidates the prior report.
         verification: data.stepCount > 0 ? undefined : state.verification,
       }
@@ -142,6 +149,7 @@ export const businessWorkflowDefinition: ConversationNodeDefinition<WorkflowStat
       gaps: state.gaps,
       issues: state.issues,
       stepCount: state.stepCount,
+      steps: state.steps,
       ...state.verification !== undefined ? { verification: state.verification } : {},
     }
     return {

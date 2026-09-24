@@ -180,6 +180,7 @@ describe('workflow rows projection', () => {
       gaps: NO_GAPS,
       issues: NO_ISSUES,
       stepCount: 0,
+      steps: [],
       ...over,
     }
   }

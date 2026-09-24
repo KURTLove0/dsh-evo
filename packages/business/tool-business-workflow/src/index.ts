@@ -523,6 +523,11 @@ export function apply(ctx: Context, config: Config): void {
           stage: outcome.stage,
           stepCount: outcome.stepCount,
           issues: outcome.issues,
+          // The board projects the accepted draft only; a rejected draft leaves
+          // the previous composition (or none) on the panel.
+          steps: outcome.stepCount > 0
+            ? composition.steps.map(step => ({ id: step.id, title: step.title, dependsOn: step.dependsOn }))
+            : [],
         })
       }
       return Promise.resolve({

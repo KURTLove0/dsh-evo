@@ -158,8 +158,20 @@ describe('durable session records', () => {
       'tool-business-workflow/composed',
       'tool-business-workflow/verified',
     ])
-    const composed = session.events[2]?.data as unknown as { workflowId: string; stage: string; stepCount: number; issues: unknown[] }
-    expect(composed).toEqual({ workflowId: id, stage: 'composed', stepCount: 1, issues: [] })
+    const composed = session.events[2]?.data as unknown as {
+      workflowId: string
+      stage: string
+      stepCount: number
+      issues: unknown[]
+      steps: { id: string; title: string; dependsOn: string[] }[]
+    }
+    expect(composed).toEqual({
+      workflowId: id,
+      stage: 'composed',
+      stepCount: 1,
+      issues: [],
+      steps: [{ id: 'score', title: 'Score leads', dependsOn: [] }],
+    })
     const verified = session.events[3]?.data as unknown as {
       workflowId: string
       stage: string

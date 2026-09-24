@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { DisclosureRow, StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { deriveNodeStatuses } from './board-layout.ts'
 import { NS, type BusinessWorkflowKey } from './locales.ts'
+import { WorkflowBoard } from './WorkflowBoard.tsx'
 import type { BusinessWorkflowNodeStatus } from './workflow-definition.ts'
 import css from './BusinessWorkflowPanel.module.css'
 
@@ -30,6 +32,7 @@ export function BusinessWorkflowPanel({ node, t }: BusinessWorkflowPanelProps) {
   const workflow = node.data
   const expandable = workflow.gaps.length > 0
     || workflow.issues.length > 0
+    || workflow.steps.length > 0
     || workflow.verification !== undefined
   const verification = workflow.verification
   return (
@@ -80,6 +83,19 @@ export function BusinessWorkflowPanel({ node, t }: BusinessWorkflowPanelProps) {
                     <span className={css.entryText} title={issue.remedy}>{issue.message}</span>
                   </dd>
                 ))}
+              </section>
+            )
+            : null}
+          {workflow.steps.length > 0
+            ? (
+              <section className={css.section}>
+                <dt className={css.sectionLabel}>{t('section.board')}</dt>
+                <dd className={css.board}>
+                  <WorkflowBoard
+                    steps={workflow.steps}
+                    statuses={deriveNodeStatuses(workflow.steps, workflow.verification?.cases)}
+                  />
+                </dd>
               </section>
             )
             : null}

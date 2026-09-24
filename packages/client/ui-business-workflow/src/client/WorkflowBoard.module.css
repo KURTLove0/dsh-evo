@@ -1,0 +1,48 @@
+/* Theme-native node-edge canvas: layer-1 node boxes over a transparent board,
+   DSW status colors for the dry-run standing dots. */
+.canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  overflow: visible;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--dsw-alias-border-l2);
+  stroke-width: 1.5;
+}
+
+.arrowHead {
+  fill: var(--dsw-alias-border-l2);
+}
+
+.nodeBox {
+  fill: var(--dsw-alias-bg-layer-1);
+  stroke: var(--dsw-alias-border-l2);
+  stroke-width: 1;
+}
+
+.nodeDot[data-status='pending'] {
+  fill: var(--dsw-alias-label-tertiary);
+}
+
+.nodeDot[data-status='completed'] {
+  fill: var(--dsw-alias-state-success-primary);
+}
+
+.nodeDot[data-status='failed'] {
+  fill: var(--dsw-alias-state-error-primary);
+}
+
+.nodeTitle {
+  fill: var(--dsw-alias-label-primary);
+  font-size: 12px;
+  font-weight: 510;
+}
+
+.nodeId {
+  fill: var(--dsw-alias-label-tertiary);
+  font-size: 10px;
+}

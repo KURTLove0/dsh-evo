@@ -38,6 +38,16 @@ export interface ToolBusinessWorkflowClarifiedData {
   readonly gaps: readonly ClarificationGap[]
 }
 
+/** The board projection of one accepted step: its display identity plus explicit waits. */
+export interface ToolBusinessWorkflowBoardStep {
+  /** The step id (edge endpoints reference it). */
+  readonly id: string
+  /** The short display title. */
+  readonly title: string
+  /** Ids of steps this step explicitly waits for. */
+  readonly dependsOn: readonly string[]
+}
+
 /** Records one composition verdict: acceptance or the structural issues that rejected the draft. */
 export interface ToolBusinessWorkflowComposedData {
   readonly workflowId: BusinessWorkflowId
@@ -47,6 +57,8 @@ export interface ToolBusinessWorkflowComposedData {
   readonly stepCount: number
   /** The rejected draft's issues with remedies; empty when accepted. */
   readonly issues: readonly CompositionIssue[]
+  /** The accepted composition's board projection; absent when the draft was rejected or the log predates the board. */
+  readonly steps?: readonly ToolBusinessWorkflowBoardStep[]
 }
 
 /** Settles one verification: the headline plus every case's outcome. */

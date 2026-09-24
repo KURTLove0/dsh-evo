@@ -103,3 +103,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.board {
+  margin: 0;
+  padding: 4px 0 2px;
+  overflow: auto;
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
