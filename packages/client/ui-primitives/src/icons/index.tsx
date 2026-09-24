@@ -856,6 +856,18 @@ export const IconQuestionOutline14 = ({ size = 14, className }: IconProps) => (
   </svg>
 )
 
+/** ic_ds_runtime_outline_16 (chip + bolt): a processor contour with a lightning notch, for model-runtime surfaces. */
+export const IconRuntimeOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M5.4 1C5.84183 1 6.2 1.35817 6.2 1.8V2.2H9.8V1.8C9.8 1.35817 10.1582 1 10.6 1C11.0418 1 11.4 1.35817 11.4 1.8V2.2H12.2C13.7464 2.2 15 3.4536 15 5V5.8H15.2C15.6418 5.8 16 6.15817 16 6.6C16 7.04183 15.6418 7.4 15.2 7.4H15V8.6H15.2C15.6418 8.6 16 8.95817 16 9.4C16 9.84183 15.6418 10.2 15.2 10.2H15V11C15 12.5464 13.7464 13.8 12.2 13.8H11.4V14.2C11.4 14.6418 11.0418 15 10.6 15C10.1582 15 9.8 14.6418 9.8 14.2V13.8H6.2V14.2C6.2 14.6418 5.84183 15 5.4 15C4.95817 15 4.6 14.6418 4.6 14.2V13.8H3.8C2.2536 13.8 1 12.5464 1 11V10.2H0.8C0.358172 10.2 0 9.84183 0 9.4C0 8.95817 0.358172 8.6 0.8 8.6H1V7.4H0.8C0.358172 7.4 0 7.04183 0 6.6C0 6.15817 0.358172 5.8 0.8 5.8H1V5C1 3.4536 2.2536 2.2 3.8 2.2H4.6V1.8C4.6 1.35817 4.95817 1 5.4 1ZM3.8 3.8C3.13726 3.8 2.6 4.33726 2.6 5V11C2.6 11.6627 3.13726 12.2 3.8 12.2H12.2C12.8627 12.2 13.4 11.6627 13.4 11V5C13.4 4.33726 12.8627 3.8 12.2 3.8H3.8ZM8.5399 4.6L5.8 8.3H7.5001L6.8601 11.3L9.7999 7.5H8.02L8.5399 4.6Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
 /** ic_ds_archive_outline_20 (figma extract): lidded box + label slot. The export's
  *  0.11px stroke ring around the box contour is dropped — it restates the same
  *  contour in the same ink, which currentColor already carries. */

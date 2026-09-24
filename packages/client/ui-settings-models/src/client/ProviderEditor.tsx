@@ -23,7 +23,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { CredentialView, IApiClient, SettingsNamespaceView, SettingsPathOpView } from '@deepseek-ai/dsh-api-remotes/client'
+import type {
+  CredentialView, DiscoveredModelView, IApiClient, SettingsNamespaceView, SettingsPathOpView,
+} from '@deepseek-ai/dsh-api-remotes/client'
 import {
   DeepSeekModelsEditor, modelDrafts, validateDeepSeekModels,
 } from './DeepSeekModelsEditor.tsx'
@@ -36,7 +38,7 @@ import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
 /** Per-adapter-family curated field sets (unknown namespaces get the hint alone). */
-type EditorLayout = 'deepseek' | 'pi-ai' | 'unknown'
+type EditorLayout = 'deepseek' | 'pi-ai' | 'claude-cli' | 'unknown'
 
 /** The public DeepSeek endpoint shown as the deepseek base-URL placeholder. */
 const DEEPSEEK_PUBLIC_BASE_URL = 'https://api.deepseek.com'
@@ -129,6 +131,7 @@ export function pathOps(
 function layoutOf(ns: string): EditorLayout {
   if (ns === 'llm-deepseek') return 'deepseek'
   if (ns === 'llm-pi-ai') return 'pi-ai'
+  if (ns === 'llm-claude-cli') return 'claude-cli'
   return 'unknown'
 }
 
@@ -154,6 +157,12 @@ function refFor(
 export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   const { namespace, schema, settingsPath, api, t } = props
   const [draft, setDraft] = useState<Record<string, unknown>>(() => draftAt(schema, namespace, settingsPath))
+  // The CLI family edits its numeric timeout as text; the buffer holds the
+  // keystrokes while the parsed count (or the deletion) lands in the draft.
+  const [timeoutDraft, setTimeoutDraft] = useState<string>(() => {
+    const stored = schema.getPath(draftAt(schema, namespace, settingsPath), ['timeoutMs'])
+    return typeof stored === 'number' ? String(stored) : ''
+  })
   const [keyDraft, setKeyDraft] = useState('')
   const [keyState, setKeyState] = useState<CredentialView | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -212,9 +221,31 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       : schema.setPath(current, [key], value))
   }
 
+  /** Edit the CLI driver's timeout as text; a cleared field unsets the override. */
+  const editTimeout = (text: string): void => {
+    setTimeoutDraft(text)
+    const trimmed = text.trim()
+    if (trimmed === '') {
+      setDraft(current => schema.deletePath(current, ['timeoutMs']))
+      return
+    }
+    // Unparsable text stays visible for the user to correct and never reaches
+    // the draft, so an apply cannot carry a value the schema would reject.
+    if (!/^\d+$/.test(trimmed)) return
+    const value = Number(trimmed)
+    if (value > 0) setDraft(current => schema.setPath(current, ['timeoutMs'], value))
+  }
+
   // The model list is validated by the same per-row checker for both families,
   // so a bad row is named by its position rather than by a blanket message.
   const modelFailure = validateDeepSeekModels(schema.getPath(draft, ['models']))
+  // A CLI timeout the text cannot parse into a positive integer stays on
+  // screen and disables Apply, the same gate the model rows use.
+  const timeoutFailure: keyof typeof en | undefined = layout === 'claude-cli'
+    && timeoutDraft.trim() !== ''
+    && (!/^\d+$/.test(timeoutDraft.trim()) || !(Number(timeoutDraft) > 0))
+    ? 'cliTimeoutInvalid'
+    : undefined
   const keyFailure = apiKeyFailure(keyDraft)
   // What a probe or a write must carry: the typed key with paste whitespace
   // removed. A blank field yields an empty string, which both call sites read
@@ -342,7 +373,84 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
    * narrowed so the per-family branches below are total: an unknown namespace
    * renders the hint instead and never reaches this body.
    */
-  const curatedFields = (family: 'deepseek' | 'pi-ai'): ReactNode => {
+  const curatedFields = (family: 'deepseek' | 'pi-ai' | 'claude-cli'): ReactNode => {
+    // The local-CLI family: connection facts at the top, the runtime-owned
+    // model catalog behind the fold. No API key field — neither driver
+    // authenticates through a credentials reference (the claude driver rides
+    // the CLI's own login; the codex driver takes deployment credentials in
+    // its `env`), so the one write-only key input the other families lead
+    // with has no meaning here. `credentialOnly` is likewise ignored: it
+    // asks for a credential field this family does not have.
+    if (family === 'claude-cli') {
+      const customModels = schema.getPath(draft, ['models'])
+      const modelsOverridden = schema.hasPath(draft, ['models'])
+      const models = modelDrafts(modelsOverridden ? customModels : inheritedModels())
+      const fallbackCommand = stringAt(fallback, 'command')
+      const fallbackTimeout = schema.getPath(fallback, ['timeoutMs'])
+      /**
+       * The runtime-loaded catalog for this route: the same `llm.models`
+       * answer the Runtimes page renders, because the CLI drivers register
+       * no endpoint interrogation — the models a live runtime loads ARE the
+       * list to offer. A route with no group is dormant: its section has not
+       * been saved into an active registration yet.
+       */
+      const loadRuntimeModels = async (): Promise<readonly DiscoveredModelView[]> => {
+        const response = await api.llm.models({})
+        if (!response.result.ok) throw new Error(response.result.error.message)
+        const group = response.result.value.groups.find(candidate => candidate.id === props.provider)
+        if (group === undefined) throw new Error(t('runtimeRouteInactive'))
+        // `name` is required on the wire the host validates (INVALID_CATALOG
+        // refuses a model without one), so it passes through untouched.
+        return group.models.map(model => ({ id: model.id, name: model.name }))
+      }
+      return (
+        <>
+          <div className={styles['field']}>
+            <span className={styles['fieldLabel']}>{t('cliCommand')}</span>
+            <input
+              className={styles['input']}
+              type="text"
+              value={stringAt(draft, 'command') ?? ''}
+              placeholder={fallbackCommand ?? ''}
+              aria-label={t('cliCommand')}
+              disabled={disabled}
+              onChange={(event) => { setField('command', event.target.value === '' ? undefined : event.target.value) }}
+            />
+          </div>
+          <div className={styles['field']}>
+            <span className={styles['fieldLabel']}>{t('cliTimeout')}</span>
+            <input
+              className={styles['input']}
+              type="text"
+              inputMode="numeric"
+              value={timeoutDraft}
+              placeholder={typeof fallbackTimeout === 'number' ? String(fallbackTimeout) : ''}
+              aria-label={t('cliTimeout')}
+              aria-invalid={timeoutFailure !== undefined}
+              disabled={disabled}
+              onChange={(event) => { editTimeout(event.target.value) }}
+            />
+            {timeoutFailure === undefined ? null : <p className={styles['error']}>{t(timeoutFailure)}</p>}
+          </div>
+          <details className={styles['customized']}>
+            <summary className={styles['customizedSummary']}>{t('customized')}</summary>
+            <div className={styles['customizedBody']}>
+              <ModelListEditor
+                models={models}
+                overridden={modelsOverridden}
+                t={t}
+                disabled={disabled}
+                onChange={(next) => { setDraft(current => schema.setPath(current, ['models'], next)) }}
+                onReset={() => { setDraft(current => schema.deletePath(current, ['models'])) }}
+                probe={probe}
+                loadCandidates={loadRuntimeModels}
+                api={api}
+              />
+            </div>
+          </details>
+        </>
+      )
+    }
     // What a hand-declared route names for itself and nothing else can supply.
     // A whole-section `llm-deepseek` profile is a composition fact with no
     // per-route identity for its schema to carry, hence the family test.
@@ -507,6 +615,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
         submitDisabled={disabled || layout === 'unknown'
           || (props.credentialOnly !== true && modelFailure !== undefined)
           || shownKeyFailure !== undefined
+          || timeoutFailure !== undefined
           || (props.credentialRequired === true && keyValue.length === 0)}
         submitLabel={props.submitLabel ?? 'apply'}
         submitBusyLabel={props.submitBusyLabel ?? 'applying'}

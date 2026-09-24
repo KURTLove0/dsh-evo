@@ -680,6 +680,16 @@
       "ignoreDependencies": [
         "@deepseek-ai/.+"
       ]
+    },
+    "packages/llm/llm-claude-cli": {
+      "entry": [
+        "lib/index.js"
+      ],
+      "ignoreDependencies": [
+        "@deepseek-ai/dsh-llm",
+        "@deepseek-ai/dsh-settings",
+        "@deepseek-ai/schemastery"
+      ]
     }
   }
 }

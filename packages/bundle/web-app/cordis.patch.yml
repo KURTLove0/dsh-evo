@@ -203,6 +203,11 @@
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
 
+    # Runtimes page: the model runtimes this deployment can call (directory
+    # liveness + loaded models), read-only beside the Models configuration.
+    - id: ui-settings-runtimes
+      name: '@deepseek-ai/dsh-client-ui-settings-runtimes'
+
     - id: ui-settings-plugin-inventory
       name: '@deepseek-ai/dsh-client-ui-settings-plugin-inventory'
 

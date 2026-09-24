@@ -165,6 +165,9 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh-session-persistence-sqlite': ['resources/sql/**/*.sql'],
   '@deepseek-ai/dsh-skill-badge': ['assets'],
   '@deepseek-ai/dsh-subprocess-local': ['scripts/ensure-spawn-helper.mjs'],
+  // The MCP schema-bridge entry ships beside the lib as its own bundle; the
+  // claude/codex drivers resolve it through the package's ./mcp-server export.
+  '@deepseek-ai/dsh-llm-claude-cli': ['lib/mcp-server.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {
