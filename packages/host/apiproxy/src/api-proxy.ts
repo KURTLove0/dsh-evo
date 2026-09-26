@@ -112,6 +112,7 @@ import {
   hasApiRemoteSubagentOwner,
   inspectApiRemoteSession,
 } from '@deepseek-ai/dsh-api-remotes'
+import { commandPresent } from './command-presence.ts'
 import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-path-opener.ts'
 
 /** Page size when history is called without maxMessages. */
@@ -3307,6 +3308,9 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           settingsPath: [...entry.settingsPath],
           active: active.has(entry.provider),
           ...entry.declared === undefined ? {} : { declared: entry.declared },
+          // Presence is probed per answer so installing or removing a CLI is
+          // visible on the next page load without a restart.
+          ...entry.localCommand === undefined ? {} : { localCommand: entry.localCommand, present: commandPresent(entry.localCommand) },
         }))
         // Routes registered without a directory declaration still appear —
         // they exist and serve models — just with no settings address. No

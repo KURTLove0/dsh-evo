@@ -75,13 +75,6 @@ export interface ModelListEditorProps {
   /** Endpoint facts for the fetch action. */
   probe: ProbeTarget
   /**
-   * Candidate source override: when provided, the fetch action asks this
-   * instead of `llm.discoverModels` — for an adapter that registers no model
-   * discovery (the local-CLI family), the runtime-loaded catalog
-   * (`llm.models`) is the list to load, not an endpoint interrogation.
-   */
-  loadCandidates?: () => Promise<readonly DiscoveredModelView[]>
-  /**
    * Copy key naming why the fetch action is unavailable, or `undefined` when
    * it is. The card owns this because the key it would send is judged there:
    * asking with a key the form has already refused spends a round trip to be
@@ -238,23 +231,18 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
     setBusy(true)
     setFailure(undefined)
     try {
-      let found: readonly DiscoveredModelView[]
-      if (props.loadCandidates !== undefined) {
-        found = await props.loadCandidates()
-      } else {
-        const response = await api.llm.discoverModels({
-          settingsNs: probe.settingsNs,
-          ...probe.provider === undefined ? {} : { provider: probe.provider },
-          ...probe.baseURL === undefined || probe.baseURL.length === 0 ? {} : { baseURL: probe.baseURL },
-          ...probe.api === undefined ? {} : { api: probe.api },
-          ...probe.apiKey === undefined ? {} : { apiKey: probe.apiKey },
-        })
-        if (!response.result.ok) {
-          setFailure(response.result.error.message)
-          return
-        }
-        found = response.result.value.models
+      const response = await api.llm.discoverModels({
+        settingsNs: probe.settingsNs,
+        ...probe.provider === undefined ? {} : { provider: probe.provider },
+        ...probe.baseURL === undefined || probe.baseURL.length === 0 ? {} : { baseURL: probe.baseURL },
+        ...probe.api === undefined ? {} : { api: probe.api },
+        ...probe.apiKey === undefined ? {} : { apiKey: probe.apiKey },
+      })
+      if (!response.result.ok) {
+        setFailure(response.result.error.message)
+        return
       }
+      const found = response.result.value.models
       if (found.length === 0) {
         setFailure(t('fetchEmpty'))
         return

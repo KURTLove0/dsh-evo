@@ -673,6 +673,26 @@ describe('llm domain', () => {
     ])
   })
 
+  it('answers local-CLI rows with a probed presence fact; API rows carry none', async () => {
+    const ctx = await harness({ configurableProviders: false })
+    ctx.llm.registerConfigurableProviders([
+      // `node` is on PATH on every test host — vitest itself runs on it.
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], localCommand: 'node' },
+      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], localCommand: 'dsh-absolutely-not-a-command-x7q9' },
+      // A command naming a path answers from the filesystem, on any platform.
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], localCommand: process.execPath },
+      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
+    ])
+    const api = createApiProxy(ctx, DEFAULTS)
+    const value = expectOk(await api.llm.providers(request({})))
+    expect(value.providers).toEqual([
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: false, localCommand: 'node', present: true },
+      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, localCommand: 'dsh-absolutely-not-a-command-x7q9', present: false },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], active: false, localCommand: process.execPath, present: true },
+      { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: false },
+    ])
+  })
+
   it('serves the host-scoped catalog with per-provider failures contained', async () => {
     const ctx = await harness()
     ctx.llm.registerAdapter(['deepseek-official'], new CatalogAdapter('DeepSeek', ['deepseek-v4-flash', 'deepseek-v4-pro']))

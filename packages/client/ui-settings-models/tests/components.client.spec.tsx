@@ -136,6 +136,23 @@ function fail<T>(message: string, code = 'settings-rejected'): RpcResponse<T> {
   }
 }
 
+/** The directory rows a scripted face may carry (present probes included). */
+type ScriptedProviders = {
+  provider: string
+  displayName: string
+  settingsNs: string
+  settingsPath: string[]
+  active: boolean
+  localCommand?: string
+  present?: boolean
+}[]
+
+/** The host model catalog a scripted face answers. */
+interface ScriptedCatalog {
+  groups: { id: string; name: string; models: { id: string; name: string }[] }[]
+  failures: { id: string; name: string; message: string }[]
+}
+
 function scriptedFace(overrides: {
   update?: ReturnType<typeof vi.fn>
   replace?: ReturnType<typeof vi.fn>
@@ -150,7 +167,7 @@ function scriptedFace(overrides: {
   const unset = overrides.unset ?? vi.fn(() => Promise.resolve(ok({})))
   const face = {
     llm: {
-      providers: vi.fn(() => Promise.resolve(ok({
+      providers: vi.fn((): Promise<RpcResponse<{ providers: ScriptedProviders }>> => Promise.resolve(ok({
         providers: [
           { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
           { provider: 'openai', displayName: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], active: true },
@@ -160,7 +177,7 @@ function scriptedFace(overrides: {
           { provider: 'plain', displayName: 'plain', settingsNs: 'llm-plain', settingsPath: ['profiles', 'plain'], active: false },
         ],
       }))),
-      models: vi.fn(() => Promise.resolve(ok({ groups: [], failures: [] }))),
+      models: vi.fn((): Promise<RpcResponse<ScriptedCatalog>> => Promise.resolve(ok({ groups: [], failures: [] }))),
     },
     settings: {
       describe: vi.fn(() => Promise.resolve(ok({ writable: true, hasDocument: false, namespaces: wireNamespaces() }))),
@@ -234,6 +251,62 @@ describe('ModelsSection', () => {
     const uninjected = {} as ModelsSectionProps
     render(<ModelsSection {...uninjected} />)
     expect(document.body.textContent).toBe('')
+  })
+
+  it('splits probed local runtimes into a read-only group above the API providers', async () => {
+    const scripted = scriptedFace()
+    scripted.face.llm.providers.mockImplementation(() => Promise.resolve(ok({
+      providers: [
+        { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+        { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, localCommand: 'codex', present: true },
+        { provider: 'ghost-cli', displayName: 'Ghost CLI', settingsNs: 'llm-claude-cli', settingsPath: ['ghost'], active: true, localCommand: 'ghost', present: false },
+        { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
+      ],
+    })))
+    scripted.face.llm.models.mockImplementation(() => Promise.resolve(ok({
+      groups: [{ id: 'claude-cli', name: 'Claude CLI', models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }, { id: 'opus-4-6', name: 'Opus 4.6' }] }],
+      failures: [],
+    })))
+    await mountFace(scripted)
+    expect(screen.getByText(en.runtimesGroup)).toBeTruthy()
+    expect(screen.getByText(en.modelApisGroup)).toBeTruthy()
+    // The live runtime lists the models it loads, and the row offers no edit.
+    const claudeRow = screen.getByText('Claude CLI').closest('li') as HTMLElement
+    expect(claudeRow.textContent).toContain('sonnet-4-5')
+    expect(claudeRow.textContent).toContain('opus-4-6')
+    expect(claudeRow.textContent).toContain(en.statusActive)
+    expect(within(claudeRow).queryByRole('button')).toBeNull()
+    // A dormant local route stays a configuration candidate, not a runtime
+    // row; a runtime the host could not find has no row anywhere either.
+    expect(screen.queryByText('Codex CLI')).toBeNull()
+    expect(screen.queryByText('Ghost CLI')).toBeNull()
+    // The API provider keeps its ordinary row with its Edit action.
+    expect(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) })).toBeTruthy()
+  })
+
+  it('renders a live runtime listing failure and an empty catalog in place', async () => {
+    const scripted = scriptedFace()
+    scripted.face.llm.providers.mockImplementation(() => Promise.resolve(ok({
+      providers: [
+        { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+        { provider: 'echo-cli', displayName: 'Echo CLI', settingsNs: 'llm-claude-cli', settingsPath: ['echo'], active: true, localCommand: 'echo', present: true },
+      ],
+    })))
+    scripted.face.llm.models.mockImplementation(() => Promise.resolve(ok({
+      groups: [{ id: 'echo-cli', name: 'Echo CLI', models: [] }],
+      failures: [{ id: 'claude-cli', name: 'Claude CLI', message: 'catalog down' }],
+    })))
+    await mountFace(scripted)
+    const claudeRow = screen.getByText('Claude CLI').closest('li')
+    expect(claudeRow?.textContent).toContain(`${en.runtimeModelsFailure}: catalog down`)
+    const echoRow = screen.getByText('Echo CLI').closest('li')
+    expect(echoRow?.textContent).toContain(en.runtimeModelsEmpty)
+  })
+
+  it('hides the runtimes group entirely when no local runtime is probed present', async () => {
+    await mountSection()
+    expect(screen.queryByText(en.runtimesGroup)).toBeNull()
+    expect(screen.getByText(en.modelApisGroup)).toBeTruthy()
   })
 
   it('renders the unkeyed whole-section provider as an open setup card in the first-run posture', async () => {

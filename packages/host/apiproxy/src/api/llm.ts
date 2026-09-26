@@ -29,6 +29,18 @@ export interface ConfigurableProviderView {
    * surface must treat absence as "unknown", not as "shipped".
    */
   declared?: boolean
+  /**
+   * The executable a local-CLI runtime shells out to, as the adapter
+   * declared it; absent for remote API providers.
+   */
+  localCommand?: string
+  /**
+   * Whether {@link localCommand} resolves to an executable on this host,
+   * probed when the answer is built. Answered only for local-CLI routes; a
+   * missing CLI degrades the row to "not present on this machine", it never
+   * fails the listing.
+   */
+  present?: boolean
 }
 
 /** Llm-domain unary methods (the map keys llm.* of RpcMethodMap). */

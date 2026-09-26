@@ -1,9 +1,11 @@
 /**
  * Runtimes settings section: the model runtimes this deployment can call,
  * rendered as read-only rows joined from the configurable-provider directory
- * and the host model catalog. A live runtime shows its loaded models inline;
- * a dormant runtime shows where it is configured. Model selection itself stays
- * with the composer's picker — this page reports and links, it never routes.
+ * and the host model catalog. Every row is a live runtime showing its loaded
+ * models inline — a dormant route is a configuration candidate that belongs
+ * to the Models page, and a local CLI the host cannot find is no runtime
+ * here. Model selection itself stays with the composer's picker — this page
+ * reports and links, it never routes.
  */
 
 import type { ReactNode } from 'react'
@@ -84,49 +86,43 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
 /** One runtime row: identity, liveness, and the models it currently loads. */
 function RuntimeCard({ row, t }: { row: RuntimeRow; t: (key: keyof typeof en) => string }): ReactNode {
   return (
-    <li className={styles['rowCard']} data-active={row.active ? 'true' : undefined}>
+    <li className={styles['rowCard']}>
       <div className={styles['rowHead']}>
         <span className={styles['rowIdentity']}>
           <span
-            className={`${styles['stateDot']} ${row.active ? styles['stateDotActive'] : styles['stateDotDormant']}`}
+            className={`${styles['stateDot']} ${styles['stateDotActive']}`}
             role="img"
-            aria-label={row.active ? t('statusActive') : t('statusDormant')}
-            title={row.active ? t('statusActive') : t('statusDormant')}
+            aria-label={t('statusActive')}
+            title={t('statusActive')}
           />
           <span className={styles['rowName']}>{row.displayName}</span>
           <span className={styles['rowRoute']}>{row.provider}</span>
         </span>
-        <span className={styles['rowStatus']}>
-          {row.active ? t('statusActive') : t('statusDormant')}
-        </span>
+        <span className={styles['rowStatus']}>{t('statusActive')}</span>
       </div>
-      {row.active
-        ? (
-          <div className={styles['runtimeBody']}>
-            {row.failure !== undefined
-              ? <p className={styles['failure']} role="alert">{`${t('modelsFailure')}: ${row.failure}`}</p>
-              : (
-                <div className={styles['models']}>
-                  <span className={styles['modelsHeading']}>{t('modelsHeading')}</span>
-                  {row.models === undefined || row.models.length === 0
-                    ? <span className={styles['modelsEmpty']}>{t('modelsEmpty')}</span>
-                    : (
-                      <ul className={styles['modelList']}>
-                        {row.models.map(model => (
-                          <li key={model.id} className={styles['modelItem']}>
-                            <span className={styles['modelChip']} title={model.name}>{model.id}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  {row.models !== undefined && row.models.length > 0
-                    ? <span className={styles['modelsCount']}>{modelsCountCopy(t('modelsCount'), row.models.length)}</span>
-                    : null}
-                </div>
-              )}
-          </div>
-        )
-        : <p className={styles['configHint']}>{t('configHint')}</p>}
+      <div className={styles['runtimeBody']}>
+        {row.failure !== undefined
+          ? <p className={styles['failure']} role="alert">{`${t('modelsFailure')}: ${row.failure}`}</p>
+          : (
+            <div className={styles['models']}>
+              <span className={styles['modelsHeading']}>{t('modelsHeading')}</span>
+              {row.models === undefined || row.models.length === 0
+                ? <span className={styles['modelsEmpty']}>{t('modelsEmpty')}</span>
+                : (
+                  <ul className={styles['modelList']}>
+                    {row.models.map(model => (
+                      <li key={model.id} className={styles['modelItem']}>
+                        <span className={styles['modelChip']} title={model.name}>{model.id}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              {row.models !== undefined && row.models.length > 0
+                ? <span className={styles['modelsCount']}>{modelsCountCopy(t('modelsCount'), row.models.length)}</span>
+                : null}
+            </div>
+          )}
+      </div>
     </li>
   )
 }

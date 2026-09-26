@@ -7,7 +7,7 @@ DeepSeek Harness LLM seam 的本地 CLI 运行时。一个插件、两个 CLI �
 - **`claude`**（ClaudeCliAdapter，默认 provider `claude-cli`）：每次调用一个 `claude -p --output-format stream-json` 子进程。对话折叠为单条 stdin user 帧；读到首个 assistant 帧即 kill 整个进程树（单轮截断），它发出的工具调用由 harness 执行而非 CLI 自身。工具经包内只分发 schema 的 MCP 桥（`./mcp-server`）暴露，`--tools ""` 从存在性上移除 CLI 的内置工具。
 - **`codex`**（CodexCliAdapter，默认 provider `codex-cli`）：每次调用一个 `codex app-server --listen stdio://` JSON-RPC 子进程，走 initialize → thread/start → turn/start → turn/completed 生命周期。每次调用私有的 `CODEX_HOME`（渲染 `config.toml` 的 `[mcp_servers.dsh]`）把受管会话与用户的 `~/.codex` 隔离，认证也随之隔离：部署凭据必须经驱动配置的 `env`（API key）或 `extraArgs`（`-c provider` 覆盖）提供——交互式 ChatGPT 登录态不可用。
 
-插件把 `cordis.yml` 条目配置叠在可选的 `llm-claude-cli` 用户设置段（`ctx.settings`）之下：command、目录或超时的变化直达下一次请求而无需重启；`codex:` 段的出现（或消失）原地激活（或停用）codex 路由，进行中的流保持它启动时的事实。claude 路由挂载即注册（含休眠目录项）；codex 路由仅在其段存在时注册。`retryPolicy` 默认 normal 模式五次重试；两驱动默认 `timeoutMs` 300000、`contextWindow` 200000。可选 `models` 目录（codex 如 `gpt-5-codex`，claude 如 `sonnet`/`opus`/`haiku`）供发现侧消费；请求本身不受限制。
+插件把 `cordis.yml` 条目配置叠在可选的 `llm-claude-cli` 用户设置段（`ctx.settings`）之下：command、目录或超时的变化直达下一次请求而无需重启；`codex:` 段的出现（或消失）原地激活（或停用）codex 路由，进行中的流保持它启动时的事实。claude 路由挂载即注册（含休眠目录项）；codex 路由在其段存在或本机探测到 codex CLI 时注册——仅凭探测即以驱动默认值激活，`codex:` 显式段只做覆盖（command、目录、超时），因此可用的 codex 运行时不要求任何 `settings.yaml` 条目。`retryPolicy` 默认 normal 模式五次重试；两驱动默认 `timeoutMs` 300000、`contextWindow` 200000。可选 `models` 目录（codex 如 `gpt-5-codex`，claude 如 `sonnet`/`opus`/`haiku`）供发现侧消费；请求本身不受限制。
 
 `attributionHeaders()` 不适用于任一驱动：传输层是本地子进程，不是提供方 HTTP 请求。
 

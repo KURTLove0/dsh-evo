@@ -39,12 +39,14 @@ function api(overrides: {
 }
 
 describe('RuntimesSettingsStore', () => {
-  it('joins live rows with their models and dormant rows without', async () => {
+  it('joins live rows with their models and leaves dormant routes out entirely', async () => {
     const store = new RuntimesSettingsStore(api())
     await store.load()
     const state = store.store.getSnapshot()
     expect(state.status).toBe('ready')
     expect(state.error).toBeNull()
+    // The dormant codex route is a configuration candidate for the Models
+    // page, not a runtime this deployment can call.
     expect(state.rows).toEqual([
       {
         provider: 'claude-cli',
@@ -52,14 +54,6 @@ describe('RuntimesSettingsStore', () => {
         settingsNs: 'llm-claude-cli',
         active: true,
         models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }],
-        failure: undefined,
-      },
-      {
-        provider: 'codex-cli',
-        displayName: 'Codex CLI',
-        settingsNs: 'llm-claude-cli',
-        active: false,
-        models: undefined,
         failure: undefined,
       },
       {
@@ -73,6 +67,25 @@ describe('RuntimesSettingsStore', () => {
     ])
   })
 
+  it('omits a local-CLI runtime whose command the host could not find, even when its route is live', async () => {
+    const store = new RuntimesSettingsStore(api({
+      providers: () => Promise.resolve(ok({
+        providers: [
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+          // Live but missing: the route registered, yet the CLI is gone.
+          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: true, localCommand: 'codex', present: false },
+          { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
+        ] as never,
+      })),
+    }))
+    await store.load()
+    const state = store.store.getSnapshot()
+    // The missing CLI leaves no row even though its route is live; the present
+    // local runtime joins its catalog, and an API provider carries no presence.
+    expect(state.rows.map(row => row.provider)).toEqual(['claude-cli', 'deepseek-official'])
+    expect(state.rows[0]).toMatchObject({ active: true, models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }] })
+  })
+
   it('carries the catalog failure text onto the failing live row', async () => {
     const store = new RuntimesSettingsStore(api({
       models: () => Promise.resolve(ok({
@@ -84,9 +97,9 @@ describe('RuntimesSettingsStore', () => {
     const state = store.store.getSnapshot()
     expect(state.rows[0]).toMatchObject({ active: true, failure: 'the CLI is not installed' })
     // A live route with neither a group nor a failure entry carries neither.
-    expect(state.rows[2]?.active).toBe(true)
-    expect(state.rows[2]?.models).toBeUndefined()
-    expect(state.rows[2]?.failure).toBeUndefined()
+    expect(state.rows[1]?.active).toBe(true)
+    expect(state.rows[1]?.models).toBeUndefined()
+    expect(state.rows[1]?.failure).toBeUndefined()
   })
 
   it('surfaces a directory failure as the page error', async () => {
@@ -148,7 +161,7 @@ describe('RuntimesSettingsStore', () => {
     release?.()
     await first
     // The stale empty directory never overwrote the newer join.
-    expect(store.store.getSnapshot().rows).toHaveLength(3)
+    expect(store.store.getSnapshot().rows).toHaveLength(2)
   })
 })
 

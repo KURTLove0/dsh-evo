@@ -103,10 +103,6 @@
   background: var(--dsw-alias-state-success-primary);
 }
 
-.stateDotDormant {
-  background: var(--dsw-alias-border-l3);
-}
-
 .rowStatus {
   margin-left: auto;
   flex: none;
@@ -179,13 +175,6 @@
   font-size: 12px;
   line-height: 18px;
   color: var(--dsw-alias-state-error-primary);
-}
-
-.configHint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-label-tertiary);
 }
 
 .secondaryButton {

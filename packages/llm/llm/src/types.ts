@@ -184,6 +184,15 @@ export interface LlmConfigurableProvider {
    * from outside.
    */
   declared?: boolean
+  /**
+   * The executable this route shells out to, when it is a local-CLI runtime
+   * (`claude`, `codex`, …) rather than a remote API. Its presence is what
+   * lets a configuration surface split local runtimes from API providers and
+   * ask the host whether the executable exists on this machine. The value
+   * tracks the adapter's current configuration, so a settings edit that
+   * retargets the command moves the presence answer with it.
+   */
+  localCommand?: string
 }
 
 /**

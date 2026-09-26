@@ -43,6 +43,10 @@ const NAMESPACES = [
 
 function api(overrides: {
   providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
+  models?: () => Promise<RpcResponse<{
+    groups: { id: string; name: string; models: { id: string; name: string }[] }[]
+    failures: { id: string; name: string; message: string }[]
+  }>>
   describeSettings?: () => Promise<RpcResponse<{ writable: boolean; namespaces: typeof NAMESPACES }>>
   describeCredentials?: (refs: string[]) => Promise<RpcResponse<{ credentials: Record<string, unknown> }>>
 } = {}) {
@@ -50,7 +54,7 @@ function api(overrides: {
   const face = {
     llm: {
       providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY }))),
-      models: () => Promise.resolve(ok({ groups: [], failures: [] })),
+      models: overrides.models ?? (() => Promise.resolve(ok({ groups: [], failures: [] }))),
     },
     settings: {
       describe: overrides.describeSettings ?? (() => Promise.resolve(ok({ writable: true, hasDocument: false, namespaces: NAMESPACES }))),
@@ -165,6 +169,55 @@ describe('ModelsSettingsStore', () => {
     release?.()
     await Promise.all([first, second])
     expect(store.store.getSnapshot().status).toBe('ready')
+  })
+
+  it('projects probed-present local runtimes with their live catalogs', async () => {
+    const { face, mirror } = api({
+      providers: () => Promise.resolve(ok({
+        providers: [
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, localCommand: 'codex', present: true },
+          { provider: 'ghost-cli', displayName: 'Ghost CLI', settingsNs: 'llm-claude-cli', settingsPath: ['ghost'], active: true, localCommand: 'ghost', present: false },
+          { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
+        ] as never,
+      })),
+      models: () => Promise.resolve(ok({
+        groups: [{ id: 'claude-cli', name: 'Claude CLI', models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }] }],
+        failures: [],
+      })),
+    })
+    const store = new ModelsSettingsStore(face, settingsSchema, mirror)
+    await store.load()
+    const state = store.store.getSnapshot()
+    // A runtime the host could not find gets no row; a dormant local route
+    // stays a Models-page candidate; an API provider never enters the split.
+    expect(state.runtimes.map(row => row.entry.provider)).toEqual(['claude-cli'])
+    expect(state.runtimes[0]).toMatchObject({ models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }], failure: undefined })
+    expect(state.rows.map(row => row.entry.provider)).toContain('deepseek-official')
+  })
+
+  it('carries a catalog failure onto the live runtime row it names', async () => {
+    const { face, mirror } = api({
+      providers: () => Promise.resolve(ok({
+        providers: [
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+        ] as never,
+      })),
+      models: () => Promise.resolve(ok({
+        groups: [],
+        failures: [{ id: 'claude-cli', name: 'Claude CLI', message: 'the CLI is not installed' }],
+      })),
+    })
+    const store = new ModelsSettingsStore(face, settingsSchema, mirror)
+    await store.load()
+    expect(store.store.getSnapshot().runtimes[0]).toMatchObject({ failure: 'the CLI is not installed', models: undefined })
+  })
+
+  it('surfaces a catalog failure as the page error', async () => {
+    const { face, mirror } = api({ models: () => Promise.resolve(fail('catalog down')) })
+    const store = new ModelsSettingsStore(face, settingsSchema, mirror)
+    await store.load()
+    expect(store.store.getSnapshot()).toMatchObject({ status: 'error', error: 'catalog down' })
   })
 })
 

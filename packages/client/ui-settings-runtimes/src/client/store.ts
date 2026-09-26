@@ -1,10 +1,13 @@
 /**
  * Runtimes settings page store: one snapshot joining the configurable-provider
- * directory (`llm.providers` — which model runtimes this deployment declares,
- * and whether each route is live) with the host-scoped model catalog
- * (`llm.models` — the models each live runtime currently loads). The host
- * stays the single fact source; the page is read-only, so every refresh is a
- * whole re-read rather than a write-back join.
+ * directory (`llm.providers`) with the host-scoped model catalog
+ * (`llm.models` — the models each live runtime currently loads). Only LIVE
+ * routes are runtimes this deployment can call: a dormant route is a
+ * configuration candidate that belongs to the Models page, and a local-CLI
+ * runtime whose command the host could not find on this machine can never
+ * serve a request from here — neither gets a row. The host stays the single
+ * fact source; the page is read-only, so every refresh is a whole re-read
+ * rather than a write-back join.
  */
 
 import type {
@@ -16,7 +19,7 @@ import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 /** One model as the host catalog reports it, for the runtime's loaded-models view. */
 export type RuntimeModel = ModelProviderGroup['models'][number]
 
-/** One runtime row: a declared provider route with its live model catalog. */
+/** One runtime row: a live provider route with its current model catalog. */
 export interface RuntimeRow {
   /** Provider route key (`claude-cli`, `deepseek-official`, …). */
   provider: string
@@ -24,7 +27,7 @@ export interface RuntimeRow {
   displayName: string
   /** Settings namespace owning this route's configuration. */
   settingsNs: string
-  /** Whether the route is registered and its models are requestable. */
+  /** Whether the route is registered and its models are requestable (always true here). */
   active: boolean
   /** Models the live runtime currently loads; absent until a load succeeds. */
   models: RuntimeModel[] | undefined
@@ -71,9 +74,9 @@ export class RuntimesSettingsStore {
 
   /**
    * Refresh the whole page snapshot: the provider directory and the host model
-   * catalog answer in parallel, then join by route id. A dormant route carries
-   * no catalog entry; a live route carries its models, or the failure text
-   * from the catalog's per-provider failures.
+   * catalog answer in parallel, then join by route id over the live routes
+   * only. A live route carries its models, or the failure text from the
+   * catalog's per-provider failures.
    * @returns nothing; the snapshot carries the outcome.
    */
   async load(): Promise<void> {
@@ -94,19 +97,20 @@ export class RuntimesSettingsStore {
       this.store.update((s) => {
         s.status = 'ready'
         s.error = null
-        s.rows = providers.map((entry): RuntimeRow => {
-          const group = entry.active ? catalog.get(entry.provider) : undefined
+        s.rows = providers.flatMap((entry): RuntimeRow[] => {
+          // Dormant routes are configuration candidates for the Models page;
+          // a local CLI the host could not find can never serve from here.
+          if (!entry.active || entry.present === false) return []
+          const group = catalog.get(entry.provider)
           const models = group === undefined ? undefined : group.models.map(model => ({ ...model }))
-          return {
+          return [{
             provider: entry.provider,
             displayName: entry.displayName,
             settingsNs: entry.settingsNs,
             active: entry.active,
             models,
-            failure: entry.active
-              ? group === undefined ? failed.get(entry.provider) : undefined
-              : undefined,
-          }
+            failure: group === undefined ? failed.get(entry.provider) : undefined,
+          }]
         })
       })
     } catch (error) {

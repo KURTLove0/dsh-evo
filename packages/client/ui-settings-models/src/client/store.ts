@@ -7,7 +7,7 @@
  */
 
 import type {
-  ConfigurableProviderView, CredentialView, IApiClient, SettingsNamespaceView,
+  ConfigurableProviderView, CredentialView, IApiClient, ModelProviderGroup, SettingsNamespaceView,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
@@ -19,6 +19,25 @@ import type { SettingsSchemaOperations } from './schema-operations.ts'
  * names one that cannot collide with a configured route.
  */
 const PROBE_ROUTE = '\u0000probe'
+
+/** One model as the host catalog reports it, for a runtime's loaded-models view. */
+export type RuntimeLoadedModel = ModelProviderGroup['models'][number]
+
+/**
+ * One local-CLI runtime row: the directory entry of a live route the host
+ * probed as present on this machine, joined with the models the runtime
+ * currently loads. A runtime row is read-only by design — local runtimes
+ * carry no editable profile on this page; their catalog is what the runtime
+ * reports.
+ */
+export interface RuntimeProviderRow {
+  /** The directory entry (route id, display name, live state, probed presence). */
+  entry: ConfigurableProviderView
+  /** Models the live runtime currently loads; absent while unlisted. */
+  models: RuntimeLoadedModel[] | undefined
+  /** Catalog failure text when the live runtime failed to list its models. */
+  failure: string | undefined
+}
 
 /** One provider row the page renders. */
 export interface ProviderRow {
@@ -45,6 +64,8 @@ export interface ModelsSettingsState {
   writable: boolean
   /** Every configurable provider joined with its configured/credential state. */
   rows: readonly ProviderRow[]
+  /** Local-CLI runtimes probed present on this machine, with their live catalogs. */
+  runtimes: readonly RuntimeProviderRow[]
   /** Namespace views by ns, for the editor's schema/layers/secrets. */
   namespaces: ReadonlyMap<string, SettingsNamespaceView>
 }
@@ -108,7 +129,7 @@ function apiKeyEnvOf(
 export class ModelsSettingsStore {
   /** The snapshot the section renders from (uSES-safe store). */
   readonly store: SnapshotStore<ModelsSettingsState> = createSnapshotStore<ModelsSettingsState>({
-    status: 'idle', error: null, credentialError: null, writable: false, rows: [], namespaces: new Map(),
+    status: 'idle', error: null, credentialError: null, writable: false, rows: [], runtimes: [], namespaces: new Map(),
   })
 
   /** Latest load wins; an older response never overwrites a newer one. */
@@ -138,12 +159,16 @@ export class ModelsSettingsStore {
     let providers: ConfigurableProviderView[]
     let writable: boolean
     let views: readonly SettingsNamespaceView[]
+    let groups: ModelProviderGroup[]
+    let failures: { id: string; name: string; message: string }[]
     try {
-      const [providersResponse] = await Promise.all([
+      const [providersResponse, modelsResponse] = await Promise.all([
         this.api.llm.providers({}),
+        this.api.llm.models({}),
         this.describeFace.ensure(),
       ])
       if (!providersResponse.result.ok) throw new Error(providersResponse.result.error.message)
+      if (!modelsResponse.result.ok) throw new Error(modelsResponse.result.error.message)
       const mirrored = this.describeFace.getSnapshot()
       if (mirrored.view === undefined) {
         throw new Error(mirrored.error ?? 'settings are unavailable in this browser')
@@ -151,6 +176,8 @@ export class ModelsSettingsStore {
       providers = providersResponse.result.value.providers
       writable = mirrored.view.writable
       views = mirrored.view.namespaces
+      groups = modelsResponse.result.value.groups
+      failures = modelsResponse.result.value.failures
     } catch (error) {
       if (generation !== this.generation) return
       this.store.update((s) => {
@@ -160,6 +187,20 @@ export class ModelsSettingsStore {
       return
     }
     const namespaces = new Map(views.map(view => [view.ns, view]))
+    const catalog = new Map(groups.map(group => [group.id, group]))
+    const failed = new Map(failures.map(failure => [failure.id, failure.message]))
+    // The local-CLI split: a live runtime the host probed as present joins
+    // its live catalog; a dormant route is a Models-page candidate, and one
+    // the host could not find on this machine gets no row anywhere.
+    const runtimes: RuntimeProviderRow[] = providers.flatMap((entry) => {
+      if (entry.localCommand === undefined || entry.present === false || !entry.active) return []
+      const group = catalog.get(entry.provider)
+      return [{
+        entry,
+        models: group === undefined ? undefined : group.models.map(model => ({ ...model })),
+        failure: group === undefined ? failed.get(entry.provider) : undefined,
+      }]
+    })
     const rows: ProviderRow[] = providers.map((entry) => {
       const namespace = namespaces.get(entry.settingsNs)
       const configured = namespace !== undefined
@@ -203,6 +244,7 @@ export class ModelsSettingsStore {
           ? { credential: credentials[row.apiKeyEnv] }
           : {},
       }))
+      s.runtimes = runtimes
       s.namespaces = namespaces
     })
   }

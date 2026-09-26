@@ -68,7 +68,7 @@ describe('RuntimesSection', () => {
     expect(document.body.textContent).toBe('')
   })
 
-  it('renders each runtime row with liveness, route id, and loaded models', async () => {
+  it('renders each live runtime row with liveness, route id, and loaded models', async () => {
     await mountSection()
     // Live runtime: name, route id, both loaded models, and the count caption.
     expect(screen.getByText('Claude CLI')).toBeTruthy()
@@ -77,13 +77,9 @@ describe('RuntimesSection', () => {
     expect(screen.getByText('opus-4-6')).toBeTruthy()
     expect(screen.getByText(modelsCountCopy(en.modelsCount, 2))).toBeTruthy()
     expect(screen.getByRole('img', { name: en.statusActive })).toBeTruthy()
-    // Dormant runtime: the configuration hint, no models block of its own.
-    expect(screen.getByText('Codex CLI')).toBeTruthy()
-    expect(screen.getByText(en.configHint)).toBeTruthy()
-    expect(screen.getByRole('img', { name: en.statusDormant })).toBeTruthy()
-    const dormantCard = screen.getByText(en.configHint).closest('li')
-    expect(dormantCard?.textContent).toContain('Codex CLI')
-    expect(dormantCard?.querySelectorAll('[class*="modelChip"]').length).toBe(0)
+    // The dormant codex route renders nowhere: it is a configuration
+    // candidate for the Models page, not a runtime this deployment can call.
+    expect(screen.queryByText('Codex CLI')).toBeNull()
   })
 
   it('renders the empty-catalog caption for a live runtime with no models', async () => {
@@ -102,8 +98,6 @@ describe('RuntimesSection', () => {
       })),
     })
     expect(screen.getByRole('alert').textContent).toBe(`${en.modelsFailure}: the CLI is not installed`)
-    // The dormant row keeps its configuration hint rather than a failure.
-    expect(screen.getByText(en.configHint)).toBeTruthy()
   })
 
   it('renders the empty-deployment notice when the directory declares nothing', async () => {

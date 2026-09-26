@@ -1,5 +1,9 @@
 /**
- * Models settings section: the provider rows joined from the configurable
+ * Models settings section, in two groups. The Runtimes group lists the
+ * local-CLI runtimes the host probed as present on this machine, read-only:
+ * a live one shows the models it loads, a dormant one points at
+ * `settings.yaml` — a local runtime has no editable profile on this page.
+ * The Model APIs group holds the provider rows joined from the configurable
  * directory, settings namespaces, and credential states, with one editor
  * card at a time. Rows expose only confirmed API-key state through accessible
  * solid configured or missing dots. A whole-section provider without a
@@ -19,7 +23,7 @@ import { Button, IconPlusOutline16, Modal } from '@deepseek-ai/dsh-client-ui-pri
 import type { InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
 import { deriveKeyRef, messageOf, protocolChoices, providerUsable } from './store.ts'
-import type { ModelsSettingsStore, ProviderRow } from './store.ts'
+import type { ModelsSettingsStore, ProviderRow, RuntimeProviderRow } from './store.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
 import type { en } from './locales.ts'
@@ -272,8 +276,11 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
   // One fact decides both first-run postures on this page and the onboarding
   // step: whether the user already has a provider to talk to.
   const anyUsable = state.rows.some(providerUsable)
-  const configured = state.rows.filter(row => row.configured)
-  const addable = state.rows.filter(row => !row.configured && row.entry.settingsNs !== '')
+  // Local-CLI runtimes render read-only in their own group; everything below
+  // them keeps the API-provider behaviors unchanged.
+  const apiRows = state.rows.filter(row => row.entry.localCommand === undefined)
+  const configured = apiRows.filter(row => row.configured)
+  const addable = apiRows.filter(row => !row.configured && row.entry.settingsNs !== '')
   const addTarget = adding ? editing : undefined
   const addNamespace = addTarget === undefined ? undefined : state.namespaces.get(addTarget.settingsNs)
   // Hand-declared routes live in the pi-ai namespace, which is also the only
@@ -293,6 +300,17 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
             {providerCopy(t('savedProvider'), savedIdentity)}
           </p>
         )}
+      {state.runtimes.length === 0
+        ? null
+        : (
+          <>
+            <h3 className={styles['groupTitle']}>{t('runtimesGroup')}</h3>
+            <ul className={styles['rows']}>
+              {state.runtimes.map(row => <RuntimeRowCard key={row.entry.provider} row={row} t={t} />)}
+            </ul>
+          </>
+        )}
+      <h3 className={styles['groupTitle']}>{t('modelApisGroup')}</h3>
       <ul className={styles['rows']}>
         {configured.map((row) => {
           const target = targetOf(row)
@@ -534,5 +552,43 @@ function Loaded({ injected }: { injected: ModelsSectionFace }): ReactNode {
         {deleteFailure === undefined ? null : <p className={styles['error']}>{deleteFailure}</p>}
       </Modal>
     </div>
+  )
+}
+
+/**
+ * One local-CLI runtime row: identity, liveness, and the models the live
+ * runtime currently loads. Read-only by design — a local runtime's catalog
+ * is what the runtime reports, and its configuration lives in `settings.yaml`.
+ */
+function RuntimeRowCard({ row, t }: { row: RuntimeProviderRow; t: (key: keyof typeof en) => string }): ReactNode {
+  return (
+    <li className={styles['rowCard']}>
+      <div className={styles['rowHead']}>
+        <span className={styles['rowIdentity']}>
+          <span
+            className={`${styles['stateDot']} ${styles['stateDotActive']}`}
+            role="img"
+            aria-label={t('statusActive')}
+            title={t('statusActive')}
+          />
+          <span className={styles['rowName']}>{row.entry.displayName}</span>
+          <span className={styles['rowRoute']}>{row.entry.provider}</span>
+        </span>
+        <span className={styles['rowStatus']}>{t('statusActive')}</span>
+      </div>
+      {row.failure !== undefined
+        ? <p className={styles['failure']} role="alert">{`${t('runtimeModelsFailure')}: ${row.failure}`}</p>
+        : row.models === undefined || row.models.length === 0
+          ? <p className={styles['configHint']}>{t('runtimeModelsEmpty')}</p>
+          : (
+            <ul className={styles['modelList']}>
+              {row.models.map(model => (
+                <li key={model.id} className={styles['modelItem']}>
+                  <span className={styles['modelChip']} title={model.name}>{model.id}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+    </li>
   )
 }
