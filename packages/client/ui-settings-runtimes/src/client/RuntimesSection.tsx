@@ -8,11 +8,14 @@
  * reports and links, it never routes.
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RuntimesSettingsStore, RuntimeRow } from './store.ts'
 import type { en } from './locales.ts'
 import styles from './RuntimesSection.module.css'
+
+/** The command the hint asks the user to run; a CLI literal, never localized. */
+export const DAEMON_START_COMMAND = 'dsh daemon start'
 
 /** Injected dependencies of {@link RuntimesSection} (slot `inject`). */
 export interface RuntimesSectionInjected {
@@ -72,6 +75,7 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
     <div className={styles['section']}>
       <h2 className={styles['title']}>{t('title')}</h2>
       <p className={styles['intro']}>{t('intro')}</p>
+      {state.status === 'ready' && !state.daemonRunning ? <DaemonHint t={t} /> : null}
       {state.rows.length === 0 && state.status === 'ready'
         ? <p className={styles['empty']}>{t('empty')}</p>
         : (
@@ -79,6 +83,37 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
             {state.rows.map(row => <RuntimeCard key={row.provider} row={row} t={t} />)}
           </ul>
         )}
+    </div>
+  )
+}
+
+/**
+ * The daemon hint: an instruction card shown while no sensing daemon runs on
+ * this host. The page reports presence inline until then; starting the daemon
+ * moves presence to its report.
+ */
+function DaemonHint({ t }: { t: (key: keyof typeof en) => string }): ReactNode {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className={styles['daemonHint']} role="note">
+      <span className={styles['daemonHintTitle']}>{t('daemonHintTitle')}</span>
+      <span className={styles['daemonHintBody']}>{t('daemonHintBody')}</span>
+      <span className={styles['daemonHintCommand']}>
+        <code className={styles['daemonHintCommandText']}>{DAEMON_START_COMMAND}</code>
+        <button
+          type="button"
+          className={styles['daemonHintCopy']}
+          onClick={() => {
+            // The web UI is a secure-context loopback page, so the typed
+            // clipboard API is present; no absence branch belongs here.
+            void navigator.clipboard.writeText(DAEMON_START_COMMAND)
+            setCopied(true)
+          }}
+        >
+          {copied ? t('daemonHintCopied') : t('daemonHintCopy')}
+        </button>
+      </span>
+      <span className={styles['daemonHintBody']}>{t('daemonHintStatus')}</span>
     </div>
   )
 }

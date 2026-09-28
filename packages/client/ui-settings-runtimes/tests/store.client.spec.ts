@@ -26,12 +26,12 @@ const CATALOG = {
 }
 
 function api(overrides: {
-  providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
+  providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY; daemonRunning: boolean }>>
   models?: () => Promise<RpcResponse<typeof CATALOG>>
 } = {}) {
   const face = {
     llm: {
-      providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY }))),
+      providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: true }))),
       models: overrides.models ?? (() => Promise.resolve(ok(CATALOG))),
     },
   }
@@ -76,6 +76,7 @@ describe('RuntimesSettingsStore', () => {
           { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: true, localCommand: 'codex', present: false },
           { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
         ] as never,
+        daemonRunning: true,
       })),
     }))
     await store.load()
@@ -84,6 +85,18 @@ describe('RuntimesSettingsStore', () => {
     // local runtime joins its catalog, and an API provider carries no presence.
     expect(state.rows.map(row => row.provider)).toEqual(['claude-cli', 'deepseek-official'])
     expect(state.rows[0]).toMatchObject({ active: true, models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }] })
+  })
+
+  it('carries the daemon liveness from the directory answer', async () => {
+    const running = new RuntimesSettingsStore(api())
+    await running.load()
+    expect(running.store.getSnapshot().daemonRunning).toBe(true)
+
+    const stopped = new RuntimesSettingsStore(api({
+      providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })),
+    }))
+    await stopped.load()
+    expect(stopped.store.getSnapshot().daemonRunning).toBe(false)
   })
 
   it('carries the catalog failure text onto the failing live row', async () => {
@@ -131,7 +144,7 @@ describe('RuntimesSettingsStore', () => {
           await gate
           return fail('stale slow failure')
         }
-        return ok({ providers: DIRECTORY })
+        return ok({ providers: DIRECTORY, daemonRunning: true })
       },
     }))
     const first = store.load()
@@ -150,9 +163,9 @@ describe('RuntimesSettingsStore', () => {
         call += 1
         if (call === 1) {
           await gate
-          return ok({ providers: [] as never })
+          return ok({ providers: [] as never, daemonRunning: true })
         }
-        return ok({ providers: DIRECTORY })
+        return ok({ providers: DIRECTORY, daemonRunning: true })
       },
     }))
     const first = store.load()

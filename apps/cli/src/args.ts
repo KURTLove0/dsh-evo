@@ -15,7 +15,22 @@
  * @module @deepseek-ai/dsh/args
  */
 
+import { readFileSync } from 'node:fs'
 import { Command, CommanderError } from 'commander'
+
+/**
+ * This app's version, read from its checked-in package.json. Both the source
+ * tree (apps/cli/src) and the bundled bin (apps/cli/lib) sit one directory
+ * under apps/cli, so the manifest resolves with the same relative hop from
+ * either artifact — shared by `--version` and the daemon's health identity.
+ * @returns the version string, or `0.0.0` when the manifest carries none.
+ */
+export function readDshVersion(): string {
+  const manifest = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  ) as { version?: unknown }
+  return typeof manifest.version === 'string' ? manifest.version : '0.0.0'
+}
 
 /** Boot a named profile and hand it the invocation's inner arguments. */
 interface ProfileInvocation {
@@ -44,8 +59,27 @@ interface PluginInvocation {
   args: string[]
 }
 
+/** Control the local runtime-sensing daemon. */
+export interface DaemonInvocation {
+  mode: 'daemon'
+  /** Lifecycle operation to run. */
+  command: 'start' | 'stop' | 'restart' | 'status' | 'logs'
+  /** start/restart: run in the foreground instead of spawning a background child. */
+  foreground: boolean
+  /** start/restart: loopback port override (`0` picks a free port). */
+  port?: number
+  /** start/restart: probe interval override in seconds. */
+  intervalSeconds?: number
+  /** status: output format. */
+  output: 'table' | 'json'
+  /** logs: keep printing appended content. */
+  follow: boolean
+  /** logs: trailing line count. */
+  lines: number
+}
+
 /** The resolved `dsh` invocation. Help, version, and errors exit inside {@link parseDshArgs}. */
-export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation
+export type DshInvocation = ProfileInvocation | DumpConfigInvocation | PluginInvocation | DaemonInvocation
 
 /** Launcher flags shared by the default command and the `web` alias. */
 interface BootOptions {
@@ -69,6 +103,8 @@ Examples:
   dsh --profile tui --resume <session>       arguments after the launcher flags reach the app
   dsh --profile web --help                   the web app's own flags and help
   dsh plugin --profile tui add <package>     install a plugin into the tui profile
+  dsh daemon start                           start the runtime-sensing daemon in the background
+  dsh daemon status                          show what the daemon has sensed on this machine
 `
 
 /**
@@ -179,6 +215,95 @@ export function parseDshArgs(argv: readonly string[], version: string): DshInvoc
       if (args.length === 0) program.error('error: plugin needs pnpm arguments to forward (e.g. add <package>)')
       resolved = { mode: 'plugin', profile: options.profile, args }
     })
+
+  const daemon = program.command('daemon').description('control the local runtime-sensing daemon (multica-style): start, stop, status, logs')
+
+  /** Validate one `--port` value: an integer 0-65535, where 0 picks a free port. */
+  const parsePort = (raw: string): number => {
+    const port = Number(raw)
+    if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+      program.error(`error: --port needs an integer 0-65535, got ${JSON.stringify(raw)}`)
+    }
+    return port
+  }
+
+  /** Validate one `--interval` value: a positive number of seconds. */
+  const parseInterval = (raw: string): number => {
+    const seconds = Number(raw)
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      program.error(`error: --interval needs a positive number of seconds, got ${JSON.stringify(raw)}`)
+    }
+    return seconds
+  }
+
+  /** Start/restart flag set, shared so both commands parse identically. */
+  interface DaemonStartFlags {
+    foreground: boolean
+    port?: number
+    interval?: number
+  }
+  const addStartFlags = (leaf: Command): Command => leaf
+    .option('--foreground', 'run in the foreground instead of background', false)
+    .option('--port <port>', 'loopback port for the health endpoint; 0 picks a free port (env: DSH_DAEMON_PORT)', parsePort)
+    .option('--interval <seconds>', 'probe interval in seconds (env: DSH_DAEMON_INTERVAL_MS, in milliseconds)', parseInterval)
+
+  const resolveStart = (options: DaemonStartFlags, command: 'start' | 'restart'): DaemonInvocation => ({
+    mode: 'daemon',
+    command,
+    foreground: options.foreground,
+    ...options.port === undefined ? {} : { port: options.port },
+    ...options.interval === undefined ? {} : { intervalSeconds: options.interval },
+    output: 'table',
+    follow: false,
+    lines: 50,
+  })
+
+  addStartFlags(daemon.command('start').description('start the daemon in the background (see --foreground)'))
+    .action((options: DaemonStartFlags) => {
+      rejectParentOptions('daemon')
+      resolved = resolveStart(options, 'start')
+    })
+
+  daemon.command('stop').description('stop the running daemon')
+    .action(() => {
+      rejectParentOptions('daemon')
+      resolved = { mode: 'daemon', command: 'stop', foreground: false, output: 'table', follow: false, lines: 50 }
+    })
+
+  addStartFlags(daemon.command('restart').description('restart the running daemon (stop + start)'))
+    .action((options: DaemonStartFlags) => {
+      rejectParentOptions('daemon')
+      resolved = resolveStart(options, 'restart')
+    })
+
+  daemon.command('status').description('show daemon status and the sensed runtimes')
+    .option('--output <format>', 'output format: table or json', 'table')
+    .action((options: { output: string }) => {
+      rejectParentOptions('daemon')
+      if (options.output !== 'table' && options.output !== 'json') {
+        program.error(`error: --output needs table or json, got ${JSON.stringify(options.output)}`)
+      }
+      resolved = { mode: 'daemon', command: 'status', foreground: false, output: options.output, follow: false, lines: 50 }
+    })
+
+  daemon.command('logs').description('show daemon logs')
+    .option('-f, --follow', 'follow log output', false)
+    .option('-n, --lines <count>', 'number of trailing lines to show', (raw: string) => {
+      const lines = Number(raw)
+      if (!Number.isInteger(lines) || lines < 0) {
+        program.error(`error: --lines needs a non-negative integer, got ${JSON.stringify(raw)}`)
+      }
+      return lines
+    }, 50)
+    .action((options: { follow: boolean; lines: number }) => {
+      rejectParentOptions('daemon')
+      resolved = { mode: 'daemon', command: 'logs', foreground: false, output: 'table', follow: options.follow, lines: options.lines }
+    })
+
+  daemon.action(() => {
+    // Bare `dsh daemon`: the group's own help is the useful answer.
+    daemon.help()
+  })
 
   try {
     program.parse(argv, { from: 'user' })

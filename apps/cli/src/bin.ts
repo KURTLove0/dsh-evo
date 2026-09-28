@@ -8,23 +8,10 @@
 
 /* v8 ignore file -- built-bin acceptance exercises this self-executing dispatch. */
 
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { loadLayeredEnv } from '@deepseek-ai/dsh-app-boot'
-import { parseDshArgs } from './args.ts'
+import { parseDshArgs, readDshVersion } from './args.ts'
 
-// Both the source tree (apps/cli/src) and the bundled bin (apps/cli/lib) sit
-// one directory under apps/cli, so the checked-in manifest resolves with the
-// same relative hop from either artifact.
-/** This app's version, read from its checked-in package.json. */
-function readVersion(): string {
-  const manifest = JSON.parse(
-    readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
-  ) as { version?: unknown }
-  return typeof manifest.version === 'string' ? manifest.version : '0.0.0'
-}
-
-const invocation = parseDshArgs(process.argv.slice(2), readVersion())
+const invocation = parseDshArgs(process.argv.slice(2), readDshVersion())
 
 switch (invocation.mode) {
   case 'profile': {
@@ -45,6 +32,11 @@ switch (invocation.mode) {
   case 'dump-config': {
     const { runDumpConfig } = await import('./dump-config.ts')
     runDumpConfig(invocation.profile, invocation.defaultOnly, invocation.patches)
+    break
+  }
+  case 'daemon': {
+    const { runDaemonCommand } = await import('./daemon.ts')
+    process.exitCode = await runDaemonCommand(invocation)
     break
   }
   default:

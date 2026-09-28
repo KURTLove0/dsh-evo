@@ -112,7 +112,7 @@ import {
   hasApiRemoteSubagentOwner,
   inspectApiRemoteSession,
 } from '@deepseek-ai/dsh-api-remotes'
-import { commandPresent } from './command-presence.ts'
+import { commandPresent, probeDaemonHealth } from '@deepseek-ai/dsh-daemon'
 import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-path-opener.ts'
 
 /** Page size when history is called without maxMessages. */
@@ -3296,11 +3296,19 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     },
 
     llm: {
-      providers(request) {
+      async providers(request) {
         const registered = ctx.llm.listProviders()
         const active = new Set(registered.map(provider => provider.id))
         const directory = ctx.llm.listConfigurableProviders()
         const declared = new Set(directory.map(entry => entry.provider))
+        // The sensing daemon owns presence for the commands it catalogs; the
+        // inline probe answers everything else (custom commands, or no
+        // daemon), so installing or removing a CLI is still visible on the
+        // next page load without a restart.
+        const daemon = await probeDaemonHealth()
+        const sensed = daemon.running
+          ? new Map(daemon.health.runtimes.map(row => [row.command, row.present]))
+          : undefined
         const views: ConfigurableProviderView[] = directory.map(entry => ({
           provider: entry.provider,
           displayName: entry.displayName,
@@ -3308,9 +3316,10 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
           settingsPath: [...entry.settingsPath],
           active: active.has(entry.provider),
           ...entry.declared === undefined ? {} : { declared: entry.declared },
-          // Presence is probed per answer so installing or removing a CLI is
-          // visible on the next page load without a restart.
-          ...entry.localCommand === undefined ? {} : { localCommand: entry.localCommand, present: commandPresent(entry.localCommand) },
+          ...entry.localCommand === undefined ? {} : {
+            localCommand: entry.localCommand,
+            present: sensed?.get(entry.localCommand) ?? commandPresent(entry.localCommand),
+          },
         }))
         // Routes registered without a directory declaration still appear —
         // they exist and serve models — just with no settings address. No
@@ -3325,7 +3334,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
             active: true,
           })
         }
-        return Promise.resolve(ok(request, { providers: views }))
+        return ok(request, { providers: views, daemonRunning: daemon.running })
       },
 
       async models(request) {

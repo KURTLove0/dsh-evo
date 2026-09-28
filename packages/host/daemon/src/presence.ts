@@ -1,8 +1,10 @@
 /**
- * Local-command presence probe for the llm domain: whether the executable a
- * local-CLI runtime declares resolves on this host. The answer rides the
- * provider listing as a row fact; a missing CLI degrades the row to "not
- * present", it never fails the call.
+ * Local-command presence probe: whether an executable resolves on this host.
+ * The daemon probes its catalog on an interval; configuration surfaces fall
+ * back to this probe per answer for commands the daemon does not know (or
+ * while no daemon runs). A missing CLI degrades the asking row to "not
+ * present" — the probe never fails its caller.
+ * @module @deepseek-ai/dsh-daemon/presence
  */
 
 import { spawnSync } from 'node:child_process'
@@ -24,7 +26,7 @@ export interface CommandPresenceInternals {
  * a command containing a path separator is checked for the executable bit
  * directly. A backslash marks a Windows path on any host — a PATH command
  * never carries one.
- * @param command - the executable name or path the adapter declared.
+ * @param command - the executable name or path to probe.
  * @param internals - platform/spawn/access seam for deterministic tests.
  * @returns whether a request through this runtime can start at all.
  */

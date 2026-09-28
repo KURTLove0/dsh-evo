@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
-import { RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
+import { DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
 import type { RuntimesSectionInjected } from '../src/client/RuntimesSection.tsx'
 import { RuntimesSettingsStore } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
@@ -33,12 +33,12 @@ interface CatalogAnswer {
 }
 
 function scriptedFace(overrides: {
-  providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
+  providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY; daemonRunning: boolean }>>
   models?: () => Promise<RpcResponse<CatalogAnswer>>
 } = {}) {
   return {
     llm: {
-      providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY }))),
+      providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: true }))),
       models: overrides.models ?? (() => Promise.resolve(ok({
         groups: [
           { id: 'claude-cli', name: 'Claude CLI', models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }, { id: 'opus-4-6', name: 'Opus 4.6' }] },
@@ -101,18 +101,37 @@ describe('RuntimesSection', () => {
   })
 
   it('renders the empty-deployment notice when the directory declares nothing', async () => {
-    await mountSection({ providers: () => Promise.resolve(ok({ providers: [] as never })) })
+    await mountSection({ providers: () => Promise.resolve(ok({ providers: [] as never, daemonRunning: true })) })
     expect(screen.getByText(en.empty)).toBeTruthy()
     expect(screen.queryByText(en.statusActive)).toBeNull()
   })
 
+  it('renders the daemon hint while no sensing daemon runs, copying its start command', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await mountSection({ providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })) })
+    expect(screen.getByText(en.daemonHintTitle)).toBeTruthy()
+    expect(screen.getByText(DAEMON_START_COMMAND)).toBeTruthy()
+    // Rows still render — the inline probe answers while no daemon runs.
+    expect(screen.getByText('Claude CLI')).toBeTruthy()
+    fireEvent.click(screen.getByText(en.daemonHintCopy))
+    expect(writeText).toHaveBeenCalledWith(DAEMON_START_COMMAND)
+    expect(screen.getByText(en.daemonHintCopied)).toBeTruthy()
+    delete (navigator as { clipboard?: unknown }).clipboard
+  })
+
+  it('renders no daemon hint while the daemon runs', async () => {
+    await mountSection()
+    expect(screen.queryByText(en.daemonHintTitle)).toBeNull()
+  })
+
   it('renders the load failure with a retry control that reloads', async () => {
     let call = 0
-    const providers = vi.fn((): Promise<RpcResponse<{ providers: typeof DIRECTORY }>> => {
+    const providers = vi.fn((): Promise<RpcResponse<{ providers: typeof DIRECTORY; daemonRunning: boolean }>> => {
       call += 1
       return call === 1
         ? Promise.resolve(fail('directory down'))
-        : Promise.resolve(ok({ providers: DIRECTORY }))
+        : Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: true }))
     })
     const face = scriptedFace({ providers })
     const controller = new RuntimesSettingsStore(face)

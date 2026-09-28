@@ -123,7 +123,7 @@ function scriptedApi(overrides: {
       ...overrides.credentials,
     },
     llm: {
-      providers: r => ok(r, { providers: [] }),
+      providers: r => ok(r, { providers: [], daemonRunning: false }),
       models: r => ok(r, { groups: [], failures: [] }),
       discoverModels: err,
       ...overrides.llm,
@@ -750,7 +750,7 @@ describe('config unary surface', () => {
         unset: record('credentials.unset', r => ok(r, {})),
       },
       llm: {
-        providers: record('llm.providers', r => ok(r, { providers: [providerRow] })),
+        providers: record('llm.providers', r => ok(r, { providers: [providerRow], daemonRunning: false })),
         models: record('llm.models', r => ok(r, { groups: [group], failures: [] })),
         discoverModels: record('llm.discoverModels', r => ok(r, { models: [{ id: 'acme-large', contextWindow: 65536 }] })),
       },
@@ -775,7 +775,7 @@ describe('config unary surface', () => {
     expect((await c.credentials.set({ ref: 'OPENAI_API_KEY', value: 'sk-x' })).result).toEqual({ ok: true, value: {} })
     expect((await c.credentials.unset({ ref: 'OPENAI_API_KEY' })).result).toEqual({ ok: true, value: {} })
     const providers = await c.llm.providers({})
-    expect(providers.result).toEqual({ ok: true, value: { providers: [providerRow] } })
+    expect(providers.result).toEqual({ ok: true, value: { providers: [providerRow], daemonRunning: false } })
     const models = await c.llm.models({})
     expect(models.result).toEqual({ ok: true, value: { groups: [group], failures: [] } })
     const discovered = await c.llm.discoverModels({

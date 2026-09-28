@@ -18,6 +18,7 @@ flowchart TD
   end
   subgraph group_llm["packages/llm"]
     pkg_llm["llm"]
+    pkg_llm_claude_cli["llm-claude-cli"]
     pkg_llm_deepseek["llm-deepseek"]
     pkg_llm_pi_ai["llm-pi-ai"]
     pkg_llm_retry["llm-retry"]
@@ -131,6 +132,7 @@ flowchart TD
     pkg_client_ui_agent_preset["client-ui-agent-preset"]
     pkg_client_ui_attachment["client-ui-attachment"]
     pkg_client_ui_brand_official["client-ui-brand-official"]
+    pkg_client_ui_business_workflow["client-ui-business-workflow"]
     pkg_client_ui_commands["client-ui-commands"]
     pkg_client_ui_conversation["client-ui-conversation"]
     pkg_client_ui_deliverables["client-ui-deliverables"]
@@ -152,6 +154,7 @@ flowchart TD
     pkg_client_ui_settings_models["client-ui-settings-models"]
     pkg_client_ui_settings_plugin_inventory["client-ui-settings-plugin-inventory"]
     pkg_client_ui_settings_plugins["client-ui-settings-plugins"]
+    pkg_client_ui_settings_runtimes["client-ui-settings-runtimes"]
     pkg_client_ui_sidebar["client-ui-sidebar"]
     pkg_client_ui_skill["client-ui-skill"]
     pkg_client_ui_slots["client-ui-slots"]
@@ -217,6 +220,7 @@ flowchart TD
     pkg_tool_call_timeout_policy["tool-call-timeout-policy"]
   end
   subgraph group_host["packages/host"]
+    pkg_daemon["daemon"]
     pkg_host_apiproxy["host-apiproxy"]
     pkg_host_directory_picker["host-directory-picker"]
     pkg_host_directory_picker_auto["host-directory-picker-auto"]
@@ -408,6 +412,12 @@ flowchart TD
   pkg_client_ui_conversation --> pkg_token_meter
   pkg_client_ui_conversation --> pkg_tool_todo
   pkg_client_ui_renderer --> pkg_client_runtime
+  pkg_client_ui_settings_runtimes --> pkg_api_remotes
+  pkg_client_ui_settings_runtimes --> pkg_client_connection
+  pkg_client_ui_settings_runtimes --> pkg_client_locale
+  pkg_client_ui_settings_runtimes --> pkg_client_runtime
+  pkg_client_ui_settings_runtimes --> pkg_client_ui_settings
+  pkg_client_ui_settings_runtimes --> pkg_invariants
   pkg_client_ui_skill --> pkg_client_connection
   pkg_client_ui_skill --> pkg_client_ui_tool
   pkg_client_ui_subagent --> pkg_client_ui_input_trigger
@@ -429,6 +439,7 @@ flowchart TD
 | [`output-retention`](../packages/util/output-retention) | `util` | — |
 | [`timeout`](../packages/util/timeout) | `util` | — |
 | [`llm`](../packages/llm/llm) | `llm` | — |
+| [`llm-claude-cli`](../packages/llm/llm-claude-cli) | `llm` | — |
 | [`llm-deepseek`](../packages/llm/llm-deepseek) | `llm` | — |
 | [`llm-pi-ai`](../packages/llm/llm-pi-ai) | `llm` | — |
 | [`llm-retry`](../packages/llm/llm-retry) | `llm` | — |
@@ -488,6 +499,7 @@ flowchart TD
 | [`client-hmr`](../packages/client/hmr) | `client` | — |
 | [`client-modules`](../packages/client/modules) | `client` | — |
 | [`client-ui-brand-official`](../packages/client/ui-brand-official) | `client` | — |
+| [`client-ui-business-workflow`](../packages/client/ui-business-workflow) | `client` | — |
 | [`client-ui-commands`](../packages/client/ui-commands) | `client` | — |
 | [`client-ui-deliverables`](../packages/client/ui-deliverables) | `client` | — |
 | [`client-ui-directory-picker-browse`](../packages/client/ui-directory-picker-browse) | `client` | — |
@@ -533,6 +545,7 @@ flowchart TD
 | [`command-feedback`](../packages/feedback/command-feedback) | `feedback` | — |
 | [`message-feedback`](../packages/feedback/message-feedback) | `feedback` | — |
 | [`repeat-tool-reminder`](../packages/guard/repeat-tool-reminder) | `guard` | — |
+| [`daemon`](../packages/host/daemon) | `host` | — |
 | [`host-apiproxy`](../packages/host/apiproxy) | `host` | — |
 | [`host-directory-picker`](../packages/host/directory-picker) | `host` | — |
 | [`host-directory-picker-browse`](../packages/host/directory-picker-browse) | `host` | — |
@@ -646,6 +659,7 @@ flowchart TD
 | [`workspace`](../packages/workspace/workspace) | `workspace` | [`storage`](../packages/storage/storage) |
 | [`client-ui-conversation`](../packages/client/ui-conversation) | `client` | [`api-remotes`](../packages/api/remotes), [`goal`](../packages/goal/goal), [`permission-presets`](../packages/interaction/permission-presets), [`plan-mode`](../packages/plan/plan-mode), [`session-stats`](../packages/session/session-stats), [`token-meter`](../packages/llm/token-meter), [`tool-todo`](../packages/todo/tool-todo) |
 | [`client-ui-renderer`](../packages/client/ui-renderer) | `client` | [`client-runtime`](../packages/client/runtime) |
+| [`client-ui-settings-runtimes`](../packages/client/ui-settings-runtimes) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-ui-skill`](../packages/client/ui-skill) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-tool`](../packages/client/ui-tool) |
 | [`client-ui-subagent`](../packages/client/ui-subagent) | `client` | [`client-ui-input-trigger`](../packages/client/ui-input-trigger), [`subagent`](../packages/subagent/subagent), [`token-meter`](../packages/llm/token-meter) |
 | [`acp-demo`](../packages/examples/acp-demo) | `examples` | [`session-query`](../packages/session-query/session-query) |

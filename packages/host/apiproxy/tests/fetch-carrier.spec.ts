@@ -273,7 +273,7 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
     },
     llm: {
       async providers(request) {
-        return { rpcId: request.rpcId, result: { ok: true, value: { providers: [] } } }
+        return { rpcId: request.rpcId, result: { ok: true, value: { providers: [], daemonRunning: false } } }
       },
       async models(request) {
         return { rpcId: request.rpcId, result: { ok: true, value: { groups: [], failures: [] } } }

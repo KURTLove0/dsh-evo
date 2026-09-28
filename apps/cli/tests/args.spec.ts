@@ -103,4 +103,38 @@ describe('parseDshArgs', () => {
     expect(exitCode(['-h'])).toBe(0)
     expect(exitCode(['--version'])).toBe(0)
   })
+
+  it('routes the daemon lifecycle commands with their flags', () => {
+    expect(parse(['daemon', 'start'])).toEqual({
+      mode: 'daemon', command: 'start', foreground: false, output: 'table', follow: false, lines: 50,
+    })
+    expect(parse(['daemon', 'start', '--foreground', '--port', '3081', '--interval', '30'])).toEqual({
+      mode: 'daemon', command: 'start', foreground: true, port: 3081, intervalSeconds: 30, output: 'table', follow: false, lines: 50,
+    })
+    expect(parse(['daemon', 'start', '--port', '0'])).toMatchObject({ command: 'start', port: 0 })
+    expect(parse(['daemon', 'restart'])).toMatchObject({ command: 'restart', foreground: false })
+    expect(parse(['daemon', 'restart', '--foreground', '--interval', '5'])).toMatchObject({ command: 'restart', foreground: true, intervalSeconds: 5 })
+    expect(parse(['daemon', 'stop'])).toMatchObject({ command: 'stop' })
+    expect(parse(['daemon', 'status'])).toMatchObject({ command: 'status', output: 'table' })
+    expect(parse(['daemon', 'status', '--output', 'json'])).toMatchObject({ command: 'status', output: 'json' })
+    expect(parse(['daemon', 'logs'])).toMatchObject({ command: 'logs', follow: false, lines: 50 })
+    expect(parse(['daemon', 'logs', '-f', '-n', '100'])).toMatchObject({ command: 'logs', follow: true, lines: 100 })
+    expect(parse(['daemon', 'logs', '--lines', '0'])).toMatchObject({ command: 'logs', lines: 0 })
+  })
+
+  it('rejects malformed daemon flags and parent options on daemon commands', () => {
+    expect(exitCode(['daemon', 'start', '--port', 'abc'])).toBe(1)
+    expect(exitCode(['daemon', 'start', '--port', '-1'])).toBe(1)
+    expect(exitCode(['daemon', 'start', '--port', '65536'])).toBe(1)
+    expect(exitCode(['daemon', 'start', '--interval', '0'])).toBe(1)
+    expect(exitCode(['daemon', 'start', '--interval', 'xyz'])).toBe(1)
+    expect(exitCode(['daemon', 'status', '--output', 'yaml'])).toBe(1)
+    expect(exitCode(['daemon', 'logs', '-n', '-1'])).toBe(1)
+    expect(exitCode(['daemon', 'logs', '-n', '1.5'])).toBe(1)
+    expect(exitCode(['--profile', 'x', 'daemon', 'start'])).toBe(1)
+  })
+
+  it('prints the daemon group help for a bare daemon command', () => {
+    expect(exitCode(['daemon'])).toBe(0)
+  })
 })

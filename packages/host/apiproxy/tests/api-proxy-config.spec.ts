@@ -5,8 +5,12 @@
  * invalidation frames (settings/credentials/models changed).
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
+import { createDaemonServer, writeDaemonState, type DaemonServer } from '@deepseek-ai/dsh-daemon'
 import z from '@deepseek-ai/schemastery'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SessionStore from '@deepseek-ai/dsh-session'
@@ -651,6 +655,34 @@ describe('credentials domain', () => {
 })
 
 describe('llm domain', () => {
+  // The providers listing probes the sensing daemon through $DSH_HOME; an
+  // empty home isolates every test here from a developer's live daemon.
+  let daemonHome: string
+  let daemonServer: DaemonServer | undefined
+
+  async function startSensingDaemon(runtimes: { command: string; present: boolean }[]): Promise<void> {
+    daemonServer = await createDaemonServer({
+      port: 0,
+      version: 'test',
+      startedAt: new Date().toISOString(),
+      report: () => ({ runtimes: runtimes.map(row => ({ ...row, label: row.command, checkedAt: 't' })) }),
+      onShutdown: () => {},
+    })
+    await writeDaemonState({ pid: process.pid, port: daemonServer.port, version: 'test', startedAt: new Date().toISOString() })
+  }
+
+  beforeEach(async () => {
+    daemonHome = await mkdtemp(join(tmpdir(), 'dsh-apiproxy-daemon-'))
+    vi.stubEnv('DSH_HOME', daemonHome)
+  })
+
+  afterEach(async () => {
+    await daemonServer?.close()
+    daemonServer = undefined
+    vi.unstubAllEnvs()
+    await rm(daemonHome, { recursive: true, force: true })
+  })
+
   it('merges the configurable directory with live routes and appends undeclared ones', async () => {
     const ctx = await harness({ configurableProviders: false })
     ctx.llm.registerConfigurableProviders([
@@ -671,6 +703,7 @@ describe('llm domain', () => {
       // interrogated on its behalf either.
       { provider: 'undeclared', displayName: 'Undeclared', settingsNs: '', settingsPath: [], active: true },
     ])
+    expect(value.daemonRunning).toBe(false)
   })
 
   it('answers local-CLI rows with a probed presence fact; API rows carry none', async () => {
@@ -691,6 +724,29 @@ describe('llm domain', () => {
       { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], active: false, localCommand: process.execPath, present: true },
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: false },
     ])
+    expect(value.daemonRunning).toBe(false)
+  })
+
+  it('prefers the sensing daemon for catalog commands and probes inline for the rest', async () => {
+    // The daemon's report contradicts the machine on purpose (`node` sensed
+    // missing though it is on PATH): the catalog command rides the report,
+    // the custom command still answers from the host's own probe.
+    await startSensingDaemon([
+      { command: 'node', present: false },
+      { command: 'dsh-absolutely-not-a-command-x7q9', present: true },
+    ])
+    const ctx = await harness({ configurableProviders: false })
+    ctx.llm.registerConfigurableProviders([
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], localCommand: 'node' },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], localCommand: process.execPath },
+    ])
+    const api = createApiProxy(ctx, DEFAULTS)
+    const value = expectOk(await api.llm.providers(request({})))
+    expect(value.providers).toEqual([
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: false, localCommand: 'node', present: false },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], active: false, localCommand: process.execPath, present: true },
+    ])
+    expect(value.daemonRunning).toBe(true)
   })
 
   it('serves the host-scoped catalog with per-provider failures contained', async () => {

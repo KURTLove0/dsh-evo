@@ -3047,6 +3047,10 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           // the tagged shape rather than only the shipped one.
           { provider: 'acme-gateway', displayName: 'Acme Gateway', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'acme-gateway'], active: true, declared: true },
         ],
+        // The fixture's providers are all remote APIs, so a sensing daemon
+        // changes nothing here; answering "running" keeps replayed surfaces
+        // on their daemon-fed path instead of rendering the start hint.
+        daemonRunning: true,
       }),
       models: request => ok(request, { groups: fixtureModelGroups(), failures: [] }),
       // The fixture endpoint is imaginary, so the interrogation answers the

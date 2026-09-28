@@ -13,6 +13,11 @@ export const en = {
   modelsEmpty: 'No models listed. Unlisted IDs can still be requested directly.',
   modelsFailure: 'Model listing failed',
   modelsCount: '{count} model(s)',
+  daemonHintTitle: 'Runtime sensing daemon is not running',
+  daemonHintBody: 'Start it to sense the local CLI runtimes on this machine; presence on this page then follows the daemon’s report.',
+  daemonHintCopy: 'Copy',
+  daemonHintCopied: 'Copied',
+  daemonHintStatus: 'Check what it sensed anytime with: dsh daemon status',
 }
 
 /** The settings.runtimes namespace key union. */
@@ -31,4 +36,9 @@ export const zh: { [Key in keyof typeof en]: string } = {
   modelsEmpty: '未列出任何模型；目录外 ID 仍可直接请求。',
   modelsFailure: '模型列表获取失败',
   modelsCount: '{count} 个模型',
+  daemonHintTitle: '运行时感知守护进程未运行',
+  daemonHintBody: '启动守护进程以感知本机的本地 CLI 运行时；此后本页的存在性将跟随守护进程的报告。',
+  daemonHintCopy: '复制',
+  daemonHintCopied: '已复制',
+  daemonHintStatus: '随时可用以下命令查看感知结果：dsh daemon status',
 }

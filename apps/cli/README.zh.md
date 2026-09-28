@@ -12,6 +12,11 @@
 | `dsh --profile headless "job"` | 运行一个全新的持久化会话，打印最终答案并退出。 |
 | `dsh web` | `--profile web` 的别名。 |
 | `dsh plugin --profile <name> <pnpm args>` | 通过在 profile 目录中转发给 pnpm 来管理该 profile 的插件。 |
+| `dsh daemon <start\|stop\|restart\|status\|logs>` | 控制本机运行时感知守护进程。 |
+
+## 守护进程
+
+`dsh daemon start` 在后台启动运行时感知守护进程：同一个 bin 以 `daemon start --foreground` 重新拉起，detached 运行，日志写入 `$DSH_HOME/daemon/daemon.log`。守护进程按固定本地 CLI 清单（`claude`、`codex`）启动即探、随后每 15 秒探测一次，并在 127.0.0.1 上由 `GET /health` 提供报告与自身身份信息（默认端口 3081，`--port`/`DSH_DAEMON_PORT`；周期经 `--interval` 秒/`DSH_DAEMON_INTERVAL_MS` 配置）；`POST /shutdown` 请求其退出。Web 设置的「运行时」页优先采用守护进程的存在性答案，并在守护进程未运行时展示启动提示。`status` 展示感知结果（脚本可用 `--output json`），`stop` 优雅停止（失败回落 SIGTERM），`logs -f` 跟踪日志，`restart` 等价于 stop + start。进程、状态与信任模型见 [`@deepseek-ai/dsh-daemon`](../../packages/host/daemon/README.zh.md)。
 
 运行命令时所在的目录将作为默认 workspace 根目录。`web` 和 `headless` profile 在首次使用时会从随附模板自动初始化；其他任何 profile 都必须通过 `dsh plugin` 创建。
 

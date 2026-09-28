@@ -1,11 +1,11 @@
 /**
  * commandPresent: PATH-resolver dispatch by platform, direct executable-bit
- * checks for commands naming a path, and the real-host answers the llm
- * provider listing relies on.
+ * checks for commands naming a path, and the real-host answers the daemon's
+ * catalog probes and the API proxy's fallback rely on.
  */
 
 import { describe, expect, it } from 'vitest'
-import { commandPresent } from '../src/command-presence.ts'
+import { commandPresent } from '../src/presence.ts'
 
 describe('commandPresent', () => {
   it('resolves a bare name through which on POSIX and where on Windows', () => {

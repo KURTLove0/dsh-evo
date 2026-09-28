@@ -50,8 +50,14 @@ export interface LlmApi {
    * directory declaration order. Routes registered outside the directory
    * (an adapter that never declared configurability) are appended with their
    * registration identity and no settings address.
+   *
+   * `daemonRunning` reports whether the local runtime-sensing daemon
+   * answered its health endpoint while this listing was built; when true,
+   * the presence rows of commands in the daemon's catalog come from its
+   * report rather than a per-answer probe. Configuration surfaces use it to
+   * point at the daemon when no daemon senses for them.
    */
-  providers(request: RpcRequest<{}>): Promise<RpcResponse<{ providers: ConfigurableProviderView[] }>>
+  providers(request: RpcRequest<{}>): Promise<RpcResponse<{ providers: ConfigurableProviderView[]; daemonRunning: boolean }>>
 
   /**
    * Host-scoped model catalog over every registered provider route: the

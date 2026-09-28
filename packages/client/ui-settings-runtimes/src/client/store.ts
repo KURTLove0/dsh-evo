@@ -42,6 +42,12 @@ export interface RuntimesSettingsState {
   error: string | null
   /** Runtime rows in directory declaration order. */
   rows: readonly RuntimeRow[]
+  /**
+   * Whether the host's runtime-sensing daemon answered while the directory
+   * loaded; `false` points the page at `dsh daemon start`. Initialized true
+   * so the hint never flashes before the first answer.
+   */
+  daemonRunning: boolean
 }
 
 /**
@@ -59,7 +65,7 @@ export function messageOf(error: unknown): string {
 export class RuntimesSettingsStore {
   /** The snapshot the section renders from (uSES-safe store). */
   readonly store: SnapshotStore<RuntimesSettingsState> = createSnapshotStore<RuntimesSettingsState>({
-    status: 'idle', error: null, rows: [],
+    status: 'idle', error: null, rows: [], daemonRunning: true,
   })
 
   /** Latest load wins; an older response never overwrites a newer one. */
@@ -90,13 +96,14 @@ export class RuntimesSettingsStore {
       if (!providersResponse.result.ok) throw new Error(providersResponse.result.error.message)
       if (!modelsResponse.result.ok) throw new Error(modelsResponse.result.error.message)
       if (generation !== this.generation) return
-      const { providers } = providersResponse.result.value
+      const { providers, daemonRunning } = providersResponse.result.value
       const { groups, failures } = modelsResponse.result.value
       const catalog = new Map(groups.map(group => [group.id, group]))
       const failed = new Map(failures.map(failure => [failure.id, failure.message]))
       this.store.update((s) => {
         s.status = 'ready'
         s.error = null
+        s.daemonRunning = daemonRunning
         s.rows = providers.flatMap((entry): RuntimeRow[] => {
           // Dormant routes are configuration candidates for the Models page;
           // a local CLI the host could not find can never serve from here.

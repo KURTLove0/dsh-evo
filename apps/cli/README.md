@@ -12,6 +12,11 @@ The `dsh` command is the product launcher for profiles: ordered stacks of plugin
 | `dsh --profile headless "job"` | Run one fresh persisted session, print the final answer, and exit. |
 | `dsh web` | Alias of `--profile web`. |
 | `dsh plugin --profile <name> <pnpm args>` | Manage a profile's plugins by forwarding to pnpm in the profile directory. |
+| `dsh daemon <start\|stop\|restart\|status\|logs>` | Control the local runtime-sensing daemon. |
+
+## Daemon
+
+`dsh daemon start` launches the runtime-sensing daemon in the background: the same bin re-invoked as `daemon start --foreground`, detached, logging to `$DSH_HOME/daemon/daemon.log`. The daemon probes the fixed local-CLI catalog (`claude`, `codex`) immediately and every 15s, and serves the report plus its identity from `GET /health` on 127.0.0.1 (default port 3081, `--port`/`DSH_DAEMON_PORT`; interval via `--interval` seconds/`DSH_DAEMON_INTERVAL_MS`); `POST /shutdown` asks it out. The web settings' Runtimes page prefers the daemon's presence answers and shows a start hint while no daemon runs. `status` renders what it sensed (`--output json` for scripts), `stop` shuts it down gracefully (SIGTERM fallback), `logs -f` tails the log, and `restart` is stop + start. See [`@deepseek-ai/dsh-daemon`](../../packages/host/daemon/README.md) for the process, state, and trust model.
 
 The invoking directory is the default workspace root. The `web` and `headless` profiles auto-initialize on first use from shipped templates; any other profile must be created through `dsh plugin`.
 

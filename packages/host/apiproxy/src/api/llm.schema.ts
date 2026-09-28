@@ -27,6 +27,7 @@ export const llmProvidersRequestSchema = z.object({}) satisfies z.ZodType<Wire<R
 /** llm.providers response value. */
 export const llmProvidersValueSchema = z.object({
   providers: z.array(configurableProviderViewSchema),
+  daemonRunning: z.boolean(),
 }) satisfies z.ZodType<Wire<ResponseValue<'llm.providers'>>>
 
 /** llm.models request payload. */
