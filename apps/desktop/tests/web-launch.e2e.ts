@@ -10,7 +10,7 @@ import { buildDshWebLaunch, parseWebUrlLine, stopHost } from '../src/launcher.ts
 
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const frontendIndex = join(repoRoot, 'apps/web/dist/index.html')
-/** A source boot of the web composition serves the built frontend dist, so the smoke needs it present. */
+/** A boot of the web composition serves the built frontend dist, so the smoke needs it present. */
 const builtArtifactsExist = existsSync(frontendIndex)
 const tempRoots: string[] = []
 let host: ChildProcess | undefined
@@ -24,8 +24,9 @@ afterEach(() => {
 })
 
 /**
- * Boot the real source `dsh web` with the desktop shell's exact launch vector,
- * resolve the settled-ready URL, and stop through {@link stopHost}.
+ * Boot the real `dsh web` composition with the desktop shell's exact launch
+ * vector (the built CLI artifact when the checkout has one), resolve the
+ * settled-ready URL, and stop through {@link stopHost}.
  * @returns the ready URL and the host's exit code after the stop.
  */
 async function bootAndStopHost(): Promise<{ url: string; code: number | null }> {

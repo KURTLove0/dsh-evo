@@ -10,7 +10,7 @@ The desktop shell for the dsh Web GUI: an Electron main process that boots the r
 pnpm run desktop        # build the main process, then electron .
 ```
 
-The shell spawns the source-launch vector of the root `dsh` script (`node --import tsx/esm apps/cli/src/bin.ts web --no-open --port 0`) with the Electron binary as its Node runtime (`ELECTRON_RUN_AS_NODE=1`), so the child's Node version rides the pinned Electron instead of a system Node. `--expose-internals` is part of the vector: the vendored Loader's native addon cannot attach under the Electron binary, and without the internal loader bare plugin names stop resolving.
+The shell spawns the hosted checkout's web composition (`web --no-open --port 0`) through the built CLI artifact when one exists (`apps/cli/lib/bin.js` — the artifact plane the distributed `dsh web` runs, so the desktop window and the released web serve the same build), falling back to the root `dsh` script's source-launch vector (`node --import tsx/esm apps/cli/src/bin.ts`) in an unbuilt checkout. Either way the Electron binary is the child's Node runtime (`ELECTRON_RUN_AS_NODE=1`), so the child's Node version rides the pinned Electron instead of a system Node. `--expose-internals` is part of the vector: the vendored Loader's native addon cannot attach under the Electron binary, and without the internal loader bare plugin names stop resolving.
 
 ## Pack an application bundle
 

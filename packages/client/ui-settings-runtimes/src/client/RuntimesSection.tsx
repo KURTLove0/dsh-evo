@@ -14,6 +14,9 @@ import type { RuntimesSettingsStore, RuntimeRow } from './store.ts'
 import type { en } from './locales.ts'
 import styles from './RuntimesSection.module.css'
 
+/** The command installing the dsh CLI; an npm literal, never localized. */
+export const DAEMON_INSTALL_COMMAND = 'npm install -g @deepseek-ai/dsh'
+
 /** The command the hint asks the user to run; a CLI literal, never localized. */
 export const DAEMON_START_COMMAND = 'dsh daemon start'
 
@@ -90,31 +93,43 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
 /**
  * The daemon hint: an instruction card shown while no sensing daemon runs on
  * this host. The page reports presence inline until then; starting the daemon
- * moves presence to its report.
+ * moves presence to its report. Two steps cover the whole path: install the
+ * CLI when it is not on PATH yet, then start the daemon.
  */
 function DaemonHint({ t }: { t: (key: keyof typeof en) => string }): ReactNode {
-  const [copied, setCopied] = useState(false)
   return (
     <div className={styles['daemonHint']} role="note">
       <span className={styles['daemonHintTitle']}>{t('daemonHintTitle')}</span>
       <span className={styles['daemonHintBody']}>{t('daemonHintBody')}</span>
+      <HintCommandRow label={t('daemonHintInstall')} command={DAEMON_INSTALL_COMMAND} t={t} />
+      <HintCommandRow label={t('daemonHintStart')} command={DAEMON_START_COMMAND} t={t} />
+      <span className={styles['daemonHintBody']}>{t('daemonHintStatus')}</span>
+    </div>
+  )
+}
+
+/** One hint step: a caption, the command chip, and its own copy button. */
+function HintCommandRow({ label, command, t }: { label: string; command: string; t: (key: keyof typeof en) => string }): ReactNode {
+  const [copied, setCopied] = useState(false)
+  return (
+    <span className={styles['daemonHintStep']}>
+      <span className={styles['daemonHintStepLabel']}>{label}</span>
       <span className={styles['daemonHintCommand']}>
-        <code className={styles['daemonHintCommandText']}>{DAEMON_START_COMMAND}</code>
+        <code className={styles['daemonHintCommandText']}>{command}</code>
         <button
           type="button"
           className={styles['daemonHintCopy']}
           onClick={() => {
             // The web UI is a secure-context loopback page, so the typed
             // clipboard API is present; no absence branch belongs here.
-            void navigator.clipboard.writeText(DAEMON_START_COMMAND)
+            void navigator.clipboard.writeText(command)
             setCopied(true)
           }}
         >
           {copied ? t('daemonHintCopied') : t('daemonHintCopy')}
         </button>
       </span>
-      <span className={styles['daemonHintBody']}>{t('daemonHintStatus')}</span>
-    </div>
+    </span>
   )
 }
 

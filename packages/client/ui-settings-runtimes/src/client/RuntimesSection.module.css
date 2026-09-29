@@ -202,6 +202,19 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+/* One numbered hint step: caption line above the command row. */
+.daemonHintStep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.daemonHintStepLabel {
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
 .daemonHintCommand {
   display: inline-flex;
   align-items: center;

@@ -30,6 +30,9 @@ export interface StoppableChild {
 /** The dsh source launcher's entry, relative to the repository root (the root `dsh` script's target). */
 const DSH_SOURCE_BIN = 'apps/cli/src/bin.ts'
 
+/** The built dsh CLI entry, relative to the repository root (the artifact plane the distributed `dsh` runs). */
+const DSH_BUILT_BIN = 'apps/cli/lib/bin.js'
+
 /** File this shell's pack step drops beside the packaged bundle: the checkout the app hosts. */
 const PACKAGED_REPO_ROOT_FILE = 'repo-root'
 
@@ -114,27 +117,33 @@ export function resolveRepoRoot(inputs: RepoRootInputs): RepoRootResolution {
 
 /**
  * Build the launch vector for one `dsh web` child process from a repository
- * checkout: the source-launch contract of the root `dsh` script
- * (`node --import tsx/esm apps/cli/src/bin.ts`) plus two shell-owned
- * additions. `--expose-internals` keeps the vendored Loader's internal-module
- * access working when its native addon cannot attach — always, under the
- * Electron binary this shell runs as its Node runtime, because the addon
- * needs an embedder slot plain Node provides and Electron node mode does not
- * ([branch](../../vendor/loader/src/internal.ts)); without the internal
- * loader, bare plugin names stop resolving and the tree fails to load.
- * `--port 0` asks the OS for a free port and `--no-open` suppresses the
- * default-browser handoff because the desktop window — not a browser — is
- * this host's consumer.
+ * checkout: the built CLI artifact when the checkout has one
+ * (`apps/cli/lib/bin.js` — the artifact plane the distributed `dsh` runs, so
+ * the desktop window and the released web serve the same build), otherwise
+ * the source-launch contract of the root `dsh` script
+ * (`node --import tsx/esm apps/cli/src/bin.ts`) for an unbuilt checkout. Two
+ * shell-owned additions apply to both planes. `--expose-internals` keeps the
+ * vendored Loader's internal-module access working when its native addon
+ * cannot attach — always, under the Electron binary this shell runs as its
+ * Node runtime, because the addon needs an embedder slot plain Node provides
+ * and Electron node mode does not ([branch](../../vendor/loader/src/internal.ts));
+ * without the internal loader, bare plugin names stop resolving and the tree
+ * fails to load. `--port 0` asks the OS for a free port and `--no-open`
+ * suppresses the default-browser handoff because the desktop window — not a
+ * browser — is this host's consumer.
  * @param repoRoot - absolute repository root; the child's cwd.
  * @returns the executable, argv, cwd, and environment additions.
  */
 export function buildDshWebLaunch(repoRoot: string): DshWebLaunch {
+  const builtBin = join(repoRoot, DSH_BUILT_BIN)
+  const entryArgs = existsSync(builtBin)
+    ? [builtBin]
+    : ['--import', 'tsx/esm', join(repoRoot, DSH_SOURCE_BIN)]
   return {
     command: process.execPath,
     args: [
       '--expose-internals',
-      '--import', 'tsx/esm',
-      join(repoRoot, DSH_SOURCE_BIN),
+      ...entryArgs,
       'web', '--no-open', '--port', '0',
     ],
     cwd: repoRoot,

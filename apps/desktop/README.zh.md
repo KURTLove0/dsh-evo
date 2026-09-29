@@ -10,7 +10,7 @@ dsh Web GUI 的桌面壳：一个 Electron 主进程，把真实的 `dsh web` �
 pnpm run desktop        # build the main process, then electron .
 ```
 
-桌面壳以根 `dsh` 脚本的源码启动向量（`node --import tsx/esm apps/cli/src/bin.ts web --no-open --port 0`）启动子进程，并以 Electron 二进制充当其 Node 运行时（`ELECTRON_RUN_AS_NODE=1`），子进程的 Node 版本随之锁定在固定的 Electron 上而非系统 Node。`--expose-internals` 是向量的一部分：vendored Loader 的原生 addon 在 Electron 二进制下无法挂载，失去内部 loader 后裸插件名将无法解析。
+桌面壳启动所托管检出的 web 组合（`web --no-open --port 0`）：检出存在构建产物时经 `apps/cli/lib/bin.js` 启动（与分发的 `dsh web` 同一产物面，使桌面窗口与发布的网页提供同一份构建），未构建的检出则回退到根 `dsh` 脚本的源码启动向量（`node --import tsx/esm apps/cli/src/bin.ts`）。两种方式都以 Electron 二进制充当子进程的 Node 运行时（`ELECTRON_RUN_AS_NODE=1`），子进程的 Node 版本随之锁定在固定的 Electron 上而非系统 Node。`--expose-internals` 是向量的一部分：vendored Loader 的原生 addon 在 Electron 二进制下无法挂载，失去内部 loader 后裸插件名将无法解析。
 
 ## 打包应用程序
 

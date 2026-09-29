@@ -45,18 +45,45 @@ class StubChild extends EventEmitter implements StoppableChild {
 }
 
 describe('buildDshWebLaunch', () => {
-  it('builds the source-launch vector with the desktop-owned flags', () => {
-    const root = '/repo/root'
+  const tempRoots: string[] = []
+
+  afterEach(() => {
+    for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true })
+  })
+
+  /** One checkout dir, with or without the built CLI artifact. */
+  function checkout(withBuiltBin: boolean): string {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-desktop-launch-'))
+    tempRoots.push(root)
+    if (withBuiltBin) {
+      mkdirSync(join(root, 'apps/cli/lib'), { recursive: true })
+      writeFileSync(join(root, 'apps/cli/lib/bin.js'), '')
+    }
+    return root
+  }
+
+  it('prefers the built CLI artifact when the checkout has one', () => {
+    const root = checkout(true)
     const launch = buildDshWebLaunch(root)
     expect(launch.command).toBe(process.execPath)
+    expect(launch.args).toStrictEqual([
+      '--expose-internals',
+      join(root, 'apps/cli/lib/bin.js'),
+      'web', '--no-open', '--port', '0',
+    ])
+    expect(launch.cwd).toBe(root)
+    expect(launch.env).toStrictEqual({ ELECTRON_RUN_AS_NODE: '1' })
+  })
+
+  it('falls back to the source-launch vector in an unbuilt checkout', () => {
+    const root = checkout(false)
+    const launch = buildDshWebLaunch(root)
     expect(launch.args).toStrictEqual([
       '--expose-internals',
       '--import', 'tsx/esm',
       join(root, 'apps/cli/src/bin.ts'),
       'web', '--no-open', '--port', '0',
     ])
-    expect(launch.cwd).toBe(root)
-    expect(launch.env).toStrictEqual({ ELECTRON_RUN_AS_NODE: '1' })
   })
 })
 

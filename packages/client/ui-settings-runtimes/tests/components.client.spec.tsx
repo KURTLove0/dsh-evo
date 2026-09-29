@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
-import { DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
+import { DAEMON_INSTALL_COMMAND, DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
 import type { RuntimesSectionInjected } from '../src/client/RuntimesSection.tsx'
 import { RuntimesSettingsStore } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
@@ -106,17 +106,28 @@ describe('RuntimesSection', () => {
     expect(screen.queryByText(en.statusActive)).toBeNull()
   })
 
-  it('renders the daemon hint while no sensing daemon runs, copying its start command', async () => {
-    const writeText = vi.fn(() => Promise.resolve())
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+  it('renders the daemon hint while no sensing daemon runs, with install and start steps', async () => {
     await mountSection({ providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })) })
     expect(screen.getByText(en.daemonHintTitle)).toBeTruthy()
+    expect(screen.getByText(en.daemonHintInstall)).toBeTruthy()
+    expect(screen.getByText(en.daemonHintStart)).toBeTruthy()
+    expect(screen.getByText(DAEMON_INSTALL_COMMAND)).toBeTruthy()
     expect(screen.getByText(DAEMON_START_COMMAND)).toBeTruthy()
     // Rows still render — the inline probe answers while no daemon runs.
     expect(screen.getByText('Claude CLI')).toBeTruthy()
-    fireEvent.click(screen.getByText(en.daemonHintCopy))
+  })
+
+  it('copies each hint command through its own button', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await mountSection({ providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })) })
+    const [installCopy, startCopy] = screen.getAllByText(en.daemonHintCopy)
+    fireEvent.click(startCopy!)
     expect(writeText).toHaveBeenCalledWith(DAEMON_START_COMMAND)
-    expect(screen.getByText(en.daemonHintCopied)).toBeTruthy()
+    fireEvent.click(installCopy!)
+    expect(writeText).toHaveBeenCalledWith(DAEMON_INSTALL_COMMAND)
+    // Each row confirms independently of the other.
+    expect(screen.getAllByText(en.daemonHintCopied)).toHaveLength(2)
     delete (navigator as { clipboard?: unknown }).clipboard
   })
 
