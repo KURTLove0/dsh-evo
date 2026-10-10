@@ -7,6 +7,7 @@ import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import AgentRegistry, { type Agent } from '@deepseek-ai/dsh-agent'
 
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import SandboxPolicyService, { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
 import { MockAdapter, maxTokensResponse, textResponse, toolCallResponse } from './mock-adapter.ts'
 
 function driverDone(agent: Agent): Promise<void> {
@@ -271,6 +272,26 @@ describe('agent loop', () => {
 
     expect(adapter.requests[0]!.system).toBe('You are an AI agent powered by DeepSeek Harness.\n\nWorking in /work/space.')
     expect(adapter.requests[0]!.cwd).toBe('/work/space')
+    expect(adapter.requests[0]!.sandboxMode).toBeUndefined()
+  })
+
+  it('carries the session’s effective sandbox mode when a policy service is mounted', async () => {
+    const adapter = new MockAdapter([textResponse('ok')])
+    const ctx = await harness(adapter)
+    await ctx.plugin(SandboxPolicyService, { mode: 'read-only' })
+    const handle = await ctx.agents.create({
+      sessionId: SessionId('s-sandbox-mode'),
+      meta: { cwd: '/work/space' },
+      agentOptions: { provider: 'mock', model: 'mock' },
+    })
+
+    const agent = handle.agent
+    setSandboxMode(agent.session, 'workspace-write')
+    send(agent, 'hi')
+    await waitForIdle(ctx, agent)
+
+    expect(adapter.requests[0]!.sandboxMode).toBe('workspace-write')
+    await ctx.fiber.dispose()
   })
 
   it('contains a strict-variable render failure: the turn errors, the loop keeps serving turns', async () => {

@@ -380,6 +380,13 @@ export interface GenerateOptions {
    */
   cwd?: string
   /**
+   * The session's currently effective sandbox mode (the DSH file policy's
+   * `read-only` | `workspace-write` | `danger-full-access`); adapters may map
+   * it onto provider-side workspace-context or sandbox declarations. Absent
+   * when no policy service is mounted or the call carries no session.
+   */
+  sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'
+  /**
    * Session identity stamped by the loop for request routing. Replay uses it
    * to separate cursors; adapters may map it to model-hidden transport metadata.
    */

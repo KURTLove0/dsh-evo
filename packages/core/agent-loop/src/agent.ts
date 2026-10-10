@@ -27,6 +27,7 @@ import {
 } from '@deepseek-ai/dsh-llm'
 import type { Scope } from '@deepseek-ai/dsh-scope'
 import { createScope } from '@deepseek-ai/dsh-scope'
+import type { SandboxPolicyService } from '@deepseek-ai/dsh-sandbox-policy'
 import type { EpochHeader, RequestContext, Session, SessionId, TurnEndReason, UserMessage } from '@deepseek-ai/dsh-session'
 import { canonicalHeader, headerEquals } from '@deepseek-ai/dsh-session'
 import { joinContextSections, renderContextSections, renderPrompt } from '@deepseek-ai/dsh-system-prompt'
@@ -77,6 +78,9 @@ export class ReactLoopAgent implements Agent {
   private requestHeaderLogged = false
   private readonly runtimeContext: RuntimeContextProjection
 
+  /** The mounted sandbox-policy service; undefined in compositions without one. */
+  private sandboxPolicy?: SandboxPolicyService
+
   constructor(
     private loopCtx: Context,
     public readonly id: SessionId,
@@ -94,6 +98,9 @@ export class ReactLoopAgent implements Agent {
     this.scope = createScope(loopCtx, this)
     this.ctx = this.scope.ctx.extend({ agent: this })
     this.runtimeContext = new RuntimeContextProjection(this.ctx, session)
+    // Optional service: captured when the composition mounts a sandbox policy
+    // so requests can carry the session's effective file mode to adapters.
+    this.ctx.inject(['sandboxPolicy'], (scope) => { this.sandboxPolicy = scope.sandboxPolicy })
   }
 
   get status(): AgentStatus {
@@ -509,6 +516,7 @@ export class ReactLoopAgent implements Agent {
       ...header.tools !== undefined ? { tools: header.tools } : {},
       sessionId: this.session.id,
       ...session.header.cwd === undefined ? {} : { cwd: session.header.cwd },
+      ...this.sandboxPolicy === undefined ? {} : { sandboxMode: this.sandboxPolicy.resolve({ session }).mode },
       signal,
     }))
     return { request, ...preparedCall === undefined ? {} : { preparedCall } }
