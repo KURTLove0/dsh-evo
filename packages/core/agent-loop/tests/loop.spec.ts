@@ -256,7 +256,7 @@ describe('agent loop', () => {
     expect(request!.tools?.map(t => t.name)).toEqual(['noop'])
   })
 
-  it('resolves {{cwd}} from the agent session workspace (factory create with meta.cwd)', async () => {
+  it('resolves {{cwd}} from the agent session workspace and carries it on the request (factory create with meta.cwd)', async () => {
     const adapter = new MockAdapter([textResponse('ok')])
     const ctx = await harness(adapter, 'Working in {{cwd}}.')
     const handle = await ctx.agents.create({
@@ -270,6 +270,7 @@ describe('agent loop', () => {
     await waitForIdle(ctx, agent)
 
     expect(adapter.requests[0]!.system).toBe('You are an AI agent powered by DeepSeek Harness.\n\nWorking in /work/space.')
+    expect(adapter.requests[0]!.cwd).toBe('/work/space')
   })
 
   it('contains a strict-variable render failure: the turn errors, the loop keeps serving turns', async () => {

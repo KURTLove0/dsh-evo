@@ -373,6 +373,13 @@ export interface GenerateOptions {
   stop?: string[]
   signal?: AbortSignal
   /**
+   * Session working directory the adapter may map onto provider-side
+   * workspace context (a CLI's environment context, a provider's
+   * working-directory field). Absent on hand-built requests and auxiliary
+   * calls without a workspace.
+   */
+  cwd?: string
+  /**
    * Session identity stamped by the loop for request routing. Replay uses it
    * to separate cursors; adapters may map it to model-hidden transport metadata.
    */

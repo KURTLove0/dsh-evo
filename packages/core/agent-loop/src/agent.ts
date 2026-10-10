@@ -508,6 +508,7 @@ export class ReactLoopAgent implements Agent {
       ...header.system !== undefined ? { system: header.system } : {},
       ...header.tools !== undefined ? { tools: header.tools } : {},
       sessionId: this.session.id,
+      ...session.header.cwd === undefined ? {} : { cwd: session.header.cwd },
       signal,
     }))
     return { request, ...preparedCall === undefined ? {} : { preparedCall } }
