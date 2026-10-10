@@ -42,7 +42,7 @@ function normalize(text: string, root: string): string {
   return text
     .replaceAll(root, '{{root}}')
     .replace(/pid \d+/u, 'pid {{pid}}')
-    .replace(/127\.0\.0\.1:\d+/u, '127.0.0.1:{{port}}')
+    .replace(/127\.0\.0\.1:\d+/gu, '127.0.0.1:{{port}}')
 }
 
 describe.skipIf(!builtArtifactsExist)('dsh daemon lifecycle assembled snapshot', () => {
@@ -50,10 +50,13 @@ describe.skipIf(!builtArtifactsExist)('dsh daemon lifecycle assembled snapshot',
     const root = mkdtempSync(join(tmpdir(), 'dsh-daemon-snapshot-'))
     tempRoots.push(root)
 
+    // `--port 0` keeps the suite hermetic: the default port 3081 is
+    // machine-global, and a daemon running under the real harness home
+    // would otherwise fail this start.
     const stoppedTable = await daemon(root, ['status'])
     const stoppedJson = await daemon(root, ['status', '--output', 'json'])
-    const started = await daemon(root, ['start'])
-    const again = await daemon(root, ['start'])
+    const started = await daemon(root, ['start', '--port', '0'])
+    const again = await daemon(root, ['start', '--port', '0'])
     const stopped = await daemon(root, ['stop'])
     const stoppedAgain = await daemon(root, ['stop'])
 
@@ -103,7 +106,7 @@ describe.skipIf(!builtArtifactsExist)('dsh daemon lifecycle assembled snapshot',
     const root = mkdtempSync(join(tmpdir(), 'dsh-daemon-log-snapshot-'))
     tempRoots.push(root)
 
-    const started = await daemon(root, ['start'])
+    const started = await daemon(root, ['start', '--port', '0'])
     expect(started.exitCode).toBe(0)
     // The health answer races the startup line's flush into the log file;
     // wait for the line before tailing.
@@ -122,6 +125,36 @@ describe.skipIf(!builtArtifactsExist)('dsh daemon lifecycle assembled snapshot',
       {
         "exitCode": 0,
         "stdout": "dsh daemon: pid {{pid}}, sensing claude, codex every 15000ms, health on http://127.0.0.1:{{port}}/health",
+      }
+    `)
+  }, 60_000)
+
+  it('fails fast naming the bind refusal when the port is already owned', async () => {
+    const ownerRoot = mkdtempSync(join(tmpdir(), 'dsh-daemon-port-owner-'))
+    const contenderRoot = mkdtempSync(join(tmpdir(), 'dsh-daemon-port-contender-'))
+    tempRoots.push(ownerRoot, contenderRoot)
+
+    const started = await daemon(ownerRoot, ['start', '--port', '0'])
+    expect(started.exitCode).toBe(0)
+    const state = JSON.parse(readFileSync(join(ownerRoot, '.dsh', 'daemon', 'daemon.json'), 'utf8')) as { port: number }
+
+    const conflict = await daemon(contenderRoot, ['start', '--port', String(state.port)])
+    const stopped = await daemon(ownerRoot, ['stop'])
+
+    expect({
+      conflict: { exitCode: conflict.exitCode, stderr: normalize(conflict.stderr, contenderRoot) },
+      stopped: { exitCode: stopped.exitCode, stderr: stopped.stderr },
+    }).toMatchInlineSnapshot(`
+      {
+        "conflict": {
+          "exitCode": 1,
+          "stderr": "Daemon failed to start: dsh daemon: dsh-daemon: cannot bind 127.0.0.1:{{port}}: listen EADDRINUSE: address already in use 127.0.0.1:{{port}}
+      Logs: {{root}}/.dsh/daemon/daemon.log",
+        },
+        "stopped": {
+          "exitCode": 0,
+          "stderr": "Daemon stopped.",
+        },
       }
     `)
   }, 60_000)

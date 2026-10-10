@@ -5,7 +5,7 @@
  */
 
 import { spawn as spawnChild } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, rmSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -63,7 +63,7 @@ describe('startDaemon', () => {
 
   it('spawns the detached child with daemon env and resolves once health answers', async () => {
     const calls: unknown[] = []
-    const child = { unref: vi.fn() }
+    const child = { unref: vi.fn(), exitCode: null, signalCode: null }
     const spawn = ((...args: unknown[]) => {
       calls.push(args)
       return child
@@ -107,13 +107,66 @@ describe('startDaemon', () => {
   })
 
   it('times out when the child never reports healthy', async () => {
-    const child = { unref: vi.fn() }
+    const child = { unref: vi.fn(), exitCode: null, signalCode: null }
     const spawn = (() => child) as never
     const result = await startDaemon(
       { binPath: '/cli/bin.js', port: 3081, intervalMs: 15_000 },
       { spawn, probe: () => Promise.resolve(stoppedProbe), sleep: noSleep, startupTimeoutMs: 250 },
     )
     expect(result).toEqual({ ok: false, reason: 'start-timeout', logPath: daemonLogPath() })
+  })
+
+  it('fails fast quoting the log line when the child dies before reporting healthy', async () => {
+    const refusal = 'dsh daemon: dsh-daemon: cannot bind 127.0.0.1:3081: listen EADDRINUSE: address already in use 127.0.0.1:3081'
+    await writeFile(daemonLogPath(), `${refusal}\n`)
+    const child = { unref: vi.fn(), exitCode: null as number | null, signalCode: null as string | null }
+    const spawn = (() => child) as never
+    const sleep = (): Promise<void> => {
+      child.exitCode = 1
+      return Promise.resolve()
+    }
+    const result = await startDaemon(
+      { binPath: '/cli/bin.js', port: 3081, intervalMs: 15_000 },
+      { spawn, probe: () => Promise.resolve(stoppedProbe), sleep },
+    )
+    expect(result).toEqual({ ok: false, reason: 'child-exited', logPath: daemonLogPath(), message: refusal })
+  })
+
+  it('falls back to the exit facts when the dying child left no log line', async () => {
+    const exited = { unref: vi.fn(), exitCode: null as number | null, signalCode: null as string | null }
+    const killed = { unref: vi.fn(), exitCode: null as number | null, signalCode: null as string | null }
+
+    // The log vanished before the exit was noticed: the message carries the
+    // exit code alone.
+    const vanished = await startDaemon(
+      { binPath: '/cli/bin.js', port: 3081, intervalMs: 15_000 },
+      {
+        spawn: (() => exited) as never,
+        probe: () => Promise.resolve(stoppedProbe),
+        sleep: (): Promise<void> => {
+          rmSync(daemonLogPath(), { force: true })
+          exited.exitCode = 1
+          return Promise.resolve()
+        },
+      },
+    )
+    expect(vanished).toEqual({ ok: false, reason: 'child-exited', logPath: daemonLogPath(), message: 'the daemon process exited with code 1 before reporting healthy' })
+
+    // A blank log and a signal death cover the no-line paths of the same
+    // fallback.
+    await writeFile(daemonLogPath(), '\n \n')
+    const signalled = await startDaemon(
+      { binPath: '/cli/bin.js', port: 3081, intervalMs: 15_000 },
+      {
+        spawn: (() => killed) as never,
+        probe: () => Promise.resolve(stoppedProbe),
+        sleep: (): Promise<void> => {
+          killed.signalCode = 'SIGKILL'
+          return Promise.resolve()
+        },
+      },
+    )
+    expect(signalled).toEqual({ ok: false, reason: 'child-exited', logPath: daemonLogPath(), message: 'the daemon process exited on signal SIGKILL before reporting healthy' })
   })
 })
 

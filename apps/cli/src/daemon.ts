@@ -173,6 +173,10 @@ async function startDaemonFlow(invocation: DaemonInvocation, operations: DaemonC
     process.stderr.write(`Daemon failed to start: ${result.message}\n`)
     return 1
   }
+  if (result.reason === 'child-exited') {
+    process.stderr.write(`Daemon failed to start: ${result.message}\nLogs: ${result.logPath}\n`)
+    return 1
+  }
   process.stderr.write(`Daemon may not have started. Check logs: ${result.logPath}\n`)
   return 1
 }

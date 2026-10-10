@@ -54,6 +54,7 @@ export type StartDaemonResult =
   | { ok: true; pid: number; logPath: string }
   | { ok: false; reason: 'already-running'; pid: number }
   | { ok: false; reason: 'spawn-failed'; logPath: string; message: string }
+  | { ok: false; reason: 'child-exited'; logPath: string; message: string }
   | { ok: false; reason: 'start-timeout'; logPath: string }
 
 /** Outcome of one {@link stopDaemon} attempt. */
@@ -67,11 +68,36 @@ const defaultSleep = (ms: number): Promise<void> => new Promise<void>((resolve) 
 const defaultKill = (pid: number): void => { process.kill(pid) }
 
 /**
+ * Read the daemon log's last non-empty line — a dead child's dying words,
+ * such as its bind refusal.
+ * @param logPath - the daemon log path.
+ * @returns the last non-empty line, or `undefined` when the log is absent,
+ * unreadable, or blank.
+ */
+function lastLogLine(logPath: string): string | undefined {
+  let content: string
+  try {
+    content = readFileSync(logPath, 'utf8')
+  } catch {
+    // An unreadable log (deleted, or its permissions changed) leaves the
+    // child's exit facts as the only message.
+    return undefined
+  }
+  const lines = content.split('\n')
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]?.trim()
+    if (line !== undefined && line !== '') return line
+  }
+  return undefined
+}
+
+/**
  * Start the daemon in the background: refuse a live one, spawn this CLI as
  * `daemon start --foreground` detached with output to the log file, release
- * it, and wait for its health answer. A start that never reports healthy is
- * left running — its log names the failure, matching the multica daemon's
- * supervisor stance.
+ * it, and wait for its health answer. A child that dies before answering
+ * fails the start at once, quoting its log's last line; one that stays
+ * silent for the whole budget is left running — its log names the failure,
+ * matching the multica daemon's supervisor stance.
  * @param options - bin path, port, and probe interval.
  * @param internals - spawn/probe/clock seams.
  * @returns the spawn outcome.
@@ -111,6 +137,17 @@ export async function startDaemon(options: StartDaemonOptions, internals: Daemon
   const deadline = Date.now() + (internals.startupTimeoutMs ?? 10_000)
   while (Date.now() < deadline) {
     await sleep(200)
+    if (child.exitCode !== null || child.signalCode !== null) {
+      const death = child.exitCode !== null
+        ? `with code ${child.exitCode}`
+        : `on signal ${child.signalCode}`
+      return {
+        ok: false,
+        reason: 'child-exited',
+        logPath,
+        message: lastLogLine(logPath) ?? `the daemon process exited ${death} before reporting healthy`,
+      }
+    }
     const attempt = await probe({ timeoutMs: 500 })
     if (attempt.running) return { ok: true, pid: attempt.health.pid, logPath }
   }

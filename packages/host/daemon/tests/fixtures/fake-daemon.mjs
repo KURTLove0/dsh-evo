@@ -40,6 +40,12 @@ const server = createServer((request, response) => {
   response.writeHead(404, { 'content-type': 'application/json' })
   response.end(JSON.stringify({ error: 'not-found' }))
 })
+server.on('error', (error) => {
+  // The real daemon logs its bind refusal and exits 1; mirror that shape so
+  // lifecycle tests can quote the refusal from the log.
+  console.error(`fake-daemon: cannot bind 127.0.0.1:${process.env.DSH_DAEMON_PORT}: ${error.message}`)
+  process.exit(1)
+})
 server.listen(Number(process.env.DSH_DAEMON_PORT ?? '0'), '127.0.0.1', () => {
   mkdirSync(stateDir, { recursive: true })
   writeFileSync(statePath, JSON.stringify({

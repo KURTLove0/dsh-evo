@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-10-10-daemon-start-fails-fast-on-child-death.md
+2026-10-10-daemon-start-fails-fast-on-child-death.md: 9e884c6d3d3b6690872b69023ddffd7dbb6326a9
+2026-10-10-daemon-start-fails-fast-on-child-death.zh.md: d9f2f9d023cbee01f44b2b2090df0d4c15896d2e

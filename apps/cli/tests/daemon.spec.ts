@@ -123,6 +123,12 @@ describe('runDaemonCommand', () => {
     await expect(runDaemonCommand(invocation({ command: 'start' }), spawnFailed.operations)).resolves.toBe(1)
     expect(stderr).toHaveBeenCalledWith('Daemon failed to start: ENOEXEC\n')
 
+    const childExited = stubOperations({
+      start: (() => Promise.resolve({ ok: false, reason: 'child-exited', logPath: '/x/daemon.log', message: 'dsh-daemon: cannot bind 127.0.0.1:3081: listen EADDRINUSE' })) as never,
+    })
+    await expect(runDaemonCommand(invocation({ command: 'start' }), childExited.operations)).resolves.toBe(1)
+    expect(stderr).toHaveBeenCalledWith('Daemon failed to start: dsh-daemon: cannot bind 127.0.0.1:3081: listen EADDRINUSE\nLogs: /x/daemon.log\n')
+
     const timeout = stubOperations({
       start: (() => Promise.resolve({ ok: false, reason: 'start-timeout', logPath: '/x/daemon.log' })) as never,
     })
