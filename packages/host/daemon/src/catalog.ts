@@ -1,8 +1,7 @@
 /**
- * Fixed local-runtime probe catalog for the daemon: the local-CLI runtimes
- * the harness can route to, sensed on an interval and published over the
- * daemon's health endpoint. A new local-CLI adapter extends this list in the
- * same change that teaches the harness to route to it.
+ * Fixed local-runtime probe catalog for the daemon: local CLI executables
+ * used by model and subagent providers, sensed on an interval and published
+ * over the daemon's health endpoint.
  * @module @deepseek-ai/dsh-daemon/catalog
  */
 
@@ -14,10 +13,11 @@ export interface DaemonCatalogEntry {
   label: string
 }
 
-/** The local-CLI runtimes the harness can route to today. */
+/** Local CLI executables used by the harness's model and subagent providers. */
 export const DAEMON_PROBE_CATALOG: readonly DaemonCatalogEntry[] = [
   { command: 'claude', label: 'Claude CLI' },
   { command: 'codex', label: 'Codex CLI' },
+  { command: 'cursor-agent', label: 'Cursor CLI' },
 ]
 
 /** Default loopback port the daemon binds when start carries no override (the dsh web UI's 3080 neighbor). */

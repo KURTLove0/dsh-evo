@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-本机运行时感知守护进程，对齐 multica daemon 的模型：一个长驻后台进程感知本机安装了哪些本地 CLI 运行时，并通过 loopback 健康端点发布报告，使各配置面由同一个属主回答「这个运行时在不在」，而不是每次页面加载各自探测。daemon 按固定清单（`claude`、`codex`——harness 目前可路由的本地 CLI）启动即探、随后按周期探测，最新报告保存在内存中，由 127.0.0.1 上的 `GET /health` 提供；`POST /shutdown` 请求其退出。路由激活仍由各应用 boot 时的探测负责（llm-claude-cli 的「识别即激活」不受影响）——daemon 的报告只喂配置面，绝不参与路由。
+本机运行时感知守护进程，对齐 multica daemon 的模型：一个长驻后台进程感知本机安装了哪些本地 CLI 运行时，并通过 loopback 健康端点发布报告，使各配置面由同一个属主回答「这个运行时在不在」，而不是每次页面加载各自探测。daemon 按固定清单（`claude`、`codex`、`cursor-agent`）启动即探、随后按周期探测，最新报告保存在内存中，由 127.0.0.1 上的 `GET /health` 提供；`POST /shutdown` 请求其退出。前两项服务于模型路由，`cursor-agent` 服务于可选的 Cursor subagent provider。路由激活仍由各应用负责；daemon 的报告供配置面与 CLI 状态读取，不参与路由。
 
 进程模型是 CLI 自重生：`dsh daemon start` 把同一个 bin 以 `daemon start --foreground` 重新拉起，detached 运行，stdout/stderr 追加到 `<harness home>/daemon/daemon.log`，并等待首个健康应答；子进程在应答前死亡则启动立即失败，引用日志最后一行——bind 拒绝会写明端口与占用者的错误。daemon 开始服务后以原子写、owner-only 权限发布 `<harness home>/daemon/daemon.json`（pid、port、version、startedAt）；文档缺失或不可读是唯一的「无 daemon」信号——消费方绝不猜端口。健康应答在读取时经 zod schema 校验，因此指向外来服务的陈旧文档会降级为「未运行」，而不是错误的存在性答案。信号与 `/shutdown` 共享同一条拆卸路径（停循环、关监听、清状态）；在已有 daemon 存活时重复 start 会被拒绝，stop 则从优雅端点请求回落为普通 SIGTERM。
 

@@ -1,0 +1,29 @@
+{
+  "name": "@deepseek-ai/dsh-subagent-cursor",
+  "description": "Optional Cursor CLI subagent Bundle over the ACP provider",
+  "version": "0.1.1-rc.1",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/subagent/subagent-cursor"
+  },
+  "type": "module",
+  "files": ["lib/index.js", "lib/invariant.js", "cordis.patch.yml", "lib/types/**/*.d.ts"],
+  "license": "MIT",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
+    "./invariant": { "types": "./lib/types/invariant.d.ts", "default": "./lib/invariant.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": { "@deepseek-ai/cordis": "workspace:^" },
+  "dependencies": {
+    "@deepseek-ai/dsh-invariants": "workspace:^",
+    "@deepseek-ai/dsh-subagent-acp": "workspace:^"
+  },
+  "devDependencies": { "@deepseek-ai/cordis": "workspace:^" },
+  "dsh": { "bundle": { "patch": "./cordis.patch.yml" } }
+}

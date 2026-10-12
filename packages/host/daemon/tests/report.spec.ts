@@ -10,6 +10,11 @@ import { probeRuntimes, startProbeLoop, type ProbeLoopTimers } from '../src/repo
 
 describe('probeRuntimes', () => {
   it('probes every catalog entry in order with one shared timestamp', () => {
+    expect(DAEMON_PROBE_CATALOG).toEqual([
+      { command: 'claude', label: 'Claude CLI' },
+      { command: 'codex', label: 'Codex CLI' },
+      { command: 'cursor-agent', label: 'Cursor CLI' },
+    ])
     const seen: string[] = []
     const spawn = ((command: string, args: readonly string[]) => {
       seen.push(args[0] ?? '')

@@ -28,6 +28,7 @@ const BASE_PATCH = join(REPO_ROOT, 'packages/bundle/base/cordis.patch.yml')
 const WEB_PATCH = join(REPO_ROOT, 'packages/bundle/web-app/cordis.patch.yml')
 const CODEX_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-codex')
 const CLAUDE_CODE_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-claude-code')
+const CURSOR_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-cursor')
 /** The installation anchor whose dependency surface the preset module fallback mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
 const MINIMAL_PROMPT = 'You are a helpful software engineer assistant.'
@@ -457,8 +458,8 @@ describe('the shipped Web composition', () => {
 })
 
 describe('product Bundle and user-preset intersection', () => {
-  const presetIds = ['products-none', 'products-codex', 'products-claude', 'products-both'] as const
-  type Product = 'codex' | 'claude-code'
+  const presetIds = ['products-none', 'products-codex', 'products-claude', 'products-both', 'products-cursor', 'products-all'] as const
+  type Product = 'codex' | 'claude-code' | 'cursor'
   type PresetId = typeof presetIds[number]
 
   async function bootProducts(installed: readonly Product[]): Promise<Context> {
@@ -469,23 +470,30 @@ describe('product Bundle and user-preset intersection', () => {
     await writeFile(settingsFile, '{}\n')
     for (const id of presetIds) {
       let composition = standard
-      if (id === 'products-codex' || id === 'products-both') {
+      if (id === 'products-codex' || id === 'products-both' || id === 'products-all') {
         composition = enablePresetTool(composition, 'tool-subagent-codex')
       }
-      if (id === 'products-claude' || id === 'products-both') {
+      if (id === 'products-claude' || id === 'products-both' || id === 'products-all') {
         composition = enablePresetTool(composition, 'tool-subagent-claude-code')
+      }
+      if (id === 'products-cursor' || id === 'products-all') {
+        composition = enablePresetTool(composition, 'tool-subagent-cursor')
       }
       const directory = join(userRoot, id)
       await mkdir(directory, { recursive: true })
       await writeFile(join(directory, 'agent.cordis.yml'), composition)
     }
     const packageDir = (product: Product): string => (
-      product === 'codex' ? CODEX_PACKAGE_DIR : CLAUDE_CODE_PACKAGE_DIR
+      product === 'codex' ? CODEX_PACKAGE_DIR
+        : product === 'claude-code' ? CLAUDE_CODE_PACKAGE_DIR
+          : CURSOR_PACKAGE_DIR
     )
     const packageName = (product: Product): string => (
       product === 'codex'
         ? '@deepseek-ai/dsh-subagent-codex'
-        : '@deepseek-ai/dsh-subagent-claude-code'
+        : product === 'claude-code'
+          ? '@deepseek-ai/dsh-subagent-claude-code'
+          : '@deepseek-ai/dsh-subagent-cursor'
     )
     return await bootWeb(settingsFile, [
       {
@@ -512,12 +520,16 @@ describe('product Bundle and user-preset intersection', () => {
       'products-codex': ['codex'],
       'products-claude': ['claude-code'],
       'products-both': ['codex', 'claude-code'],
+      'products-cursor': ['cursor'],
+      'products-all': ['codex', 'claude-code', 'cursor'],
     }
     const scenarios: Array<{ installed: Product[]; presets: readonly PresetId[] }> = [
       { installed: [], presets: ['products-both'] },
       { installed: ['codex'], presets: ['products-both'] },
       { installed: ['claude-code'], presets: ['products-both'] },
       { installed: ['codex', 'claude-code'], presets: presetIds },
+      { installed: ['cursor'], presets: ['products-none', 'products-cursor', 'products-all'] },
+      { installed: ['codex', 'claude-code', 'cursor'], presets: ['products-all'] },
     ]
 
     for (const { installed, presets } of scenarios) {
@@ -525,7 +537,7 @@ describe('product Bundle and user-preset intersection', () => {
       const spawn = vi.spyOn(productCtx.subprocess, 'spawn')
       try {
         expect(productCtx.subagents.list()
-          .filter(name => name === 'codex' || name === 'claude-code')
+          .filter(name => name === 'codex' || name === 'claude-code' || name === 'cursor')
           .sort())
           .toEqual([...installed].sort())
         for (const id of presets) {
@@ -536,10 +548,11 @@ describe('product Bundle and user-preset intersection', () => {
           try {
             const productTools = enabledByPreset[id]
               .filter(product => installed.includes(product))
-              .map(product => product === 'codex' ? 'subagent_codex' : 'subagent_claude_code')
+              .map(product => product === 'codex' ? 'subagent_codex'
+                : product === 'claude-code' ? 'subagent_claude_code' : 'subagent_cursor')
               .sort()
             const tools = toolNames(productCtx, handle.agent)
-            expect(tools.filter(name => name === 'subagent_codex' || name === 'subagent_claude_code'))
+            expect(tools.filter(name => name === 'subagent_codex' || name === 'subagent_claude_code' || name === 'subagent_cursor'))
               .toEqual(productTools)
             expect(tools).toEqual(expect.arrayContaining(['job_kill', 'job_list', 'job_output']))
             for (const productTool of productTools) {

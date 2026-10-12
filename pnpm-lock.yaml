@@ -7809,6 +7809,19 @@ importers:
         specifier: workspace:^
         version: link:../../subprocess/subprocess-local
 
+  packages/subagent/subagent-cursor:
+    dependencies:
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-subagent-acp':
+        specifier: workspace:^
+        version: link:../subagent-acp
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+
   packages/subagent/subagent-dsh-sdk:
     dependencies:
       '@deepseek-ai/dsh-invariants':

@@ -1,0 +1,9 @@
+# Cursor runs as an external ACP child. A Preset grants its delegation tool separately.
+- insert:
+    - id: subagent-cursor
+      name: '@deepseek-ai/dsh-subagent-cursor'
+      config:
+        providerName: cursor
+        command: cursor-agent
+        args: [acp]
+        permission: reject
