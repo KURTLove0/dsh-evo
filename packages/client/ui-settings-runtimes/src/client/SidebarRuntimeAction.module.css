@@ -1,0 +1,119 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.trigger {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  width: 100%;
+  height: 39px;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.trigger[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 23%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent);
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
+.triggerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 160ms var(--ds-ease-in-out);
+}
+
+.trigger[aria-expanded='true'] .chevron {
+  transform: rotate(90deg);
+}
+
+.rail .trigger {
+  align-self: flex-start;
+  width: 36px;
+  height: 36px;
+  margin: 0 0 8px;
+  padding: 0;
+  justify-content: center;
+}
+
+.panel {
+  position: fixed;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 470px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 16px;
+  background: var(--dsw-specific-menu);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: var(--dsw-shadow-lv3);
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.panelActions {
+  float: right;
+  display: flex;
+  gap: 4px;
+  margin: -4px -4px 0 8px;
+}
+
+.panelActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.panelActions button:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.panelActions button:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron { transition: none; }
+}

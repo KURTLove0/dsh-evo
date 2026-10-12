@@ -1,5 +1,3 @@
-/* Trigger geometry mirrors the sidebar shell's New Session button so the two
-   read as siblings in both column states (wide row / 56px rail). */
 .root {
   position: relative;
   display: flex;
@@ -10,15 +8,15 @@
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 38px;
-  padding: 8px 16px;
-  margin: 0 2px 8px;
+  justify-content: flex-start;
+  gap: 11px;
+  height: 39px;
+  padding: 8px 11px;
+  margin: 0;
   box-sizing: border-box;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: var(--dsw-alias-button-elevated-fill);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   font-weight: 500;
@@ -28,29 +26,51 @@
 }
 
 .trigger:hover {
-  background: var(--dsw-alias-button-floating-hover);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.trigger[aria-expanded='true'] {
+  border-color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 23%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 11%, transparent);
+  color: var(--dsw-alias-state-business-primary);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
 }
 
 .triggerLabel {
+  flex: 1;
+  text-align: left;
   max-width: 200px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* Rail state: the sidebar's own collapsed class is on an ancestor. */
-:global(.collapsed) .trigger {
+.chevron {
+  flex: none;
+  color: var(--dsw-alias-label-tertiary);
+  transition: transform 160ms var(--ds-ease-in-out);
+}
+
+.trigger[aria-expanded='true'] .chevron {
+  transform: rotate(90deg);
+}
+
+.rail .trigger {
   align-self: flex-start;
   width: 36px;
   height: 36px;
   padding: 0;
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   gap: 0;
   border-color: transparent;
   background: transparent;
 }
 
-:global(.collapsed) .trigger:hover {
+.rail .trigger:hover {
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
@@ -62,15 +82,15 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  width: 360px;
+  gap: 15px;
+  width: 390px;
   max-width: min(420px, calc(100vw - 96px));
-  max-height: min(460px, calc(100vh - 60px));
+  max-height: min(540px, calc(100vh - 32px));
   margin: 0;
-  padding: 10px;
+  padding: 18px;
   overflow: auto;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--dsw-specific-menu);
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
@@ -80,24 +100,24 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
 .formLabel,
 .listLabel {
-  color: var(--dsw-alias-label-secondary);
-  font-size: 12px;
-  font-weight: 510;
-  line-height: 18px;
+  color: var(--dsw-alias-label-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
 }
 
 .textarea {
   box-sizing: border-box;
   width: 100%;
-  padding: 6px 8px;
+  padding: 10px 12px;
   resize: vertical;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--dsw-alias-bg-layer-1);
   color: var(--dsw-alias-label-primary);
   font-size: 13px;
@@ -117,11 +137,11 @@
 
 .primary {
   align-self: flex-end;
-  padding: 4px 12px;
+  padding: 7px 14px;
   border: 0;
-  border-radius: 7px;
-  background: var(--dsw-alias-fill-l2);
-  color: var(--dsw-alias-label-primary);
+  border-radius: 8px;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
   font-size: 12px;
   line-height: 18px;
   cursor: pointer;
@@ -129,7 +149,7 @@
 
 .primary:hover:not(:disabled),
 .primary:focus-visible {
-  background: var(--dsw-alias-fill-l3);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 88%, black);
 }
 
 .primary:disabled {
@@ -140,7 +160,9 @@
 .listSection {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
 }
 
 .list {

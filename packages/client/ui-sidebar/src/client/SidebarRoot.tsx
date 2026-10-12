@@ -187,9 +187,10 @@ export function SidebarRoot({
         </button>
       </Tooltip>
 
-      {/* First-level module entries sit as New Session's siblings; empty by
-          default, so an ordinary deployment renders nothing here. */}
-      {renderSlot('sidebar.session.action', { wide })}
+      <nav className={css.modules} aria-label={t('modules')}>
+        {wide && <span className={css.moduleHeading}>{t('modules')}</span>}
+        <div className={css.moduleItems}>{renderSlot('sidebar.session.action', { wide })}</div>
+      </nav>
 
       {/* The browsing region fills the column between the controls and the
           foot in both states; its rail icon column rides the same slot. */}

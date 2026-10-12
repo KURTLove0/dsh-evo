@@ -13,7 +13,7 @@
   height: 100%;
   padding: 6px var(--dsh-sidebar-inline-padding);
   box-sizing: border-box;
-  background: var(--dsw-specific-sidebar-fill);
+  background: color-mix(in srgb, var(--dsw-specific-sidebar-fill) 94%, var(--dsw-alias-state-business-primary));
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   /* The sidebar is elevated above the conversation surface, so a revealed
@@ -95,7 +95,8 @@
   gap: 8px;
   height: 60px;
   padding: 8px 0 8px 4px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -105,6 +106,7 @@
   padding: 0;
   margin-bottom: 12px;
   justify-content: flex-start;
+  border-bottom: 0;
 }
 
 /* Brand group (figma I133:7632): the full wordmark rides the text ink
@@ -230,16 +232,16 @@
   flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 38px;
-  padding: 8px 16px;
-  margin: 0 2px 8px;
+  justify-content: flex-start;
+  gap: 10px;
+  height: 42px;
+  padding: 8px 13px;
+  margin: 0 0 18px;
   box-sizing: border-box;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  background: var(--dsw-alias-button-elevated-fill);
-  color: var(--dsw-alias-label-primary);
+  border: 1px solid var(--dsw-alias-state-business-primary);
+  border-radius: 11px;
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-inverted);
   font-size: 14px;
   font-weight: 500;
   line-height: 22px;
@@ -248,7 +250,12 @@
 }
 
 .newSession:hover {
-  background: var(--dsw-alias-button-floating-hover);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 88%, black);
+}
+
+.newSession:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
 }
 
 .collapsed .newSession {
@@ -260,6 +267,7 @@
   gap: 0;
   border-color: transparent;
   background: transparent;
+  color: var(--dsw-alias-label-primary);
 }
 
 .collapsed .newSession:hover {
@@ -270,6 +278,38 @@
   max-width: 200px;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.modules {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.modules:not(:has(.moduleItems > *)) {
+  display: none;
+}
+
+.moduleHeading {
+  padding: 0 10px 3px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.moduleItems {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.collapsed .modules {
+  margin-bottom: 4px;
 }
 
 .collapsed .newSessionLabel {

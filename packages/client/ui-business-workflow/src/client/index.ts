@@ -56,6 +56,7 @@ export function apply(ctx: ClientContext): void {
   ctx.slots.inject('sidebar.session.action', () => ctx.slots.register({
     name: 'sidebar.session.action',
     id: 'business-workflow',
+    order: 10,
     locale: NS,
     inject: (): SidebarWorkflowActionInjected => ({
       startWorkflow: starter.start,

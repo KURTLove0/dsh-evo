@@ -78,6 +78,9 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
     <div className={styles['section']}>
       <h2 className={styles['title']}>{t('title')}</h2>
       <p className={styles['intro']}>{t('intro')}</p>
+      {state.status === 'idle' || state.status === 'loading'
+        ? <p className={styles['empty']} role="status">{t('loading')}</p>
+        : null}
       {state.status === 'ready' && !state.daemonRunning ? <DaemonHint t={t} /> : null}
       {state.rows.length === 0 && state.status === 'ready'
         ? <p className={styles['empty']}>{t('empty')}</p>

@@ -9,7 +9,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconBranchOutline16, StateDot, Tooltip, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBranchOutline16, IconChevronRightOutline14, StateDot, Tooltip, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostObservable, PropsLocale, PropsRuntime, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { BusinessWorkflowStage } from '@deepseek-ai/dsh-business-workflow/types'
 // Type-only: pulls ui-sidebar's SlotMap merge ('sidebar.session.action') in.
@@ -158,11 +158,12 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
     >
       <IconBranchOutline16 size={wide ? 14 : 18} />
       {wide ? <span className={css.triggerLabel}>{t('action.entry')}</span> : null}
+      {wide ? <IconChevronRightOutline14 className={css.chevron} size={14} /> : null}
     </button>
   )
 
   return (
-    <div ref={rootRef} className={css.root} onKeyDown={onKeyDown}>
+    <div ref={rootRef} className={wide ? css.root : `${css.root} ${css.rail}`} onKeyDown={onKeyDown}>
       {wide ? trigger : <Tooltip label={t('action.entry')} delayMs={500}>{trigger}</Tooltip>}
       {open
         ? createPortal(

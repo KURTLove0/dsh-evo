@@ -9,12 +9,14 @@ import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the shell's SlotMap merge (the 'settings.section' entry).
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 // Type-only: pulls the locale plugin's Context merge (ctx.locale).
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the ctx.remote merge and the forwarded-event key face
 // (settings/provider topology invalidations ride the allowlist).
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { RuntimesSection } from './RuntimesSection.tsx'
+import { SidebarRuntimeAction } from './SidebarRuntimeAction.tsx'
 import type { RuntimesSectionInjected } from './RuntimesSection.tsx'
 import { RuntimesSettingsStore } from './store.ts'
 import { en, zh, type RuntimesKey } from './locales.ts'
@@ -92,4 +94,12 @@ export function apply(ctx: ClientContext): void {
     label: () => t('nav'),
     inject: injected,
   }, RuntimesSection))
+
+  ctx.slots.inject('sidebar.session.action', () => ctx.slots.register({
+    name: 'sidebar.session.action',
+    id: 'runtimes',
+    order: 20,
+    locale: NS,
+    inject: injected,
+  }, SidebarRuntimeAction))
 }
