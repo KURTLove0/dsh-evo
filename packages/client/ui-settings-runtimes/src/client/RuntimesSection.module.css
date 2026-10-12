@@ -70,9 +70,14 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .rowName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
   line-height: 22px;
   font-weight: 500;
@@ -82,7 +87,10 @@
 /* The route id reads as an annotation on the name: caption size, secondary
    label tone, and mono rhythm, so it never competes with the runtime name. */
 .rowRoute {
-  flex: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 11px;
   line-height: 16px;
   font-family: var(--ds-font-family-code);
@@ -152,12 +160,14 @@
 
 .modelItem {
   display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* A model chip: mono id on a module fill, the same vocabulary the composer's
    model picker uses for provider-owned model ids. */
 .modelChip {
-  max-width: 260px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -219,9 +229,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .daemonHintCommandText {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   padding: 1px 8px;
   border-radius: 4px;
   background: var(--dsw-alias-bg-module-platform);

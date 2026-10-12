@@ -2,6 +2,11 @@
  * plugin before the loader roster activates. */
 
 html,
+body {
+  overflow-x: clip;
+}
+
+html,
 body,
 #root {
   height: 100%;

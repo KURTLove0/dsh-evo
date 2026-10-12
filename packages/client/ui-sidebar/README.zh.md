@@ -8,7 +8,7 @@
 
 New Session 会启动运行时的页面局部前端 Session Intent。运行时优先使用作用域操作明确指定的 Workspace，否则使用当前 Session 所属 Workspace，再否则使用最近活跃 Workspace；一个 Workspace 都没有时则清空选择，进入空白 New Session 页面。Workspace 专属控件与共享选择器由 ui-workspace 持有。
 
-展开的侧边栏将一级 `sidebar.session.action` 入口放在带边框的「工作台」分区中。「新会话」仍是上方的主要操作；分隔线将模块导航与下方的 Workspace、Session 浏览器区分开。收起轨道保持相同的模块顺序和按钮可访问名称，但不显示分区标题和边框。Web 页面与桌面外壳共用这些样式。
+展开的侧边栏将一级 `sidebar.session.action` 入口放在无卡片边框的「工作台」分区中。「新会话」仍是上方的主要操作；分隔线将模块导航与下方的 Workspace、Session 浏览器区分开。收起轨道保持相同的模块顺序和按钮可访问名称，但不显示分区标题。品牌按钮与侧边栏收起按钮在键盘聚焦时显示清晰的焦点环。Web 页面与桌面外壳共用这些样式。
 
 `SidebarRootComponentProps` 组合布局 owner share、全局 `useSessions` 和 `useWorkspaces` 钩子、已声明的品牌、`sidebar.session.action`、`sidebar.workspaces` 与 `sidebar.settings` 子 slot，以及注入的 `startSession` 与侧边栏切换回调。`sidebar.session.action` 承载与「新会话」并列的一级模块入口（默认为空）。这里没有插件 store。
 

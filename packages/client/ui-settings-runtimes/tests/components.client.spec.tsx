@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
 import { DAEMON_INSTALL_COMMAND, DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
+import { SidebarRuntimeAction } from '../src/client/SidebarRuntimeAction.tsx'
 import type { RuntimesSectionInjected } from '../src/client/RuntimesSection.tsx'
 import { RuntimesSettingsStore } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
@@ -152,6 +153,7 @@ describe('RuntimesSection', () => {
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}
     />)
+    expect(screen.getByRole('heading', { name: en.title })).toBeTruthy()
     expect(screen.getByText(/directory down/)).toBeTruthy()
     fireEvent.click(screen.getByText(en.retry))
     await screen.findByText('Claude CLI')
@@ -167,6 +169,27 @@ describe('RuntimesSection', () => {
       t={t}
     />)
     await screen.findByText('Claude CLI')
+  })
+})
+
+describe('SidebarRuntimeAction', () => {
+  it('names the side panel and returns focus to its trigger after Escape', () => {
+    const controller = new RuntimesSettingsStore(scriptedFace())
+    render(<SidebarRuntimeAction
+      wide
+      useSessions={(() => undefined) as never}
+      useWorkspaces={(() => undefined) as never}
+      controller={controller}
+      useSnapshot={bindSnapshotSelector(controller.store)}
+      t={t}
+    />)
+    const trigger = screen.getByRole('button', { name: en.nav })
+    fireEvent.click(trigger)
+    const panel = screen.getByRole('dialog', { name: en.title })
+    expect(panel.querySelector('h2')?.textContent).toBe(en.title)
+    fireEvent.keyDown(panel, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: en.title })).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 })
 

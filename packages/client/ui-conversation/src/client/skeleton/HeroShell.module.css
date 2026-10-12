@@ -23,18 +23,17 @@
   overflow: visible;
 }
 
-/* figma 34:10411: fish + title, gap 10, centered; 26/32 wt500. The preview
-   badge is a product addition outside that source: a mono superscript pill
-   riding the title's top-right. */
+/* Fish, title, and preview badge share one centered row. The title scales
+   within the available column width; the badge remains a small annotation. */
 .headline {
   display: grid;
   grid-template-columns: 34px auto auto;
   column-gap: 10px;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
-  line-height: 32px;
-  font-weight: 500;
+  font-size: clamp(24px, 2.4vw, 30px);
+  line-height: 1.25;
+  font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
 
@@ -147,6 +146,12 @@
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
+.workspace:focus-visible,
+.modalInput:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
 /* Locked form (bound guidance state): a static echo — no hover feedback, no
    pointer affordance; label keeps full contrast. */
 .workspace:disabled {
@@ -170,8 +175,7 @@
 }
 
 /* Dialog field: 44 tall on the modal's 332 content column, r22, hairline
-   border, pad 14/7, 14/22 wt400 primary text, caption placeholder. Focus
-   keeps the resting border (design shows no focus ring). */
+   border, pad 14/7, 14/22 wt400 primary text, caption placeholder. */
 .modalInput {
   box-sizing: border-box;
   width: 100%;

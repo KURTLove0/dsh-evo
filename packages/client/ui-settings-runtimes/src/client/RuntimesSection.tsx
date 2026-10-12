@@ -36,7 +36,10 @@ export interface RuntimesSectionInjected {
  * Props delivered by the slot outlet: the inject face spread flat (the
  * renderer erases the share boundary at the render call).
  */
-export type RuntimesSectionProps = Partial<InjectFace<RuntimesSectionInjected>>
+export type RuntimesSectionProps = Partial<InjectFace<RuntimesSectionInjected>> & {
+  /** Hide the section heading when its parent panel already labels the dialog. */
+  showTitle?: boolean
+}
 
 type RuntimesSectionFace = InjectFace<RuntimesSectionInjected>
 
@@ -51,12 +54,12 @@ export function modelsCountCopy(template: string, count: number): string {
  * @returns the section, or null while the shell has not injected yet.
  */
 export function RuntimesSection(props: RuntimesSectionProps): ReactNode {
-  const { controller, useSnapshot, t } = props
+  const { controller, useSnapshot, t, showTitle = true } = props
   if (controller === undefined || useSnapshot === undefined || t === undefined) return null
-  return <Loaded injected={{ controller, useSnapshot, t }} />
+  return <Loaded injected={{ controller, useSnapshot, t }} showTitle={showTitle} />
 }
 
-function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
+function Loaded({ injected, showTitle }: { injected: RuntimesSectionFace; showTitle: boolean }): ReactNode {
   const { controller, t } = injected
   const state = injected.useSnapshot(snapshot => snapshot)
 
@@ -66,6 +69,7 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
     const errorText = state.error ?? ''
     return (
       <div className={styles['section']}>
+        {showTitle ? <h2 className={styles['title']}>{t('title')}</h2> : null}
         <p className={styles['error']}>{`${t('loadFailed')}: ${errorText}`}</p>
         <button type="button" className={styles['secondaryButton']} onClick={() => { void controller.load() }}>
           {t('retry')}
@@ -76,7 +80,7 @@ function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
 
   return (
     <div className={styles['section']}>
-      <h2 className={styles['title']}>{t('title')}</h2>
+      {showTitle ? <h2 className={styles['title']}>{t('title')}</h2> : null}
       <p className={styles['intro']}>{t('intro')}</p>
       {state.status === 'idle' || state.status === 'loading'
         ? <p className={styles['empty']} role="status">{t('loading')}</p>

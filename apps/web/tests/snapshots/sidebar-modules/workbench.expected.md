@@ -1,0 +1,10 @@
+- navigation "Workbench":
+  - heading "Workbench" [level=2]
+  - button "Business workflow":
+    - img
+    - text: Business workflow
+    - img
+  - button "Runtimes":
+    - img
+    - text: Runtimes
+    - img

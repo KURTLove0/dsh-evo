@@ -25,6 +25,14 @@
   --dsh-composer-dock-inset: 8px;
 }
 
+.root[data-phase='hero'] {
+  background: radial-gradient(
+    ellipse 58% 34% at 50% 45%,
+    color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent),
+    transparent 90%
+  ), var(--dsw-alias-bg-base);
+}
+
 .header {
   position: relative;
   flex: none;

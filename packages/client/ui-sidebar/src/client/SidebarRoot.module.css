@@ -13,7 +13,7 @@
   height: 100%;
   padding: 6px var(--dsh-sidebar-inline-padding);
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--dsw-specific-sidebar-fill) 88%, var(--dsw-alias-state-business-primary));
+  background: var(--dsw-specific-sidebar-fill);
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   /* The sidebar is elevated above the conversation surface, so a revealed
@@ -58,13 +58,14 @@
   from { opacity: 0; }
 }
 
-/* At the 150ms rail settle, the four upper controls enter from the former
+/* At the 150ms rail settle, the upper controls and modules enter from the former
    rail right edge over the remaining 150ms of the AppFrame track transition.
    The bottom-pinned settings seat shares their opacity timeline but stays
    horizontally fixed. Only a live collapse gets .railIn; a cold collapsed
    render stays static. */
 .railIn .iconButton,
 .railIn .newSession,
+.railIn .modules,
 .railIn .regionArea {
   animation: rail-in 150ms var(--ds-ease-in-out) backwards;
 }
@@ -124,6 +125,12 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
+}
+
+.brand:focus-visible,
+.iconButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
 }
 
 /* Mark and name are independent slots; the shell owns their shared baseline,
@@ -287,12 +294,9 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-bottom: 14px;
-  padding: 10px 7px 7px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 76%, transparent);
+  gap: 5px;
+  margin-bottom: 12px;
+  padding: 0 4px;
 }
 
 .modules:not(:has(.moduleItems > *)) {
@@ -301,25 +305,23 @@
 
 .moduleHeading {
   margin: 0;
-  padding: 0 10px 3px;
-  color: var(--dsw-alias-label-secondary);
-  font-size: 11px;
+  padding: 0 7px 3px;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
   font-weight: 600;
   line-height: 18px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
 }
 
 .moduleItems {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .collapsed .modules {
   margin-bottom: 8px;
   padding: 0;
-  border: 0;
-  background: transparent;
 }
 
 .collapsed .newSessionLabel {
@@ -391,6 +393,7 @@
   .fading > *,
   .railIn .iconButton,
   .railIn .newSession,
+  .railIn .modules,
   .railIn .footArea,
   .railIn .regionArea {
     transition: none;

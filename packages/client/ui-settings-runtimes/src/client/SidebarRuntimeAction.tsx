@@ -19,6 +19,7 @@ export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: Sideb
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<CSSProperties | null>(null)
   const panelId = useId()
+  const headingId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -103,18 +104,21 @@ export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: Sideb
           id={panelId}
           className={css.panel}
           role="dialog"
-          aria-label={t('title')}
+          aria-labelledby={headingId}
           style={position === null ? { visibility: 'hidden' } : position}
         >
-          <div className={css.panelActions}>
-            <button type="button" aria-label={t('refresh')} onClick={() => { void controller?.load() }}>
-              <IconRefreshOutline16 size={16} />
-            </button>
-            <button type="button" aria-label={t('close')} onClick={() => { setOpen(false); triggerRef.current?.focus() }}>
-              <IconCloseOutline16 size={16} />
-            </button>
+          <div className={css.panelHeader}>
+            <h2 id={headingId} className={css.panelTitle}>{t('title')}</h2>
+            <div className={css.panelActions}>
+              <button type="button" aria-label={t('refresh')} onClick={() => { void controller.load() }}>
+                <IconRefreshOutline16 size={16} />
+              </button>
+              <button type="button" aria-label={t('close')} onClick={() => { setOpen(false); triggerRef.current?.focus() }}>
+                <IconCloseOutline16 size={16} />
+              </button>
+            </div>
           </div>
-          <RuntimesSection controller={controller} useSnapshot={useSnapshot} t={t} />
+          <RuntimesSection controller={controller} useSnapshot={useSnapshot} t={t} showTitle={false} />
         </div>,
         document.body,
       ) : null}

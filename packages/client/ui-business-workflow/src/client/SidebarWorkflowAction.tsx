@@ -9,7 +9,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
-import { IconBranchOutline16, IconChevronRightOutline14, StateDot, Tooltip, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBranchOutline16, IconChevronRightOutline14, IconCloseOutline16, StateDot, Tooltip, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { HostObservable, PropsLocale, PropsRuntime, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { BusinessWorkflowStage } from '@deepseek-ai/dsh-business-workflow/types'
 // Type-only: pulls ui-sidebar's SlotMap merge ('sidebar.session.action') in.
@@ -73,6 +73,7 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
   const [sending, setSending] = useState(false)
   const [position, setPosition] = useState<CSSProperties | null>(null)
   const panelId = useId()
+  const headingId = useId()
   const requirementId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -187,9 +188,20 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
             id={panelId}
             className={css.menu}
             role="dialog"
-            aria-label={t('action.entry')}
+            aria-labelledby={headingId}
             style={position === null ? { visibility: 'hidden' } : position}
           >
+            <div className={css.panelHeader}>
+              <h2 id={headingId} className={css.panelTitle}>{t('action.entry')}</h2>
+              <button
+                type="button"
+                className={css.closeButton}
+                aria-label={t('action.close')}
+                onClick={() => { setOpen(false); triggerRef.current?.focus() }}
+              >
+                <IconCloseOutline16 size={16} />
+              </button>
+            </div>
             <section className={css.form}>
               <label className={css.formLabel} htmlFor={requirementId}>{t('action.new')}</label>
               <textarea

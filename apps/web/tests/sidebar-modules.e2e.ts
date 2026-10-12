@@ -47,10 +47,16 @@ describe('web e2e: sidebar workbench modules', () => {
     await workflow.click()
     const workflowPanel = page.getByRole('dialog', { name: 'Business workflow' })
     await workflowPanel.waitFor()
+    await workflowPanel.getByRole('heading', { name: 'Business workflow' }).waitFor()
     const requirement = workflowPanel.getByRole('textbox', { name: 'New workflow' })
     await expect.poll(() => requirement.evaluate(element => element === document.activeElement)).toBe(true)
     await workflowPanel.getByText('No business workflow in this session yet — start one above.').waitFor()
     await requirement.press('Escape')
+    await workflowPanel.waitFor({ state: 'detached' })
+    await expect.poll(() => workflow.evaluate(element => element === document.activeElement)).toBe(true)
+
+    await workflow.click()
+    await workflowPanel.getByRole('button', { name: 'Close business workflow' }).click()
     await workflowPanel.waitFor({ state: 'detached' })
     await expect.poll(() => workflow.evaluate(element => element === document.activeElement)).toBe(true)
 
@@ -65,18 +71,23 @@ describe('web e2e: sidebar workbench modules', () => {
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
-  it('keeps the module panel inside a narrow viewport', async () => {
+  it('keeps both module panels inside narrow viewports without horizontal overflow', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules-narrow'))
-    await page.setViewportSize({ width: 390, height: 760 })
-    const workflow = page.getByRole('navigation', { name: 'Workbench' })
-      .getByRole('button', { name: 'Business workflow' })
-    await workflow.click()
-    const panel = page.getByRole('dialog', { name: 'Business workflow' })
-    await panel.waitFor()
-    const bounds = await panel.boundingBox()
-    expect(bounds).not.toBeNull()
-    expect(bounds!.x).toBeGreaterThanOrEqual(0)
-    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
-    await panel.getByRole('textbox', { name: 'New workflow' }).press('Escape')
+    for (const width of [320, 375, 414, 768]) {
+      await page.setViewportSize({ width, height: 760 })
+      const nav = page.getByRole('navigation', { name: 'Workbench' })
+      for (const name of ['Business workflow', 'Runtimes']) {
+        await nav.getByRole('button', { name }).click()
+        const panel = page.getByRole('dialog', { name })
+        await panel.waitFor()
+        const bounds = await panel.boundingBox()
+        expect(bounds).not.toBeNull()
+        expect(bounds!.x).toBeGreaterThanOrEqual(0)
+        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
+        expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+        await page.keyboard.press('Escape')
+        await panel.waitFor({ state: 'detached' })
+      }
+    }
   }, 60_000)
 })

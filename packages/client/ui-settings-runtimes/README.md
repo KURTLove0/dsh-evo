@@ -6,7 +6,7 @@ Runtimes settings plugin: a read-only settings page that lists the model runtime
 
 The page never writes. API-provider configuration stays with the Models page (`settings.mutate` / `credentials.set`), a local runtime's overrides stay in `settings.yaml`, and model selection stays with the composer's picker — this section reports and points, it never routes. Once loaded, it subscribes to the forwarded `settings/document-updated` and `llm/adapters-updated` owner events plus local `connection/reset`, so a settings-born route coming or going converges without polling; an unopened page never fetches. Rows keep directory declaration order, every row is live by construction, and an empty directory renders the empty-deployment notice rather than an error.
 
-The Workbench entry opens the same section in a side panel. Its refresh button receives focus when opened; Escape or Close returns focus to the module button. At narrow widths the panel docks above the bottom edge.
+The Workbench entry opens the same section in a titled side panel. The Settings section keeps its heading when loading fails; the side panel supplies that heading itself. Its refresh button receives focus when opened; Escape or Close returns focus to the module button. Long runtime names, route ids, and model ids truncate within the panel. At narrow widths the panel docks above the bottom edge.
 
 ## Model Experience
 
