@@ -1,4 +1,4 @@
-/* Sidebar column (figma 133:7629): vertical stack, padding 12/6, sidebar
+/* Sidebar column: vertical stack, padding 12/6, sidebar
    fill + 1px right border painted by the layout column. Collapse is a
    slide + crossfade, not a morph: the content holds its frozen expanded
    layout (inline width set by the component) and fades in place (.fading)
@@ -13,7 +13,7 @@
   height: 100%;
   padding: 6px var(--dsh-sidebar-inline-padding);
   box-sizing: border-box;
-  background: color-mix(in srgb, var(--dsw-specific-sidebar-fill) 94%, var(--dsw-alias-state-business-primary));
+  background: color-mix(in srgb, var(--dsw-specific-sidebar-fill) 88%, var(--dsw-alias-state-business-primary));
   color: var(--dsw-alias-label-primary);
   font-size: 14px;
   /* The sidebar is elevated above the conversation surface, so a revealed
@@ -95,7 +95,7 @@
   gap: 8px;
   height: 60px;
   padding: 8px 0 8px 4px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   box-sizing: border-box;
   overflow: hidden;
@@ -236,17 +236,19 @@
   gap: 10px;
   height: 42px;
   padding: 8px 13px;
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   box-sizing: border-box;
   border: 1px solid var(--dsw-alias-state-business-primary);
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--dsw-alias-state-business-primary);
   color: var(--dsw-alias-label-primary-inverted);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 22px;
   cursor: pointer;
   overflow: hidden;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
+  transition: background var(--ds-transition-duration) var(--ds-ease-in-out), box-shadow var(--ds-transition-duration) var(--ds-ease-in-out);
 }
 
 .newSession:hover {
@@ -268,6 +270,7 @@
   border-color: transparent;
   background: transparent;
   color: var(--dsw-alias-label-primary);
+  box-shadow: none;
 }
 
 .collapsed .newSession:hover {
@@ -284,8 +287,12 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-bottom: 15px;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding: 10px 7px 7px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 76%, transparent);
 }
 
 .modules:not(:has(.moduleItems > *)) {
@@ -293,13 +300,13 @@
 }
 
 .moduleHeading {
+  margin: 0;
   padding: 0 10px 3px;
-  color: var(--dsw-alias-label-tertiary);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
   font-weight: 600;
   line-height: 18px;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .moduleItems {
@@ -309,7 +316,10 @@
 }
 
 .collapsed .modules {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .collapsed .newSessionLabel {
@@ -326,7 +336,9 @@
   flex-direction: column;
   margin-left: -4px;
   margin-right: calc(-1 * var(--dsh-sidebar-inline-padding));
+  padding-top: 12px;
   padding-left: 4px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
   overflow: hidden;
 }
 
@@ -334,6 +346,8 @@
   margin-left: 0;
   margin-right: 0;
   padding-left: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 /* Footer seats: additive actions stack above Settings. Each occupant owns its
@@ -342,6 +356,12 @@
   flex: none;
   display: flex;
   flex-direction: column;
+  padding-top: 8px;
+  border-top: 1px solid var(--dsw-alias-border-l2);
+}
+
+.collapsed .footArea {
+  border-top: 0;
 }
 
 .settingsArea,
@@ -376,4 +396,6 @@
     transition: none;
     animation: none;
   }
+
+  .newSession { transition: none; }
 }

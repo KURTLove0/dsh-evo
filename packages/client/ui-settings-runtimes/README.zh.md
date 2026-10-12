@@ -6,6 +6,8 @@
 
 本页从不写入。API 提供方配置归「模型」页（`settings.mutate` / `credentials.set`），本地运行时的覆盖项归 `settings.yaml`，模型选择归输入框的选择器——本节只报告与指引，从不路由。首次加载后，它订阅转发的 `settings/document-updated` 与 `llm/adapters-updated` owner 事件以及本地 `connection/reset`，因此 settings 促成的路由增减无需轮询即可收敛；未打开的页面从不抓取。行保持目录声明顺序，且每一行按构造即为活跃；空目录渲染空部署提示而非错误。
 
+「工作台」入口在侧边面板中打开相同的运行时信息。打开时焦点移到刷新按钮；按 Escape 或点击关闭后，焦点返回模块按钮。窄窗口中面板停靠在底部上方。
+
 ## Model Experience
 
 无；本节渲染只读浏览器视图，不触达任何模型请求。

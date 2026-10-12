@@ -188,7 +188,7 @@ export function SidebarRoot({
       </Tooltip>
 
       <nav className={css.modules} aria-label={t('modules')}>
-        {wide && <span className={css.moduleHeading}>{t('modules')}</span>}
+        {wide && <h2 className={css.moduleHeading}>{t('modules')}</h2>}
         <div className={css.moduleItems}>{renderSlot('sidebar.session.action', { wide })}</div>
       </nav>
 

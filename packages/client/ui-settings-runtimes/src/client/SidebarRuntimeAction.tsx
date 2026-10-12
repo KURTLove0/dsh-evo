@@ -1,5 +1,5 @@
 /** Sidebar access to the same live model-runtime view used by Settings. */
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { IconChevronRightOutline14, IconCloseOutline16, IconRefreshOutline16, IconRuntimeOutline16, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -18,6 +18,7 @@ export type SidebarRuntimeActionProps = PropsRuntime<'sidebar.session.action'> &
 export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: SidebarRuntimeActionProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState<CSSProperties | null>(null)
+  const panelId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -66,6 +67,8 @@ export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: Sideb
     return () => { document.removeEventListener('pointerdown', dismiss) }
   }, [open])
 
+  useEffect(() => { if (open) panelRef.current?.querySelector('button')?.focus() }, [open])
+
   if (controller === undefined || useSnapshot === undefined || t === undefined) return null
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -81,6 +84,8 @@ export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: Sideb
       className={css.trigger}
       aria-label={t('nav')}
       aria-expanded={open}
+      aria-haspopup="dialog"
+      aria-controls={open ? panelId : undefined}
       onClick={() => { setOpen(value => !value) }}
     >
       <IconRuntimeOutline16 size={wide ? 16 : 18} />
@@ -95,6 +100,7 @@ export function SidebarRuntimeAction({ wide, controller, useSnapshot, t }: Sideb
       {open ? createPortal(
         <div
           ref={panelRef}
+          id={panelId}
           className={css.panel}
           role="dialog"
           aria-label={t('title')}

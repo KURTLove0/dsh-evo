@@ -60,10 +60,19 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         xmlns="http://www.w3.org/2000/svg"
       />
     </button>
-    <div
-      data-slot="sidebar.session.action"
-      style="display: contents;"
-    />
+    <nav
+      aria-label="Workbench"
+      class="modules"
+    >
+      <div
+        class="moduleItems"
+      >
+        <div
+          data-slot="sidebar.session.action"
+          style="display: contents;"
+        />
+      </div>
+    </nav>
     <div
       class="regionArea"
     >
@@ -190,10 +199,24 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
         New Session
       </span>
     </button>
-    <div
-      data-slot="sidebar.session.action"
-      style="display: contents;"
-    />
+    <nav
+      aria-label="Workbench"
+      class="modules"
+    >
+      <h2
+        class="moduleHeading"
+      >
+        Workbench
+      </h2>
+      <div
+        class="moduleItems"
+      >
+        <div
+          data-slot="sidebar.session.action"
+          style="display: contents;"
+        />
+      </div>
+    </nav>
     <div
       class="regionArea"
     >
@@ -320,10 +343,24 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
         新会话
       </span>
     </button>
-    <div
-      data-slot="sidebar.session.action"
-      style="display: contents;"
-    />
+    <nav
+      aria-label="工作台"
+      class="modules"
+    >
+      <h2
+        class="moduleHeading"
+      >
+        工作台
+      </h2>
+      <div
+        class="moduleItems"
+      >
+        <div
+          data-slot="sidebar.session.action"
+          style="display: contents;"
+        />
+      </div>
+    </nav>
     <div
       class="regionArea"
     >

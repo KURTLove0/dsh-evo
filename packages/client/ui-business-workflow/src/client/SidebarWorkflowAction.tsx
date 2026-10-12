@@ -6,7 +6,7 @@
  * when none is open — and lists the current session's records with their next
  * click step. Every click sends one guided prompt through the starter.
  */
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { ConversationSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
 import { IconBranchOutline16, IconChevronRightOutline14, StateDot, Tooltip, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -72,9 +72,12 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
   const [error, setError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [position, setPosition] = useState<CSSProperties | null>(null)
+  const panelId = useId()
+  const requirementId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const hasSession = useSessions(state => state.current !== undefined)
   const currentTitle = useSessions(state =>
@@ -97,14 +100,24 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
       const height = panel?.offsetHeight ?? 0
       let left = rect.right + 8
       let top = rect.top
-      if (width > 0) left = Math.min(left, window.innerWidth - width - 8)
+      if (width > 0) left = Math.min(Math.max(left, 8), Math.max(8, window.innerWidth - width - 8))
       if (height > 0) top = Math.min(Math.max(top, 8), window.innerHeight - height - 8)
       setPosition({ left, top })
     }
     place()
     window.addEventListener('resize', place)
-    return () => { window.removeEventListener('resize', place) }
+    window.addEventListener('scroll', place, true)
+    const panel = panelRef.current
+    const observer = panel !== null && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(place) : null
+    if (panel !== null) observer?.observe(panel)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
   }, [open])
+
+  useEffect(() => { if (open) textareaRef.current?.focus() }, [open])
 
   // Outside-dismiss spans both the inline trigger and the portaled panel.
   useEffect(() => {
@@ -153,6 +166,8 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
       type="button"
       className={css.trigger}
       aria-expanded={open}
+      aria-haspopup="dialog"
+      aria-controls={open ? panelId : undefined}
       aria-label={t('action.entry')}
       onClick={() => { setOpen(current => !current) }}
     >
@@ -169,14 +184,17 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
         ? createPortal(
           <div
             ref={panelRef}
+            id={panelId}
             className={css.menu}
             role="dialog"
             aria-label={t('action.entry')}
             style={position === null ? { visibility: 'hidden' } : position}
           >
             <section className={css.form}>
-              <span className={css.formLabel}>{t('action.new')}</span>
+              <label className={css.formLabel} htmlFor={requirementId}>{t('action.new')}</label>
               <textarea
+                ref={textareaRef}
+                id={requirementId}
                 className={css.textarea}
                 rows={3}
                 value={draft}
@@ -221,7 +239,7 @@ export function SidebarWorkflowAction({ wide, useSessions, useConversation, star
                   </ul>
                 </section>
               )
-              : null}
+              : <p className={css.empty}>{t('action.empty')}</p>}
             {error !== null ? <span className={css.error} role="alert">{error}</span> : null}
           </div>,
           document.body,

@@ -34,12 +34,14 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: radial-gradient(ellipse 70% 38% at 50% 0%, color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent), transparent), var(--dsw-alias-bg-base);
 }
 
 .detailsCol {
   min-width: 0;
   overflow: hidden;
   border-left: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 /* The details subtree stays mounted at zero width, so its border must not paint
