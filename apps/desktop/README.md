@@ -18,7 +18,7 @@ The shell spawns the hosted checkout's web composition (`web --no-open --port 0`
 pnpm run desktop:pack   # build, then apps/desktop/scripts/pack.ts
 ```
 
-Produces `apps/desktop/dist/DSH Desktop-darwin-arm64/DSH Desktop.app` (platform directory trees on Windows/Linux). The bundle carries only the main-process build — the shell has no runtime dependencies — plus one resource recording the checkout it hosts. Double-click the `.app`, or copy it to `/Applications`.
+Produces `apps/desktop/dist/KL Agent Console-darwin-arm64/KL Agent Console.app` (platform directory trees on Windows/Linux). The bundle carries only the main-process build — the shell has no runtime dependencies — plus one resource recording the checkout it hosts. Double-click the `.app`, or copy it to `/Applications`.
 
 ## Build the distribution image
 

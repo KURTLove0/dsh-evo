@@ -162,12 +162,31 @@ describe('configurable-provider directory', () => {
   it.each([
     [entry({ provider: '' }), /non-empty provider/],
     [entry({ displayName: '' }), /non-empty provider/],
-    [entry({ settingsNs: '' }), /non-empty provider/],
+    [entry({ settingsNs: '', settingsPath: [] }), /without settings must be a local runtime/],
+    [entry({ settingsNs: '', settingsPath: [], localCommand: '' }), /empty localCommand/],
     [entry({ settingsPath: ['providers', ''] }), /empty settingsPath segment/],
   ])('rejects invalid entries all-or-nothing', async (invalid, message) => {
     const ctx = await setup()
     expect(() => ctx.llm.registerConfigurableProviders([entry({ provider: 'valid-first' }), invalid])).toThrow(message)
     expect(ctx.llm.listConfigurableProviders()).toEqual([])
+  })
+
+  it('accepts a native local runtime without a settings namespace', async () => {
+    const ctx = await setup()
+    ctx.llm.registerConfigurableProviders([entry({
+      provider: 'codex-cli',
+      displayName: 'Codex CLI',
+      settingsNs: '',
+      settingsPath: [],
+      localCommand: 'codex',
+    })])
+    expect(ctx.llm.listConfigurableProviders()).toEqual([{
+      provider: 'codex-cli',
+      displayName: 'Codex CLI',
+      settingsNs: '',
+      settingsPath: [],
+      localCommand: 'codex',
+    }])
   })
 
   it('replaces its entries atomically, keeping the old set when a candidate collides', async () => {

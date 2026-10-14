@@ -7,7 +7,7 @@
 
 import type { CommandId } from '@deepseek-ai/dsh-commands/brand'
 import type { MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm/types'
+import type { AgentInteraction, ContentBlock } from '@deepseek-ai/dsh-llm/types'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
 import type { LlmRetryEventData } from '@deepseek-ai/dsh-llm-retry/types'
 import type { TodoItem } from '@deepseek-ai/dsh-session/types'
@@ -107,6 +107,8 @@ export interface AssistantMessageNode {
   turn: number
   step: number
   blocks: readonly AssistantBlock[]
+  /** Provider-side agent work associated with this model step. */
+  interactions?: readonly AgentInteraction[]
   usage?: unknown
   provenance?: AssistantProvenanceView
   requestConfig?: AssistantRequestConfig

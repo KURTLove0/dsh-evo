@@ -175,9 +175,9 @@ describe('ModelsSettingsStore', () => {
     const { face, mirror } = api({
       providers: () => Promise.resolve(ok({
         providers: [
-          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
-          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, localCommand: 'codex', present: true },
-          { provider: 'ghost-cli', displayName: 'Ghost CLI', settingsNs: 'llm-claude-cli', settingsPath: ['ghost'], active: true, localCommand: 'ghost', present: false },
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'claude', present: true },
+          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'codex', present: true },
+          { provider: 'ghost-cli', displayName: 'Ghost CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'ghost', present: false },
           { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
         ] as never,
       })),
@@ -200,7 +200,7 @@ describe('ModelsSettingsStore', () => {
     const { face, mirror } = api({
       providers: () => Promise.resolve(ok({
         providers: [
-          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'claude', present: true },
         ] as never,
       })),
       models: () => Promise.resolve(ok({

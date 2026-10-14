@@ -18,7 +18,7 @@ pnpm run desktop        # build the main process, then electron .
 pnpm run desktop:pack   # build, then apps/desktop/scripts/pack.ts
 ```
 
-产出 `apps/desktop/dist/DSH Desktop-darwin-arm64/DSH Desktop.app`（Windows/Linux 为平台目录树）。应用包只携带主进程构建——桌面壳没有运行时依赖——外加一份记录所托管检出的资源。双击 `.app` 即可，也可以拷入 `/Applications`。
+产出 `apps/desktop/dist/KL Agent Console-darwin-arm64/KL Agent Console.app`（Windows/Linux 为平台目录树）。应用包只携带主进程构建——桌面壳没有运行时依赖——外加一份记录所托管检出的资源。双击 `.app` 即可，也可以拷入 `/Applications`。
 
 ## 构建分发镜像
 

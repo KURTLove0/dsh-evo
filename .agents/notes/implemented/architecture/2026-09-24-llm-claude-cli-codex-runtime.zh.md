@@ -12,16 +12,16 @@ Status: implemented
 
 把包恢复为"产物承载"的 workspace 成员，而非重写丢失的源码：
 
-- **package.json 依声明树重建** —— `.d.ts` 文件携带完整公开契约（驱动配置形状、默认值 `timeoutMs: 300000` / `contextWindow: 200000`、yaml 示例、settings-section 行为），因此 manifest、exports 映射（含 `./mcp-server`）与依赖列表都能忠实重建。依赖遵循同类 llm 适配器的形态（`dsh-invariants`/`dsh-llm`/`dsh-settings`/`schemastery` 放 dependencies；全仓 peer 迁移漂移属预存在问题，不在本次范围）。
-- **`src/invariant.ts` 复活** —— `verify-package-invariants` 对 companion 源码做 AST 校验（注册自身包名、命名导出、空 install 的标记注释）；编译产物 `lib/invariant.js` 正是标准 companion 的逐字投影，因此按该精确形态重建源码。最小 `tsconfig.json`（references cordis、dsh-llm、dsh-settings、invariants）让 `tsc -b` 与 references 门禁保持满足，而不触碰手工构建的 `lib/index.js`。
+- **package.json 依声明树重建** —— `.d.ts` 文件携带完整公开契约（驱动配置形状与默认值 `timeoutMs: 300000` / `contextWindow: 200000`），因此 manifest、exports 映射（含 `./mcp-server`）与依赖列表都能忠实重建。后续[原生 CLI 配置决策](../feature/2026-10-14-native-cli-reasoning-and-agent-trajectory.zh.md)把配置归属交给各 CLI，并移除了恢复出的 settings 依赖。
+- **`src/invariant.ts` 复活** —— `verify-package-invariants` 对 companion 源码做 AST 校验（注册自身包名、命名导出、空 install 的标记注释）；编译产物 `lib/invariant.js` 正是标准 companion 的逐字投影，因此按该精确形态重建源码。最小 `tsconfig.json` 让 `tsc -b` 与 references 门禁保持满足，而不触碰手工构建的 `lib/index.js`。
 - **门禁在丢失源码曾登记处重新登记** —— `check-workspace-constraints.ts` 的 `packageFileExtras` 取回 `lib/mcp-server.js` 条目；knip 得到一个以 `lib/index.js` 为 entry 的 workspace 条目，附产物承载包所需的依赖忽略（`src/` 里已没有任何引用者）。
 - **运行时解析走 launcher 维护的 flat fallback** —— `healProfilesModuleFallback` 把 `$DSH_HOME/profiles/node_modules` 维护为 app 闭包内每包一个符号链接；它只增不删，因此手工的 `dsh-llm-cli -> <repo>/packages/llm/llm-claude-cli` 符号链接跨启动稳定（未来若正式恢复提交、app manifest 重新依赖它，则回归常规 heal 路径）。Loader 从 profile 目录的 parent-walk 把裸插件名解析到 `lib/index.js`。
 
 ## 结果
 
-- web profile 经 `--patch .tmp-llm-cli.patch.yml` overlay 挂载该插件；路由激活归用户所有，在 `~/.dsh/settings.yaml` 的 `llm-claude-cli:` 段（codex 段存在 ⇒ codex 路由原地注册）。
+- web profile 经 `--patch .tmp-llm-cli.patch.yml` overlay 挂载该插件。后续[原生 CLI 配置决策](../feature/2026-10-14-native-cli-reasoning-and-agent-trajectory.zh.md)让已安装 CLI 的存在性与 CLI 自身运行时状态负责路由行为。
 - 本机 codex CLI（0.144.6）现在作为运行时加载：设置「运行时」页显示 **Codex CLI** 活跃且已加载 `gpt-5-codex`，与 Claude CLI（sonnet/opus/haiku）、DeepSeek 并列。
-- 一次经 `ctx.llm.stream` 的宿主 Context 冒烟证明了协议路径：`providers: claude-cli, codex-cli`、`models: gpt-5-codex`、未认证调用收敛为单个 `error` finish（`CLI_ERROR`，"stream disconnected ... api.openai.com"）——这是文档记载的私有 `CODEX_HOME` 认证姿态，不是接线故障。
+- 一次经 `ctx.llm.stream` 的宿主 Context 冒烟证明了原有协议路径。后续[原生 CLI 配置决策](../feature/2026-10-14-native-cli-reasoning-and-agent-trajectory.zh.md)以已安装 Codex 运行时的正常登录与配置替代了私有 `CODEX_HOME` 姿态。
 - README 三件套与本 Note 依声明树契约重建；源码文件在包被彻底重写之前仍处于丢失状态（产物在此期间是唯一权威）。
 
 ## 备选方案

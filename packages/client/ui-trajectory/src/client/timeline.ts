@@ -44,7 +44,7 @@ export function formatTimelineOffset(milliseconds: number): string {
 }
 
 function laneFor(kind: TrajectoryCellKind): number {
-  if (kind === 'tool' || kind === 'subtool') return 2
+  if (kind === 'agent' || kind === 'tool' || kind === 'subtool') return 2
   if (kind === 'message' || kind === 'compacted') return 1
   return 0
 }

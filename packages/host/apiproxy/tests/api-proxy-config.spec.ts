@@ -710,18 +710,18 @@ describe('llm domain', () => {
     const ctx = await harness({ configurableProviders: false })
     ctx.llm.registerConfigurableProviders([
       // `node` is on PATH on every test host — vitest itself runs on it.
-      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], localCommand: 'node' },
-      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], localCommand: 'dsh-absolutely-not-a-command-x7q9' },
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], localCommand: 'node' },
+      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], localCommand: 'dsh-absolutely-not-a-command-x7q9' },
       // A command naming a path answers from the filesystem, on any platform.
-      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], localCommand: process.execPath },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: '', settingsPath: [], localCommand: process.execPath },
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [] },
     ])
     const api = createApiProxy(ctx, DEFAULTS)
     const value = expectOk(await api.llm.providers(request({})))
     expect(value.providers).toEqual([
-      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: false, localCommand: 'node', present: true },
-      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, localCommand: 'dsh-absolutely-not-a-command-x7q9', present: false },
-      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], active: false, localCommand: process.execPath, present: true },
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'node', present: true },
+      { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'dsh-absolutely-not-a-command-x7q9', present: false },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: '', settingsPath: [], active: false, localCommand: process.execPath, present: true },
       { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: false },
     ])
     expect(value.daemonRunning).toBe(false)
@@ -737,14 +737,14 @@ describe('llm domain', () => {
     ])
     const ctx = await harness({ configurableProviders: false })
     ctx.llm.registerConfigurableProviders([
-      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], localCommand: 'node' },
-      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], localCommand: process.execPath },
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], localCommand: 'node' },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: '', settingsPath: [], localCommand: process.execPath },
     ])
     const api = createApiProxy(ctx, DEFAULTS)
     const value = expectOk(await api.llm.providers(request({})))
     expect(value.providers).toEqual([
-      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: false, localCommand: 'node', present: false },
-      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: 'llm-claude-cli', settingsPath: ['custom'], active: false, localCommand: process.execPath, present: true },
+      { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'node', present: false },
+      { provider: 'custom-cli', displayName: 'Custom CLI', settingsNs: '', settingsPath: [], active: false, localCommand: process.execPath, present: true },
     ])
     expect(value.daemonRunning).toBe(true)
   })

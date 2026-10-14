@@ -88,6 +88,7 @@ function timelineKindLabel(kind: TrajectoryCellKind): string {
     case 'context': return 'CONTEXT'
     case 'compacted': return 'COMPACTED'
     case 'message': return 'ASSISTANT'
+    case 'agent': return 'AGENT'
     case 'tool': return 'TOOL'
     case 'subtool': return 'SUBTOOL'
   }

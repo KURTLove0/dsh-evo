@@ -403,6 +403,44 @@ describe('deriveTrajectoryLayout', () => {
     })
   })
 
+  it('expands provider-side agent interactions into dedicated trajectory rows', () => {
+    const nodes = [{
+      kind: 'assistant', seq: 1, time: 5_000, turn: 1, step: 1,
+      blocks: [{ kind: 'text', text: 'done' }],
+      interactions: [{
+        id: 'agent-1', kind: 'agent', title: 'Agent spawnAgent', status: 'completed',
+        detail: 'review the adapter', startedAt: 2_000, completedAt: 4_500,
+      }],
+    }] as unknown as ConversationSnapshot['nodes']
+
+    const cells = deriveTrajectoryLayout({ nodes, partial: null, runningCalls: [] })
+      .flatMap(turn => turn.groups.flatMap(group => group.cells))
+    expect(cells).toMatchObject([
+      { kind: 'message', outputDetail: 'done' },
+      {
+        kind: 'agent', text: 'Agent spawnAgent', outputDetail: 'review the adapter',
+        startedAt: 2_000, timeSeconds: 2.5, isRunning: false,
+      },
+    ])
+  })
+
+  it('keeps an unsettled provider-side agent interaction pending without timing', () => {
+    const nodes = [{
+      kind: 'assistant', seq: 1, time: 5_000, turn: 1, step: 1,
+      blocks: [{ kind: 'text', text: 'working' }],
+      interactions: [{
+        id: 'agent-1', kind: 'agent', title: 'Agent reviewer', status: 'started',
+      }],
+    }] as unknown as ConversationSnapshot['nodes']
+
+    const agent = deriveTrajectoryLayout({ nodes, partial: null, runningCalls: [] })
+      .flatMap(turn => turn.groups.flatMap(group => group.cells))
+      .find(cell => cell.kind === 'agent')
+    expect(agent).toMatchObject({
+      text: 'Agent reviewer', timeSeconds: null, isRunning: true, isError: false,
+    })
+  })
+
   it('bounds a long Markdown-like thinking preview while retaining its full detail', () => {
     const thinking = `# Investigation\n\n**NAVIGATION_OK file_path** ${'- repeated detail '.repeat(1_000)}`
     const nodes = [{

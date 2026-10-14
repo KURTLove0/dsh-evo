@@ -180,6 +180,33 @@ interface ReplayEnvelope {
 }
 ```
 
+Provider-side agent work is durable diagnostic data rather than model-facing content. A runtime places completed or interrupted work on the terminal chunk; the session log retains it for Trajectory, while `BlockAssembler` deliberately leaves it out of the assistant message:
+
+```ts type-equiv
+/**
+ * One model-runtime interaction retained for diagnostics and trajectory
+ * presentation. Interactions describe work the provider-side agent already
+ * performed; they are not assistant content and never enter later model
+ * requests.
+ */
+interface AgentInteraction {
+  /** Provider-issued item identity, stable across start/completion updates. */
+  readonly id: string
+  /** Provider-neutral interaction category. */
+  readonly kind: 'command' | 'file-change' | 'web-search' | 'tool' | 'agent' | 'other'
+  /** Concise operation label suitable for a trajectory row. */
+  readonly title: string
+  /** Terminal state, or `started` when the stream ended before settlement. */
+  readonly status: 'started' | 'completed' | 'failed' | 'interrupted'
+  /** Provider-rendered arguments, output, or participant details. */
+  readonly detail?: string
+  /** Runtime-observed lifecycle start in Unix epoch milliseconds. */
+  readonly startedAt?: number
+  /** Runtime-observed lifecycle completion in Unix epoch milliseconds. */
+  readonly completedAt?: number
+}
+```
+
 ```ts type-equiv
 /**
  * Raw streaming protocol emitted by adapters.
@@ -201,6 +228,8 @@ type StreamChunk =
     reason: FinishReason
     /** Replay metadata for a successful response; see {@link ReplayEnvelope}. */
     replayState?: ReplayEnvelope
+    /** Provider-side agent work recorded for trajectory presentation only. */
+    interactions?: readonly AgentInteraction[]
   }
 ```
 
@@ -393,7 +422,7 @@ interface LlmProviderInfo {
 }
 ```
 
-Adapter plugins additionally declare which routes *could* run through `registerConfigurableProviders()`, addressing each one's user-settings section, so configuration surfaces can offer dormant providers before any route registers.
+Adapter plugins additionally declare which routes *could* run through `registerConfigurableProviders()`. API routes address their user-settings section; native local runtimes use an empty namespace and path. Configuration surfaces can therefore offer dormant providers before any route registers without inventing settings ownership for an installed CLI.
 
 ```ts type-equiv
 /**
@@ -407,11 +436,12 @@ interface LlmConfigurableProvider {
   provider: string
   /** Human-readable provider name for configuration surfaces. */
   displayName: string
-  /** User-settings namespace whose section configures this provider. */
+  /** User-settings namespace whose section configures this provider; empty for a native local runtime. */
   settingsNs: string
   /**
    * Path from that namespace's section root to this provider's profile
-   * object; empty when the whole section is the profile.
+   * object; empty when the whole section is the profile or no settings
+   * namespace applies.
    */
   settingsPath: readonly string[]
   /**
@@ -423,6 +453,15 @@ interface LlmConfigurableProvider {
    * from outside.
    */
   declared?: boolean
+  /**
+   * The executable this route shells out to, when it is a local-CLI runtime
+   * (`claude`, `codex`, …) rather than a remote API. Its presence is what
+   * lets a configuration surface split local runtimes from API providers and
+   * ask the host whether the executable exists on this machine. The value
+   * tracks the adapter's current configuration, so a settings edit that
+   * retargets the command moves the presence answer with it.
+   */
+  localCommand?: string
 }
 ```
 
@@ -523,6 +562,20 @@ interface GenerateOptions {
    */
   stop?: string[]
   signal?: AbortSignal
+  /**
+   * Session working directory the adapter may map onto provider-side
+   * workspace context (a CLI's environment context, a provider's
+   * working-directory field). Absent on hand-built requests and auxiliary
+   * calls without a workspace.
+   */
+  cwd?: string
+  /**
+   * The session's currently effective sandbox mode (the DSH file policy's
+   * `read-only` | `workspace-write` | `danger-full-access`); adapters may map
+   * it onto provider-side workspace-context or sandbox declarations. Absent
+   * when no policy service is mounted or the call carries no session.
+   */
+  sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'
   /**
    * Session identity stamped by the loop for request routing. Replay uses it
    * to separate cursors; adapters may map it to model-hidden transport metadata.

@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-09-24-llm-claude-cli-codex-runtime.md
-2026-09-24-llm-claude-cli-codex-runtime.md: 0c9ddac8ddca6efad99bf13efa1f3910fc5d6e1b
-2026-09-24-llm-claude-cli-codex-runtime.zh.md: e8349635a70d916653b6ed1227b3e07cc29f17ad
+2026-09-24-llm-claude-cli-codex-runtime.md: c565b71b69021ce0b26326c68a430efbd35836aa
+2026-09-24-llm-claude-cli-codex-runtime.zh.md: 5e2b7c322f1d2a254b7b1e35797637a622993c80

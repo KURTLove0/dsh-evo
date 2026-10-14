@@ -180,6 +180,33 @@ interface ReplayEnvelope {
 }
 ```
 
+Provider 侧 Agent 工作属于持久诊断数据，而不是面向模型的内容。运行时把已完成或被打断的工作放在终止分片上；会话日志为「轨迹」保留它，`BlockAssembler` 则明确不把它写入 assistant 消息：
+
+```ts type-equiv
+/**
+ * One model-runtime interaction retained for diagnostics and trajectory
+ * presentation. Interactions describe work the provider-side agent already
+ * performed; they are not assistant content and never enter later model
+ * requests.
+ */
+interface AgentInteraction {
+  /** Provider-issued item identity, stable across start/completion updates. */
+  readonly id: string
+  /** Provider-neutral interaction category. */
+  readonly kind: 'command' | 'file-change' | 'web-search' | 'tool' | 'agent' | 'other'
+  /** Concise operation label suitable for a trajectory row. */
+  readonly title: string
+  /** Terminal state, or `started` when the stream ended before settlement. */
+  readonly status: 'started' | 'completed' | 'failed' | 'interrupted'
+  /** Provider-rendered arguments, output, or participant details. */
+  readonly detail?: string
+  /** Runtime-observed lifecycle start in Unix epoch milliseconds. */
+  readonly startedAt?: number
+  /** Runtime-observed lifecycle completion in Unix epoch milliseconds. */
+  readonly completedAt?: number
+}
+```
+
 ```ts type-equiv
 /**
  * Raw streaming protocol emitted by adapters.
@@ -201,6 +228,8 @@ type StreamChunk =
     reason: FinishReason
     /** Replay metadata for a successful response; see {@link ReplayEnvelope}. */
     replayState?: ReplayEnvelope
+    /** Provider-side agent work recorded for trajectory presentation only. */
+    interactions?: readonly AgentInteraction[]
   }
 ```
 
@@ -399,7 +428,7 @@ interface LlmProviderInfo {
 }
 ```
 
-适配器插件还会通过 `registerConfigurableProviders()` 声明哪些路由*可以*运行，并指明每条路由的用户设置分节，使配置界面能在任何路由注册之前就呈现休眠的提供方。
+适配器插件还会通过 `registerConfigurableProviders()` 声明哪些路由*可以*运行。API 路由指向其用户设置分节；原生本地运行时使用空 namespace 与 path。配置界面因此既能在路由注册前呈现休眠提供方，也不会为已安装 CLI 虚构 settings 归属。
 
 ```ts type-equiv
 /**
@@ -413,11 +442,12 @@ interface LlmConfigurableProvider {
   provider: string
   /** Human-readable provider name for configuration surfaces. */
   displayName: string
-  /** User-settings namespace whose section configures this provider. */
+  /** User-settings namespace whose section configures this provider; empty for a native local runtime. */
   settingsNs: string
   /**
    * Path from that namespace's section root to this provider's profile
-   * object; empty when the whole section is the profile.
+   * object; empty when the whole section is the profile or no settings
+   * namespace applies.
    */
   settingsPath: readonly string[]
   /**
@@ -429,6 +459,15 @@ interface LlmConfigurableProvider {
    * from outside.
    */
   declared?: boolean
+  /**
+   * The executable this route shells out to, when it is a local-CLI runtime
+   * (`claude`, `codex`, …) rather than a remote API. Its presence is what
+   * lets a configuration surface split local runtimes from API providers and
+   * ask the host whether the executable exists on this machine. The value
+   * tracks the adapter's current configuration, so a settings edit that
+   * retargets the command moves the presence answer with it.
+   */
+  localCommand?: string
 }
 ```
 
@@ -529,6 +568,20 @@ interface GenerateOptions {
    */
   stop?: string[]
   signal?: AbortSignal
+  /**
+   * Session working directory the adapter may map onto provider-side
+   * workspace context (a CLI's environment context, a provider's
+   * working-directory field). Absent on hand-built requests and auxiliary
+   * calls without a workspace.
+   */
+  cwd?: string
+  /**
+   * The session's currently effective sandbox mode (the DSH file policy's
+   * `read-only` | `workspace-write` | `danger-full-access`); adapters may map
+   * it onto provider-side workspace-context or sandbox declarations. Absent
+   * when no policy service is mounted or the call carries no session.
+   */
+  sandboxMode?: 'read-only' | 'workspace-write' | 'danger-full-access'
   /**
    * Session identity stamped by the loop for request routing. Replay uses it
    * to separate cursors; adapters may map it to model-hidden transport metadata.

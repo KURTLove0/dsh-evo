@@ -41,6 +41,7 @@ const KIND_LABEL: Record<TrajectoryCellKind, string> = {
   context: 'CONTEXT',
   compacted: 'COMPACTED',
   message: 'ASSISTANT',
+  agent: 'AGENT',
   tool: 'TOOL',
   subtool: 'SUBTOOL',
 }
@@ -112,6 +113,7 @@ const KIND_ICON: Record<TrajectoryCellKind, ReactNode> = {
   context: <InformationIcon />,
   compacted: <CompactedIcon />,
   message: <IconSparkle16 size={13} />,
+  agent: <IconSparkle16 size={13} />,
   tool: <ToolWrenchIcon />,
   subtool: <ToolWrenchIcon />,
 }
@@ -667,6 +669,7 @@ function collapseAssistantRecords(
 function stateOf(record: TableRecord): RecordState {
   if (record.cell.isError) return 'error'
   if (record.cell.kind === 'compacted' && record.cell.timeSeconds === null) return 'running'
+  if (record.cell.kind === 'agent' && record.cell.isRunning) return 'running'
   if (
     (record.cell.kind === 'tool' || record.cell.kind === 'subtool')
     && record.cell.outputDetail === undefined
@@ -911,6 +914,13 @@ function detailTabs(record: TableRecord): readonly DetailTabItem[] {
       ...(record.cell.messageSource === undefined
         ? []
         : [{ id: 'source', label: 'Source' } as const]),
+    ]
+  }
+  if (record.cell.kind === 'agent') {
+    return [
+      { id: 'overview', label: 'Summary' },
+      ...(record.cell.outputDetail ? [{ id: 'output', label: 'Details' } as const] : []),
+      { id: 'timing', label: 'Timing' },
     ]
   }
   return [
@@ -2447,7 +2457,7 @@ export function TrajectoryTable({
                                         ? css.compacted
                                         : record.cell.kind === 'tool'
                                           ? css.toolAmber
-                                          : record.cell.kind === 'message'
+                                          : record.cell.kind === 'message' || record.cell.kind === 'agent'
                                             ? css.assistantVioletBright
                                             : record.cell.kind === 'subtool'
                                               ? css.subtoolAmber
@@ -2643,7 +2653,7 @@ export function TrajectoryTable({
                             ? css.compacted
                             : selected.cell.kind === 'tool'
                               ? css.toolAmber
-                              : selected.cell.kind === 'message'
+                              : selected.cell.kind === 'message' || selected.cell.kind === 'agent'
                                 ? css.assistantVioletBright
                                 : selected.cell.kind === 'subtool'
                                   ? css.subtoolAmber
@@ -3010,9 +3020,11 @@ export function TrajectoryTable({
                             <RecordPayload record={selected} direction="output" preview />
                           </OverviewSection>
                         )}
-                        <OverviewSection label="Schema" onOpen={() => { activateTab('schema') }}>
-                          <RecordSchema record={selected} preview />
-                        </OverviewSection>
+                        {selected.cell.kind !== 'agent' && (
+                          <OverviewSection label="Schema" onOpen={() => { activateTab('schema') }}>
+                            <RecordSchema record={selected} preview />
+                          </OverviewSection>
+                        )}
                       </>
                     )}
                   {selectedAssistantRequestTarget !== undefined && (
@@ -3025,7 +3037,9 @@ export function TrajectoryTable({
                       <RecordTiming record={selected} />
                     </OverviewSection>
                   )}
-                  {(selected.cell.kind === 'tool' || selected.cell.kind === 'subtool') && (
+                  {(selected.cell.kind === 'agent'
+                    || selected.cell.kind === 'tool'
+                    || selected.cell.kind === 'subtool') && (
                     <OverviewSection label="Timing" onOpen={() => { activateTab('timing') }}>
                       <RecordTiming record={selected} />
                     </OverviewSection>

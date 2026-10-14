@@ -442,8 +442,15 @@ export class LlmRuntime extends Service {
       const detached: LlmConfigurableProvider[] = []
       const own = new Set(held.map(entry => entry.provider))
       for (const entry of candidates) {
-        if (entry.provider.length === 0 || entry.displayName.length === 0 || entry.settingsNs.length === 0) {
-          throw new LlmError('configurable providers need a non-empty provider, displayName, and settingsNs', 'INVALID_DIRECTORY')
+        if (entry.provider.length === 0 || entry.displayName.length === 0) {
+          throw new LlmError('provider directory entries need a non-empty provider and displayName', 'INVALID_DIRECTORY')
+        }
+        if (entry.settingsNs.length === 0
+          && (entry.localCommand === undefined || entry.settingsPath.length !== 0)) {
+          throw new LlmError('a provider without settings must be a local runtime with an empty settingsPath', 'INVALID_DIRECTORY')
+        }
+        if (entry.localCommand !== undefined && entry.localCommand.length === 0) {
+          throw new LlmError(`configurable provider "${entry.provider}" has an empty localCommand`, 'INVALID_DIRECTORY')
         }
         if (entry.settingsPath.some(segment => segment.length === 0)) {
           throw new LlmError(`configurable provider "${entry.provider}" has an empty settingsPath segment`, 'INVALID_DIRECTORY')

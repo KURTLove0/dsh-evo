@@ -9,6 +9,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
+import { join } from 'node:path'
 import { app, BrowserWindow, dialog, net } from 'electron'
 import { buildDshWebLaunch, parseWebUrlLine, resolveRepoRoot, stopHost } from './launcher.ts'
 
@@ -128,8 +129,9 @@ async function probeUntilReachable(url: string): Promise<void> {
  * (sandbox, context isolation, no node integration, no preload) because the
  * renderer is the ordinary Web GUI.
  * @param url - the settled-ready loopback URL.
+ * @param icon - Application icon file.
  */
-function createWindow(url: string): void {
+function createWindow(url: string, icon: string): void {
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -137,6 +139,7 @@ function createWindow(url: string): void {
     minHeight: 600,
     show: false,
     autoHideMenuBar: true,
+    icon,
   })
   mainWindow = win
   win.once('ready-to-show', () => { win.show() })
@@ -157,6 +160,9 @@ async function start(): Promise<void> {
     moduleUrl: import.meta.url,
   })
   if ('error' in resolved) throw new Error(resolved.error)
+  app.setName('KL Agent Console')
+  const icon = join(resolved.root, 'apps/desktop/build/icon.png')
+  app.dock?.setIcon(icon)
   const launch = buildDshWebLaunch(resolved.root)
   const child = spawn(launch.command, launch.args, {
     cwd: launch.cwd,
@@ -184,7 +190,7 @@ async function start(): Promise<void> {
     void fail(`dsh web exited unexpectedly (code ${String(code)}, signal ${String(signal)})`)
   }
   await probeUntilReachable(url)
-  createWindow(url)
+  createWindow(url, icon)
 }
 
 if (!app.requestSingleInstanceLock()) {

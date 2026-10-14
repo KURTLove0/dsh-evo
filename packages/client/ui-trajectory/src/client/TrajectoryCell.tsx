@@ -21,6 +21,7 @@ const KIND_LABEL: Record<TrajectoryCellKind, string> = {
   context: 'Context',
   compacted: 'Compacted',
   message: 'Message',
+  agent: 'Agent',
   tool: 'Tool',
   subtool: 'Sub',
 }
@@ -31,6 +32,7 @@ const TAG_CLASS: Record<TrajectoryCellKind, string | undefined> = {
   context: css.tagContext,
   compacted: css.tagSystem,
   message: css.tagMessage,
+  agent: css.tagMessage,
   tool: css.tagTool,
   subtool: css.tagSubtool,
 }

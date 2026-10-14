@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
+import type { AgentInteraction } from '@deepseek-ai/dsh-llm'
 import type {
   AssistantBlock, AssistantMessageNode, ConversationLocation, ConversationMatch,
   ConversationNodeContext, ConversationNodeDefinition, PartialAssistant, RequestView,
@@ -35,6 +36,7 @@ interface AssistantState {
   readonly started: boolean
   readonly sawChunk: boolean
   readonly blocks: readonly (AssistantBlock | undefined)[]
+  readonly interactions: readonly AgentInteraction[]
   readonly firstVisibleSeq: number | undefined
   readonly firstVisibleTime: number | undefined
   readonly firstTokenTime: number | undefined
@@ -59,6 +61,7 @@ function initialState(
     started,
     sawChunk: false,
     blocks: [],
+    interactions: [],
     firstVisibleSeq: undefined,
     firstVisibleTime: undefined,
     firstTokenTime: undefined,
@@ -109,6 +112,15 @@ function updateChunk(state: AssistantState, match: ConversationMatch): Assistant
   const chunk = match.event.data.chunk
   if (chunk.type === 'usage') {
     return { ...state, sawChunk: true, usage: addUsage(state.usage, chunk.usage) }
+  }
+  if (chunk.type === 'finish') {
+    return {
+      ...state,
+      sawChunk: true,
+      interactions: chunk.interactions === undefined
+        ? state.interactions
+        : chunk.interactions.map(interaction => ({ ...interaction })),
+    }
   }
   const blocks = [...state.blocks]
   switch (chunk.type) {
@@ -223,6 +235,7 @@ function finalNode(
         firstTokenTime: state.firstTokenTime ?? null,
         completedTime: event.time,
       },
+      ...(state.interactions.length === 0 ? {} : { interactions: state.interactions }),
       ...(event.data.interrupted === true ? { interrupted: true } : {}),
     }
   }
@@ -236,6 +249,7 @@ function finalNode(
     turn: state.turn,
     step: state.step,
     blocks,
+    ...(state.interactions.length === 0 ? {} : { interactions: state.interactions }),
     interrupted: true,
   }
 }

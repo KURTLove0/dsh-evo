@@ -49,11 +49,27 @@ class CliMockAdapter extends LlmAdapter {
       .map(block => block.text)
       .join('')
     const reply = `CLI tool round trip complete: ${toolText.trim()}`
-    yield { type: 'block-start', index: 0, blockType: 'text' }
-    yield { type: 'text-delta', index: 0, text: reply }
-    yield { type: 'block-end', index: 0, block: { type: 'text', text: reply } }
+    const reasoning = 'The delegated command completed and returned the expected marker.'
+    yield { type: 'block-start', index: 0, blockType: 'reasoning' }
+    yield { type: 'reasoning-delta', index: 0, text: reasoning }
+    yield { type: 'block-end', index: 0, block: { type: 'reasoning', text: reasoning } }
+    yield { type: 'block-start', index: 1, blockType: 'text' }
+    yield { type: 'text-delta', index: 1, text: reply }
+    yield { type: 'block-end', index: 1, block: { type: 'text', text: reply } }
     yield { type: 'usage', usage: { inputTokens: 7, outputTokens: 5, reasoningTokens: 1 } }
-    yield { type: 'finish', reason: { kind: 'stop' } }
+    yield {
+      type: 'finish',
+      reason: { kind: 'stop' },
+      interactions: [{
+        id: 'cli-agent-command',
+        kind: 'command',
+        title: 'Agent command: printf CLI_TOOL_ROUND_TRIP',
+        status: 'completed',
+        detail: 'CLI_TOOL_ROUND_TRIP',
+        startedAt: 1_000,
+        completedAt: 1_250,
+      }],
+    }
   }
 }
 

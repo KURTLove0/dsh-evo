@@ -720,6 +720,27 @@ function expandAssistant(
   }
   out.push({ absTime: nodeAbs, cell: message })
 
+  for (const interaction of node.interactions ?? []) {
+    const startedAt = finiteTime(interaction.startedAt)
+    const completedAt = finiteTime(interaction.completedAt)
+    out.push({
+      absTime: startedAt,
+      cell: {
+        index: ++index,
+        recordId: `agent\u0000${node.turn}\u0000${node.step}\u0000${interaction.id}`,
+        kind: 'agent',
+        text: interaction.title,
+        ...(interaction.detail === undefined ? {} : { outputDetail: interaction.detail }),
+        timeSeconds: startedAt === null || completedAt === null
+          ? null
+          : Math.max(0, (completedAt - startedAt) / 1_000),
+        startedAt,
+        isError: interaction.status === 'failed' || interaction.status === 'interrupted',
+        isRunning: interaction.status === 'started',
+      },
+    })
+  }
+
   for (const block of node.blocks) {
     // Text and reasoning belong to the one Assistant record emitted above.
     if (block.kind !== 'tool-call') continue

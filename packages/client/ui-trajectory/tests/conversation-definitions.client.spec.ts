@@ -88,6 +88,36 @@ function assistantMessage(id: string, text: string) {
 }
 
 describe('Trajectory conversation Definitions', () => {
+  it('retains finish-chunk agent interactions beside the finalized assistant', () => {
+    const current = snapshot(assembler([
+      at(1, 'turn/start', { turn: 1 }),
+      at(2, 'step/start', { turn: 1, step: 1 }),
+      at(3, 'assistant/chunk', {
+        turn: 1,
+        step: 1,
+        chunk: {
+          type: 'finish',
+          reason: { kind: 'stop' },
+          interactions: [{
+            id: 'cmd-1', kind: 'command', title: 'pnpm test', status: 'completed',
+            detail: 'passed', startedAt: 10, completedAt: 20,
+          }],
+        },
+      }),
+      at(4, 'assistant/message', {
+        turn: 1,
+        step: 1,
+        message: assistantMessage('m1', 'done'),
+      }),
+      at(5, 'step/end', { turn: 1, step: 1 }),
+    ]))
+
+    expect(current.eventNodes).toMatchObject([{
+      kind: 'assistant',
+      interactions: [{ id: 'cmd-1', title: 'pnpm test', detail: 'passed' }],
+    }])
+  })
+
   it('assembles streaming usage, preserves retry facts, and materializes interruption', () => {
     const value = assembler([
       at(1, 'turn/start', { turn: 1 }),

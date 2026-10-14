@@ -10,6 +10,7 @@ export type TrajectoryCellKind =
   | 'context'
   | 'compacted'
   | 'message'
+  | 'agent'
   | 'tool'
   | 'subtool'
 
@@ -77,8 +78,10 @@ export interface TrajectoryCellProps extends HTMLAttributes<HTMLDivElement> {
   resultPreviewMarkdown?: string
   /** Tool call id used to link message source blocks to tool records. */
   callId?: string
-  /** Tool-only result failure state. */
+  /** Tool or provider-side Agent operation failure state. */
   isError?: boolean
+  /** Whether this operation has started but has not reached a terminal state. */
+  isRunning?: boolean
   /** Own duration in seconds, or `null` when no duration is known. */
   timeSeconds: number | null
   /** Unix epoch milliseconds when this operation actually started, when known. */

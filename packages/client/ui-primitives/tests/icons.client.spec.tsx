@@ -54,16 +54,15 @@ describe('ic_ds_ icon set', () => {
   })
 })
 
-describe('FishLogo', () => {
-  it('renders the fish path in currentColor at the native ratio', () => {
-    const { container } = render(<primitives.FishLogo />)
-    const svg = container.querySelector('svg')!
-    expect(svg.getAttribute('width')).toBe('24')
-    expect(Number(svg.getAttribute('height'))).toBeCloseTo(17.66, 1)
-    expect(svg.getAttribute('viewBox')).toBe('0 0 23.16 17.04')
-    expect(container.querySelectorAll('path')).toHaveLength(1)
-    expect(container.innerHTML).toContain('currentColor')
-    expect(container.innerHTML).not.toContain('M0 0L23.16')
+describe('BrandLogo', () => {
+  it('renders the shared application artwork with decorative semantics and square dimensions', () => {
+    const { container } = render(<primitives.BrandLogo />)
+    const image = container.querySelector('img')!
+    expect(image.getAttribute('src')).toBe('/logo.png')
+    expect(image.getAttribute('width')).toBe('24')
+    expect(image.getAttribute('height')).toBe('24')
+    expect(image.getAttribute('alt')).toBe('')
+    expect(image.getAttribute('aria-hidden')).toBe('true')
   })
 })
 

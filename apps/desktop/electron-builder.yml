@@ -1,4 +1,4 @@
-# electron-builder configuration for the DSH Desktop distribution build.
+# electron-builder configuration for the KL Agent Console distribution build.
 # Driven by apps/desktop/scripts/dist.ts, which records the hosted-checkout
 # marker as an extra resource before invoking the builder (the same marker
 # contract pack.ts writes; the main process reads it through resolveRepoRoot).
@@ -8,7 +8,7 @@
 # bundle; a releaser exports CSC_NAME (plus APPLE_ID, APPLE_APP_SPECIFIC_
 # PASSWORD, APPLE_TEAM_ID for notarize: true) to sign and notarize.
 appId: com.deepseek-ai.dsh-desktop
-productName: DSH Desktop
+productName: KL Agent Console
 artifactName: dsh-desktop-${version}-${arch}.${ext}
 directories:
   output: dist
@@ -26,4 +26,4 @@ mac:
     - dmg
 dmg:
   # The stock "drag to Applications" layout; no background image to maintain.
-  title: DSH Desktop ${version}
+  title: KL Agent Console ${version}

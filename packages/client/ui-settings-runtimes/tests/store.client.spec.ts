@@ -12,8 +12,8 @@ function fail<T>(message: string): RpcResponse<T> {
 }
 
 const DIRECTORY = [
-  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true },
-  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false },
+  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'claude', present: true },
+  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'codex', present: true },
   { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
 ]
 
@@ -51,7 +51,7 @@ describe('RuntimesSettingsStore', () => {
       {
         provider: 'claude-cli',
         displayName: 'Claude CLI',
-        settingsNs: 'llm-claude-cli',
+        settingsNs: '',
         active: true,
         models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }],
         failure: undefined,
@@ -71,9 +71,9 @@ describe('RuntimesSettingsStore', () => {
     const store = new RuntimesSettingsStore(api({
       providers: () => Promise.resolve(ok({
         providers: [
-          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, localCommand: 'claude', present: true },
+          { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'claude', present: true },
           // Live but missing: the route registered, yet the CLI is gone.
-          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: true, localCommand: 'codex', present: false },
+          { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'codex', present: false },
           { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
         ] as never,
         daemonRunning: true,

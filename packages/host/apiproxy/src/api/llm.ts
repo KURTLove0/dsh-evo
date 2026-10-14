@@ -17,9 +17,9 @@ export interface ConfigurableProviderView {
   provider: string
   /** Human-readable name for configuration surfaces. */
   displayName: string
-  /** Settings namespace whose section configures this provider. */
+  /** Settings namespace whose section configures this provider; empty for a native local runtime. */
   settingsNs: string
-  /** Path from that section's root to the provider's profile object (empty = whole section). */
+  /** Path from that section's root to the provider profile; empty for the whole section or no namespace. */
   settingsPath: string[]
   /** Whether the route is currently registered (its models are requestable). */
   active: boolean

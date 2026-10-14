@@ -168,11 +168,12 @@ export interface LlmConfigurableProvider {
   provider: string
   /** Human-readable provider name for configuration surfaces. */
   displayName: string
-  /** User-settings namespace whose section configures this provider. */
+  /** User-settings namespace whose section configures this provider; empty for a native local runtime. */
   settingsNs: string
   /**
    * Path from that namespace's section root to this provider's profile
-   * object; empty when the whole section is the profile.
+   * object; empty when the whole section is the profile or no settings
+   * namespace applies.
    */
   settingsPath: readonly string[]
   /**
@@ -311,6 +312,29 @@ export interface ReplayEnvelope {
 }
 
 /**
+ * One model-runtime interaction retained for diagnostics and trajectory
+ * presentation. Interactions describe work the provider-side agent already
+ * performed; they are not assistant content and never enter later model
+ * requests.
+ */
+export interface AgentInteraction {
+  /** Provider-issued item identity, stable across start/completion updates. */
+  readonly id: string
+  /** Provider-neutral interaction category. */
+  readonly kind: 'command' | 'file-change' | 'web-search' | 'tool' | 'agent' | 'other'
+  /** Concise operation label suitable for a trajectory row. */
+  readonly title: string
+  /** Terminal state, or `started` when the stream ended before settlement. */
+  readonly status: 'started' | 'completed' | 'failed' | 'interrupted'
+  /** Provider-rendered arguments, output, or participant details. */
+  readonly detail?: string
+  /** Runtime-observed lifecycle start in Unix epoch milliseconds. */
+  readonly startedAt?: number
+  /** Runtime-observed lifecycle completion in Unix epoch milliseconds. */
+  readonly completedAt?: number
+}
+
+/**
  * Raw streaming protocol emitted by adapters.
  * Block indexes correlate interleaved deltas, and `block-end` carries the
  * assembled block. Adapters emit usage before the terminal finish and nothing
@@ -330,6 +354,8 @@ export type StreamChunk =
     reason: FinishReason
     /** Replay metadata for a successful response; see {@link ReplayEnvelope}. */
     replayState?: ReplayEnvelope
+    /** Provider-side agent work recorded for trajectory presentation only. */
+    interactions?: readonly AgentInteraction[]
   }
 
 /**

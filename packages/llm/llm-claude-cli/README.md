@@ -2,14 +2,14 @@
 
 English | [中文](README.zh.md)
 
-Local-CLI-backed LLM runtimes for the DeepSeek Harness LLM seam. One plugin, two CLI drivers, one shared contract: the CLI process is the model transport only — tool execution, approval, and logging stay on the harness side; the CLI's own agentic loop never runs; every call replays its history from the session log (no CLI-side session resume).
+Local Claude CLI and Codex CLI runtimes for the DeepSeek Harness LLM seam. The plugin detects installed commands and registers their provider routes without reading or writing `settings.yaml`. Each subprocess inherits the selected CLI's user authentication, native configuration, and runtime integrations. The active profile's `cordis.yml` entry remains an optional deployment override for the executable, provider id, environment, timeout, retry policy, and fallback catalog.
 
-- **`claude`** ({@link ClaudeCliAdapter}, provider `claude-cli` by default): one `claude -p --output-format stream-json` subprocess per call. The conversation folds into a single stdin user frame; the process tree is killed at the first assistant frame (single-turn truncation), so tool calls it emits are executed by the harness, not by the CLI. Tools are exposed through the package's own schema-only MCP bridge (`./mcp-server`), and `--tools ""` removes the CLI's built-in tools from existence.
-- **`codex`** ({@link CodexCliAdapter}, provider `codex-cli` by default): one `codex app-server --listen stdio://` JSON-RPC subprocess per call, driven through the initialize → thread/start → turn/start → turn/completed lifecycle. A private per-call `CODEX_HOME` (with a rendered `config.toml` `[mcp_servers.dsh]`) isolates the harness-managed session from the user's `~/.codex`, which also isolates authentication: deployment credentials must arrive through the driver config's `env` (API key) or `extraArgs` (`-c provider` overrides) — the interactive ChatGPT login state is not available. The request's session cwd (`GenerateOptions.cwd`, carried by the loop from the session header) becomes the thread and turn working directory, so the model's environment context names the session workspace while the process itself stays in the private home. The request's sandbox mode (`GenerateOptions.sandboxMode`, resolved from the mounted sandbox-policy service; `read-only` without one) names the thread's sandbox, so the model's environment context reports the session's actual file policy instead of a hardcoded read-only.
+- **`claude`** ({@link ClaudeCliAdapter}, provider `claude-cli` by default): starts one `claude -p --output-format stream-json` subprocess per request. Harness tools are exposed through the package's schema-only MCP bridge, Claude's built-in tools are disabled, and the process stops after the first assistant frame so the harness continues to own tool execution and approval. The subprocess runs in the session cwd when one is available, so Claude's native user and project configuration apply.
+- **`codex`** ({@link CodexCliAdapter}, provider `codex-cli` by default): starts one `codex app-server --listen stdio://` subprocess per request and drives `initialize` → `thread/start` → `turn/start` → `turn/completed`. It inherits the user's Codex login, `config.toml`, MCP servers, skills, and native agent tools. The request cwd and harness sandbox policy apply to the ephemeral thread. Commands, file changes, web searches, MCP or dynamic tool calls, and agent collaboration are retained as provider-neutral trajectory interactions.
 
-The plugin layers its `cordis.yml` entry config under the optional `llm-claude-cli` user-settings section (`ctx.settings`): a changed command, catalog, or timeout reaches the very next request without restarting anything, and a `codex:` section appearing (or disappearing) activates (or deactivates) the codex route in place, while an in-flight stream keeps the facts it started with. The claude route registers whenever mounted (dormant catalog entry included); the codex route registers when its section is present or when a codex CLI is detected on this machine — detection alone activates with the driver defaults, and an explicit `codex:` section only ever overrides them (command, catalog, timeout), so a usable codex runtime never requires a `settings.yaml` entry. `retryPolicy` defaults to normal mode with five retries; both drivers default `timeoutMs` to 300000 and `contextWindow` to 200000. An advisory `models` catalog (e.g. `gpt-5-codex` for codex, `sonnet`/`opus`/`haiku` for claude) feeds discovery consumers; requests themselves stay unrestricted. Each entry may declare `efforts` (its selectable reasoning efforts) and a `defaultEffort` drawn from them; an entry without `efforts` falls back to the driver's built-in list.
+An installed default command activates its route with no plugin configuration. Explicit driver fields only override that runtime. Codex model discovery calls the installed app-server's `model/list`, so model ids, names, modalities, and reasoning efforts follow the running CLI configuration; the configured catalog is only fallback metadata when a model omits a field. Claude retains its configured fallback catalog because stream-json has no equivalent model-list method. Both drivers default `timeoutMs` to 300000 and normal retry mode to five retries.
 
-`attributionHeaders()` does not apply to either driver: the transport is a local subprocess, not a provider HTTP request.
+Every request is stateless at the CLI-session level. The harness replays conversation history from its durable session log, while Codex uses an ephemeral app-server thread and Claude uses a fresh print-mode process. `attributionHeaders()` does not apply because both transports are local subprocesses rather than provider HTTP requests.
 
 ## Model Experience
 
@@ -17,31 +17,32 @@ The plugin layers its `cordis.yml` entry config under the optional `llm-claude-c
 
 #### What the model sees
 
-The selected CLI-backed model receives the harness system prompt, folded message history (one stdin user frame per call), and the MCP schema bridge's tool schemas without adapter-authored prompt prose. The claude driver disables the CLI's built-in tools (`--tools ""`), so the only tools in existence are the harness's own; the codex driver's private `CODEX_HOME` keeps the user's global MCP servers out, so the same holds there.
+Both models receive the harness system instructions and folded durable conversation history. Claude additionally receives harness tool schemas through the schema-only MCP bridge. Codex receives the native CLI runtime environment selected by its user configuration, including enabled tools, skills, MCP servers, and project instructions, constrained by the harness-provided cwd, sandbox mode, and no-approval policy.
 
 #### Token effect
 
-Provider tokenization governs exact input inside the CLI process. The harness sends one folded user frame per call and re-folds the whole history next call, so the CLI-side prompt tokens are a function of the session log alone.
+Provider tokenization determines the exact input. The harness sends the complete folded durable history on every request; native CLI configuration may add provider-owned context that is not tokenized by this package.
 
 #### KV Cache effect
 
-The harness assembles no provider wire; usage arrives translated into disjoint input/output accounting (codex reports `inputTokens` minus `cachedInputTokens` for the input side). Provider-side cache reuse is the CLI's own behavior and is not observable or steerable from this adapter.
+The harness does not assemble the provider wire. Provider-side cache reuse is owned by the CLI and its backend; Codex cached input is translated into disjoint `inputTokens` and `cacheReadTokens` counts.
 
 ### CLI subprocess response
 
 #### What the model sees
 
-claude stream-json frames and codex app-server item events become harness reasoning, text, tool-call, usage, and finish chunks; tool arguments arrive as raw JSON strings. The claude process tree is killed at the first assistant frame, and the codex turn ends at `turn/completed` — the CLI's own agentic loop never runs past one turn.
+Claude `thinking` blocks become harness `reasoning` blocks. Codex requests a `detailed` reasoning summary and translates `item/reasoning/summaryTextDelta` plus the completed item's public `summary` into the same block type. Raw Codex reasoning content is deliberately ignored. Text and reasoning appear in the conversation; Codex's native tool and Agent activity appears in Trajectory and does not enter later model history as assistant content.
 
 #### Token effect
 
-Usage metadata is translated per driver (the codex cached-input subtraction above); no synthetic token counts are invented.
+Usage metadata is translated from the CLI protocol. No synthetic token counts are added.
 
 #### KV Cache effect
 
-Same as the request side: provider-reported cache fields ride the CLI's usage only as translated.
+Provider-reported cache fields are retained only through the translated usage values described above.
 
 ## Known Limitations and Deferred Work
 
-- **Codex authentication is isolated with the session** — the private `CODEX_HOME` keeps the user's global MCP servers out of managed sessions, and with them the interactive login state; an unauthenticated host converges each call to a single `error` finish rather than retrying forever. Provide `env`/`extraArgs` credentials in the driver section.
-- **Claude's shell-function wrappers are not spawnable** — `command` resolves through the child-process spawn path; a shell function (e.g. an environment-wrapped `claude`) needs its underlying binary path.
+- **Codex exposes reasoning summaries, not private chain of thought** — the app-server provides summary notifications when requested; raw reasoning tokens are not a supported display surface.
+- **Native CLI configuration is ambient state** — authentication, MCP servers, skills, and project configuration can change outside the harness. Each new subprocess observes the current runtime state, while a running request keeps the state with which it started.
+- **Claude's shell-function wrappers are not spawnable** — `command` resolves through child-process spawning; a shell function needs its underlying executable path in the active profile's plugin config.

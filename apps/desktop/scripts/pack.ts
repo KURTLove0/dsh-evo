@@ -1,5 +1,5 @@
 /**
- * Pack the desktop shell into a platform application bundle: `DSH Desktop.app`
+ * Pack the desktop shell into a platform application bundle: `KL Agent Console.app`
  * on macOS (a directory tree on Windows/Linux). The bundle carries only the
  * Electron main-process build — the shell has no runtime dependencies — plus
  * one extra resource recording the repository checkout this app hosts, which
@@ -20,8 +20,8 @@ import { packager } from '@electron/packager'
 /** Repository root: this script sits three directories under it. */
 const repoRoot = fileURLToPath(new URL('../../../', import.meta.url))
 
-/** Application display name (the DSH abbreviation per the brand guidelines). */
-const APP_NAME = 'DSH Desktop'
+/** Application display name. */
+const APP_NAME = 'KL Agent Console'
 /** Reverse-DNS bundle identifier. */
 const APP_BUNDLE_ID = 'com.deepseek-ai.dsh-desktop'
 /** Executable name inside the bundle; spaces would leak into ps listings. */
