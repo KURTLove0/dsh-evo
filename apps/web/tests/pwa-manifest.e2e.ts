@@ -18,7 +18,7 @@ it('ships install metadata with the built web application', async () => {
     scope: '/',
     display: 'fullscreen',
     icons: [{
-      src: '/logo.png',
+      src: '/icon.png',
       sizes: '1254x1254',
       type: 'image/png',
       purpose: 'any',
@@ -26,10 +26,10 @@ it('ships install metadata with the built web application', async () => {
   })
 })
 
-it('ships the repository logo as the page and installation icon', async () => {
+it('ships the repository icon as the page and installation icon', async () => {
   const index = await readFile(join(DIST_ROOT, 'index.html'), 'utf8')
-  expect(index).toContain('<link rel="icon" type="image/png" href="/logo.png" />')
-  const logo = await readFile(join(DIST_ROOT, 'logo.png'))
-  const source = await readFile(new URL('../../../logo.png', import.meta.url))
-  expect(logo.equals(source)).toBe(true)
+  expect(index).toContain('<link rel="icon" type="image/png" href="/icon.png" />')
+  const icon = await readFile(join(DIST_ROOT, 'icon.png'))
+  const source = await readFile(new URL('../../../icon.png', import.meta.url))
+  expect(icon.equals(source)).toBe(true)
 })

@@ -6,7 +6,7 @@ Pure React atoms (zero cordis): StateDot, DisclosureRow, ic_ds_* icons, Button/P
 
 ## Application logo
 
-`BrandLogo` renders `/logo.png` as a square image with a default size of 24 pixels. The web application serves the repository's `logo.png` at that URL. The image is decorative; its host supplies the accessible label.
+`BrandLogo` renders `/icon.png` as a square image with a default size of 24 pixels. The web application serves the repository's `icon.png` at that URL. The image is decorative; its host supplies the accessible label.
 
 ## Hover cards
 

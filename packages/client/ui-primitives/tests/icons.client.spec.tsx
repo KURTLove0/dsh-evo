@@ -58,7 +58,7 @@ describe('BrandLogo', () => {
   it('renders the shared application artwork with decorative semantics and square dimensions', () => {
     const { container } = render(<primitives.BrandLogo />)
     const image = container.querySelector('img')!
-    expect(image.getAttribute('src')).toBe('/logo.png')
+    expect(image.getAttribute('src')).toBe('/icon.png')
     expect(image.getAttribute('width')).toBe('24')
     expect(image.getAttribute('height')).toBe('24')
     expect(image.getAttribute('alt')).toBe('')

@@ -36,6 +36,7 @@ apps/desktop/dist/
 apps/desktop/build/repo-root
 .artifacts/
 .dsh-build/
+.qoder/
 .playwright-mcp/
 .orig
 .worktrees/

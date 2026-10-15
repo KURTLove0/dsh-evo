@@ -29,7 +29,7 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
               alt=""
               aria-hidden="true"
               height="24"
-              src="/logo.png"
+              src="/icon.png"
               width="24"
             />
           </div>
@@ -136,7 +136,7 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
                 alt=""
                 aria-hidden="true"
                 height="24"
-                src="/logo.png"
+                src="/icon.png"
                 width="24"
               />
             </div>
@@ -279,7 +279,7 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
                 alt=""
                 aria-hidden="true"
                 height="24"
-                src="/logo.png"
+                src="/icon.png"
                 width="24"
               />
             </div>

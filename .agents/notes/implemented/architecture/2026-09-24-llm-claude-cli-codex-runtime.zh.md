@@ -12,7 +12,7 @@ Status: implemented
 
 把包恢复为"产物承载"的 workspace 成员，而非重写丢失的源码：
 
-- **package.json 依声明树重建** —— `.d.ts` 文件携带完整公开契约（驱动配置形状与默认值 `timeoutMs: 300000` / `contextWindow: 200000`），因此 manifest、exports 映射（含 `./mcp-server`）与依赖列表都能忠实重建。后续[原生 CLI 配置决策](../feature/2026-10-14-native-cli-reasoning-and-agent-trajectory.zh.md)把配置归属交给各 CLI，并移除了恢复出的 settings 依赖。
+- **package.json 依声明树重建** —— `.d.ts` 文件携带完整公开契约（驱动配置形状与恢复当时的默认值 `timeoutMs: 300000` / `contextWindow: 200000`；Codex 超时默认值现为 `0`，见[无默认截止时间笔记](../bug-fix/2026-10-14-codex-cli-no-default-deadline.zh.md)），因此 manifest、exports 映射（含 `./mcp-server`）与依赖列表都能忠实重建。后续[原生 CLI 配置决策](../feature/2026-10-14-native-cli-reasoning-and-agent-trajectory.zh.md)把配置归属交给各 CLI，并移除了恢复出的 settings 依赖。
 - **`src/invariant.ts` 复活** —— `verify-package-invariants` 对 companion 源码做 AST 校验（注册自身包名、命名导出、空 install 的标记注释）；编译产物 `lib/invariant.js` 正是标准 companion 的逐字投影，因此按该精确形态重建源码。最小 `tsconfig.json` 让 `tsc -b` 与 references 门禁保持满足，而不触碰手工构建的 `lib/index.js`。
 - **门禁在丢失源码曾登记处重新登记** —— `check-workspace-constraints.ts` 的 `packageFileExtras` 取回 `lib/mcp-server.js` 条目；knip 得到一个以 `lib/index.js` 为 entry 的 workspace 条目，附产物承载包所需的依赖忽略（`src/` 里已没有任何引用者）。
 - **运行时解析走 launcher 维护的 flat fallback** —— `healProfilesModuleFallback` 把 `$DSH_HOME/profiles/node_modules` 维护为 app 闭包内每包一个符号链接；它只增不删，因此手工的 `dsh-llm-cli -> <repo>/packages/llm/llm-claude-cli` 符号链接跨启动稳定（未来若正式恢复提交、app manifest 重新依赖它，则回归常规 heal 路径）。Loader 从 profile 目录的 parent-walk 把裸插件名解析到 `lib/index.js`。

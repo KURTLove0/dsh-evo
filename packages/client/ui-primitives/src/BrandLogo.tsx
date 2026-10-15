@@ -8,5 +8,5 @@ import type { IconProps } from './icons/props.ts'
  * @returns The logo image; its host supplies the accessible label.
  */
 export function BrandLogo({ size = 24, className }: IconProps) {
-  return <img src="/logo.png" width={size} height={size} className={className} alt="" aria-hidden="true" />
+  return <img src="/icon.png" width={size} height={size} className={className} alt="" aria-hidden="true" />
 }

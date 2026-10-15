@@ -20,7 +20,7 @@ extraResources:
   - from: build/repo-root
     to: repo-root
 mac:
-  icon: build/icon.icns
+  icon: build/icon.png
   category: public.app-category.developer-tools
   target:
     - dmg
