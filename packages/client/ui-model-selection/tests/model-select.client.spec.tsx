@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
+import type { ModelSelection, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ComponentProps } from 'react'
-import type { ModelDirectoryState } from '../src/client/directory.ts'
+import { ModelDirectory, type ModelDirectoryState } from '../src/client/directory.ts'
 import { ModelSelect } from '../src/client/ModelSelect.tsx'
 import { zh } from '../src/client/locales.ts'
 import { zh as commonZh } from '@deepseek-ai/dsh-client-locale/src/locales/zh.ts'
@@ -161,10 +161,63 @@ describe('ModelSelect reasoning effort', () => {
     fireEvent.click(screen.getByRole('button', { name: /选择模型|当前/ }))
     fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
     fireEvent.click(screen.getByRole('menuitemradio', { name: /DeepSeek-V4-Pro/ }))
+    expect(screen.queryByRole('menu')).toBeNull()
     const toast = await screen.findByRole('alert')
     expect(toast.textContent).toContain('模型操作失败：model-unavailable: session already contains images')
     // The selection failure does not render the in-menu load strip (no Retry).
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
+  })
+
+  it('closes the menu and displays the requested model before Host validation settles', async () => {
+    const groups = [{
+      id: 'deepseek-official',
+      name: 'DeepSeek',
+      models: [
+        { id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash' },
+        { id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro' },
+      ],
+    }]
+    let settle: ((response: unknown) => void) | undefined
+    const directory = new ModelDirectory({
+      models: vi.fn(() => Promise.resolve({
+        result: {
+          ok: true as const,
+          value: {
+            current: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+            routable: true,
+            groups,
+            failures: [],
+          },
+        },
+      })),
+      selectModel: vi.fn(() => new Promise((resolve) => { settle = resolve })),
+    } as never, 'session' as SessionId, () => true)
+    await directory.load()
+    const select = (selection: ModelSelection) => directory.select(selection).then(() => true, () => false)
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory.store}
+      load={vi.fn()}
+      select={select}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /DeepSeek-V4-Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Pro' }))
+
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(screen.getByRole('button', { name: /当前 DeepSeek-V4-Pro/ })).toBeTruthy()
+    expect(directory.store.getSnapshot().status).toBe('selecting')
+
+    settle?.({
+      result: {
+        ok: true,
+        value: { selected: { provider: 'deepseek-official', model: 'deepseek-v4-pro' } },
+      },
+    })
+    await waitFor(() => { expect(directory.store.getSnapshot().status).toBe('ready') })
   })
 
   it('renders no Agent-bound control for an addressed subagent session', () => {

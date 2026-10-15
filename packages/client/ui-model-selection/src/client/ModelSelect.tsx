@@ -167,10 +167,7 @@ export function ModelSelect(
   }
 
   const settleSelection = (accepted: boolean): void => {
-    if (accepted) {
-      if (rootRef.current !== null) close(true)
-      return
-    }
+    if (accepted) return
     const message = directory.getSnapshot().error
     if (message !== null) {
       toastSeq.current += 1
@@ -184,6 +181,7 @@ export function ModelSelect(
       return
     }
     lastActionRef.current = 'select'
+    close(true)
     void select(selection).then(settleSelection)
   }
 
@@ -199,6 +197,7 @@ export function ModelSelect(
       ...effort === undefined ? {} : { reasoningEffort: effort },
     }
     lastActionRef.current = 'select'
+    close(true)
     void select(selection).then(settleSelection)
   }
 

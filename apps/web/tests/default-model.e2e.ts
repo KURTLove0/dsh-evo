@@ -1,8 +1,8 @@
-// Web e2e scenario: switching models in the composer is how this deployment's
-// default is chosen. The gesture writes the shared `agent-default-model` settings section, a
-// session created afterwards starts from it, and a session that already logged
-// a route keeps deriving from its own log — the tier order the gateway
-// resolves on every read.
+// Web e2e scenario: switching models in an active conversation updates that
+// session and chooses this deployment's default. The gesture writes the shared
+// `agent-default-model` settings section, a session created afterwards starts
+// from it, and unrelated sessions keep their logged routes — the tier order
+// the gateway resolves on every read.
 // Zero model calls: the switch is settings/llm-domain traffic only, so there
 // is no fixture and a stray stream would fail loud because the adapter registry is empty. Both
 // routes are declared host-side (not through the UI, which has its own
@@ -18,11 +18,17 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
-import { launchWebScaffold, watchConsole, type WebScaffold } from './scaffold.ts'
+import {
+  assertFixtureInventory, captureStableAria, compareOrRefreshGolden,
+  launchWebScaffold, watchConsole, webSnapshotMode, type WebScaffold,
+} from './scaffold.ts'
 import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './support.ts'
 
 /** Points the shipped shared Agent default at this scenario's own route. */
 const OVERLAY = fileURLToPath(new URL('./default-model.overlay.yml', import.meta.url))
+const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/default-model', import.meta.url))
+const SWITCHED_EXPECTED = join(SNAPSHOT_DIR, 'switched.expected.md')
+const MODE = webSnapshotMode()
 
 /** The route this scenario starts on, patched over the shipped default. */
 const START_ROUTE = 'origin-gateway'
@@ -94,10 +100,16 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await scaffold?.close()
   })
 
-  it('writes the switched model as the default and leaves a logged session alone', async () => {
+  it('switches the active logged session, saves the default, and leaves other sessions alone', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-default-model'))
-    // A session that has already run a turn, spelled as the fact a turn
-    // leaves behind: its own logged route.
+    const active = scaffold.ctx.agents.list().find(agent => agent.session.header.cwd === join(scaffold.workspaceCwd, 'workspace'))
+    if (active === undefined) throw new Error('connected workspace did not publish its active session')
+    active.session.append('request/header', {
+      header: { config: { provider: START_ROUTE, model: START_MODEL } },
+      reason: 'initial',
+    })
+    // An unrelated session has its own logged route and must not inherit a
+    // switch made in the active conversation.
     const loggedId = await createSession('default-model-logged')
     scaffold.ctx.sessions.get(SessionId(loggedId))?.append('request/header', {
       header: { config: { provider: START_ROUTE, model: START_MODEL } },
@@ -109,6 +121,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await trigger.click()
     await page.getByRole('menuitem', { name: /模型/ }).click()
     await page.getByRole('menuitemradio', { name: 'Acme Large' }).click()
+
+    await expect.poll(() => currentOf(active.id)).toEqual({ provider: ROUTE, model: MODEL })
+    const snapshot = await captureStableAria(page, '[aria-label^="选择模型"]', scaffold.workspaceCwd)
+    await compareOrRefreshGolden(SWITCHED_EXPECTED, snapshot, MODE)
 
     // The switch is what sets the default: the shared Agent-route settings section
     // now names it, beside the provider profiles the Models page writes.
@@ -164,4 +180,8 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await expect.poll(async () => box.isEnabled(), { timeout: 15_000 }).toBe(true)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
+
+  it('keeps its snapshot inventory closed', async () => {
+    await assertFixtureInventory(SNAPSHOT_DIR, ['switched.expected.md'])
+  })
 })

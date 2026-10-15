@@ -38,14 +38,17 @@ export class ModelDirectoryResolver extends Service {
 
   /** Localized composer-block copy; this plugin owns the string it raises. */
   private readonly blockReason: () => string
+  /** Localized block while the Host validates and commits a selection. */
+  private readonly selectingReason: () => string
 
   /**
    * @param ctx - owning root context (the service registers itself as `models`).
-   * @param config - the bound translator for this plugin's own dictionary.
+   * @param config - localized composer-block text owned by this plugin.
    */
-  constructor(ctx: Context, config: { blockReason: () => string }) {
+  constructor(ctx: Context, config: { blockReason: () => string; selectingReason: () => string }) {
     super(ctx, 'modelDirectories')
     this.blockReason = config.blockReason
+    this.selectingReason = config.selectingReason
     ctx.on('connection/reset', () => {
       for (const directory of this.live.directories.values()) directory.resetConnected()
     })
@@ -88,9 +91,13 @@ export class ModelDirectoryResolver extends Service {
     const conversation = this.ctx.get('conversation')
     if (conversation !== undefined) {
       const publish = (): void => {
-        conversation.blocks.set(sessionId, directory.store.getSnapshot().routable === false
-          ? { reason: this.blockReason() }
-          : undefined)
+        const state = directory.store.getSnapshot()
+        conversation.blocks.set(sessionId,
+          state.status === 'selecting'
+            ? { reason: this.selectingReason() }
+            : state.routable === false
+              ? { reason: this.blockReason() }
+              : undefined)
       }
       publish()
       actx.effect(() => {

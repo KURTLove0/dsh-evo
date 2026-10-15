@@ -1,0 +1,3 @@
+- button "选择模型，当前 Acme Large":
+  - text: Acme Large
+  - img

@@ -265,6 +265,19 @@ describe('ui-model-selection dual entry', () => {
     expect(b.blockOf('s1')).toBeUndefined()
   })
 
+  it('blocks prompt submission while a model selection is pending', async () => {
+    const b = await bench()
+    b.mint('s1')
+    const face = b.seat().inject!(sid('s1'))
+    const ready = face.directory.getSnapshot()
+
+    face.directory.set({ ...ready, status: 'selecting' })
+    expect(b.blockOf('s1')?.reason).toBe(zh['blocked.selecting'])
+
+    face.directory.set({ ...ready, status: 'ready' })
+    expect(b.blockOf('s1')).toBeUndefined()
+  })
+
   it('never blocks on catalog membership alone', async () => {
     const b = await bench()
     b.mint('s1')

@@ -86,15 +86,21 @@ export class ModelDirectory {
   }
 
   /**
-   * Select the complete provider/model/reasoning selection (both entries submit through here). Success
-   * updates the shared current; failure surfaces on the store and throws so
-   * each entry's own retry surface engages.
+   * Select the complete provider/model/reasoning selection (both entries submit through here).
+   * The requested selection is visible while the Host validates it; success
+   * reconciles the Host result, while failure restores the previous selection
+   * and throws so each entry's own retry surface engages.
    * @param selection - provider, provider-owned model id, and optional adapter-owned effort.
  */
   async select(selection: ModelSelection): Promise<void> {
     this.assertAvailable()
     const generation = ++this.generation
-    this.store.update((s) => { s.status = 'selecting'; s.error = null })
+    const previous = this.store.getSnapshot()
+    this.store.update((s) => {
+      s.current = selection
+      s.status = 'selecting'
+      s.error = null
+    })
     const { result } = await this.sessions.selectModel({
       sessionId: this.sessionId,
       provider: selection.provider,
@@ -108,7 +114,12 @@ export class ModelDirectory {
       return
     }
     if (!result.ok) {
-      this.store.update((s) => { s.status = 'error'; s.error = `${result.error.code}: ${result.error.message}` })
+      this.store.update((s) => {
+        s.current = previous.current
+        s.routable = previous.routable
+        s.status = 'error'
+        s.error = `${result.error.code}: ${result.error.message}`
+      })
       throw new Error(`session.selectModel failed: ${result.error.code}: ${result.error.message}`)
     }
     // The Host validated the route before accepting it, so a selection that
