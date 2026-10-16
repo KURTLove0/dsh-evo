@@ -40,6 +40,9 @@ const compactionStreamExpected = join(compactionScenarioDir, 'stream-json.expect
 const compactionConfigPath = fileURLToPath(new URL('../compaction.cordis.snapshot.yml', import.meta.url))
 const credentialsScenarioDir = join(snapshotsDir, 'missing-credential')
 const credentialsConfigPath = fileURLToPath(new URL('../credentials.cordis.snapshot.yml', import.meta.url))
+const cursorRuntimeScenarioDir = join(snapshotsDir, 'cursor-runtime')
+const cursorRuntimeConfigPath = fileURLToPath(new URL('../cursor-runtime.cordis.snapshot.yml', import.meta.url))
+const cursorRuntimeFixturePath = fileURLToPath(new URL('./fixtures/cursor-runtime-agent.mjs', import.meta.url))
 // Same keyless composition as the missing-credential scenario: the endpoint is
 // never dialed either way, because a supplied-but-unusable key fails credential
 // resolution exactly where an absent one does.
@@ -243,6 +246,38 @@ async function prepareCliMockFixture(cwd: string): Promise<void> {
 }
 
 describe('headless stream-json snapshots', () => {
+  it('runs Cursor CLI as the assembled headless model runtime', async () => {
+    const streamExpected = join(cursorRuntimeScenarioDir, 'stream-json.expected.jsonl')
+    let runCwd = ''
+    const result = await runLoaderSmoke({
+      label: 'Cursor runtime headless stream-json snapshot',
+      tempDirPrefix: 'headless-snapshot-cursor-runtime-',
+      binScript,
+      libBinScript: binScript,
+      configPath: cursorRuntimeConfigPath,
+      binArgs: [cursorRuntimeConfigPath, 'Use the Cursor runtime fixture.'],
+      tsconfigPath,
+      env: {
+        DSH_SNAPSHOT: 'replay',
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
+      },
+      prepare: async (cwd) => {
+        runCwd = cwd
+        await copyFile(cursorRuntimeFixturePath, join(cwd, 'cursor-runtime-agent.mjs'))
+      },
+    })
+
+    expect(result.stderr).toBe('')
+    const normalized = normalizeHeadlessStream(result.stdout, runCwd)
+    if (refreshing) {
+      await mkdir(cursorRuntimeScenarioDir, { recursive: true })
+      await writeFile(streamExpected, normalized)
+    }
+    expect(normalized).toBe(await readFile(streamExpected, 'utf8'))
+    expect(normalized).toContain('Cursor runtime completed.')
+    expect(normalized).toContain('cursor-tool-1')
+  }, LOADER_SMOKE_TEST_TIMEOUT_MS)
+
   it('runs one task through the product headless profile command', async () => {
     const task = 'Prove the product headless profile path with one real tool round trip.'
     const result = await runLoaderSmoke({

@@ -124,7 +124,7 @@ describe.skipIf(!builtArtifactsExist)('dsh daemon lifecycle assembled snapshot',
     }).toMatchInlineSnapshot(`
       {
         "exitCode": 0,
-        "stdout": "dsh daemon: pid {{pid}}, sensing claude, codex every 15000ms, health on http://127.0.0.1:{{port}}/health",
+        "stdout": "dsh daemon: pid {{pid}}, sensing claude, codex, cursor-agent every 15000ms, health on http://127.0.0.1:{{port}}/health",
       }
     `)
   }, 60_000)

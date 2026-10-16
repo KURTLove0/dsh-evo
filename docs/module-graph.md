@@ -19,6 +19,7 @@ flowchart TD
   subgraph group_llm["packages/llm"]
     pkg_llm["llm"]
     pkg_llm_claude_cli["llm-claude-cli"]
+    pkg_llm_cursor_cli["llm-cursor-cli"]
     pkg_llm_deepseek["llm-deepseek"]
     pkg_llm_pi_ai["llm-pi-ai"]
     pkg_llm_retry["llm-retry"]
@@ -60,6 +61,7 @@ flowchart TD
     pkg_subagent_acp["subagent-acp"]
     pkg_subagent_claude_code["subagent-claude-code"]
     pkg_subagent_codex["subagent-codex"]
+    pkg_subagent_cursor["subagent-cursor"]
     pkg_subagent_dsh_sdk["subagent-dsh-sdk"]
     pkg_subagent_fork_in_process["subagent-fork-in-process"]
     pkg_subagent_in_process_driver["subagent-in-process-driver"]
@@ -155,6 +157,7 @@ flowchart TD
     pkg_client_ui_settings_plugin_inventory["client-ui-settings-plugin-inventory"]
     pkg_client_ui_settings_plugins["client-ui-settings-plugins"]
     pkg_client_ui_settings_runtimes["client-ui-settings-runtimes"]
+    pkg_client_ui_settings_stats["client-ui-settings-stats"]
     pkg_client_ui_sidebar["client-ui-sidebar"]
     pkg_client_ui_skill["client-ui-skill"]
     pkg_client_ui_slots["client-ui-slots"]
@@ -343,6 +346,7 @@ flowchart TD
   subgraph group_workspace["packages/workspace"]
     pkg_workspace["workspace"]
   end
+  pkg_llm_cursor_cli --> pkg_invariants
   pkg_tool_fs --> pkg_session
   pkg_tool_fs_search --> pkg_session
   pkg_subagent --> pkg_agent_presets
@@ -384,6 +388,7 @@ flowchart TD
   pkg_experimental_tool_agent_team --> pkg_session
   pkg_experimental_tool_agent_team --> pkg_system_prompt
   pkg_tool_call_timeout_policy --> pkg_llm
+  pkg_daemon --> pkg_invariants
   pkg_host_directory_picker_auto --> pkg_client_ui_directory_picker_browse
   pkg_host_directory_picker_auto --> pkg_client_ui_directory_picker_native
   pkg_host_directory_picker_auto --> pkg_host_directory_picker_browse
@@ -418,6 +423,13 @@ flowchart TD
   pkg_client_ui_settings_runtimes --> pkg_client_runtime
   pkg_client_ui_settings_runtimes --> pkg_client_ui_settings
   pkg_client_ui_settings_runtimes --> pkg_invariants
+  pkg_client_ui_settings_stats --> pkg_api_remotes
+  pkg_client_ui_settings_stats --> pkg_client_connection
+  pkg_client_ui_settings_stats --> pkg_client_locale
+  pkg_client_ui_settings_stats --> pkg_client_runtime
+  pkg_client_ui_settings_stats --> pkg_client_ui_settings
+  pkg_client_ui_settings_stats --> pkg_invariants
+  pkg_client_ui_settings_stats --> pkg_token_meter
   pkg_client_ui_skill --> pkg_client_connection
   pkg_client_ui_skill --> pkg_client_ui_tool
   pkg_client_ui_subagent --> pkg_client_ui_input_trigger
@@ -467,6 +479,7 @@ flowchart TD
 | [`tool-skill`](../packages/skill/tool-skill) | `skill` | — |
 | [`subagent-claude-code`](../packages/subagent/subagent-claude-code) | `subagent` | — |
 | [`subagent-codex`](../packages/subagent/subagent-codex) | `subagent` | — |
+| [`subagent-cursor`](../packages/subagent/subagent-cursor) | `subagent` | — |
 | [`subagent-fork-in-process`](../packages/subagent/subagent-fork-in-process) | `subagent` | — |
 | [`subagent-spawn-in-process`](../packages/subagent/subagent-spawn-in-process) | `subagent` | — |
 | [`tool-subagent`](../packages/subagent/tool-subagent) | `subagent` | — |
@@ -545,7 +558,6 @@ flowchart TD
 | [`command-feedback`](../packages/feedback/command-feedback) | `feedback` | — |
 | [`message-feedback`](../packages/feedback/message-feedback) | `feedback` | — |
 | [`repeat-tool-reminder`](../packages/guard/repeat-tool-reminder) | `guard` | — |
-| [`daemon`](../packages/host/daemon) | `host` | — |
 | [`host-apiproxy`](../packages/host/apiproxy) | `host` | — |
 | [`host-directory-picker`](../packages/host/directory-picker) | `host` | — |
 | [`host-directory-picker-browse`](../packages/host/directory-picker-browse) | `host` | — |
@@ -614,6 +626,7 @@ flowchart TD
 | [`typert-protocol`](../packages/typert/protocol) | `typert` | — |
 | [`typert-registry`](../packages/typert/registry) | `typert` | — |
 | [`workflow`](../packages/workflow/workflow) | `workflow` | — |
+| [`llm-cursor-cli`](../packages/llm/llm-cursor-cli) | `llm` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`tool-fs`](../packages/fs/tool-fs) | `fs` | [`session`](../packages/core/session) |
 | [`tool-fs-search`](../packages/fs/tool-fs-search) | `fs` | [`session`](../packages/core/session) |
 | [`subagent`](../packages/subagent/subagent) | `subagent` | [`agent-presets`](../packages/preset/agent-presets), [`jobs`](../packages/jobs/jobs), [`sandbox`](../packages/sandbox/sandbox), [`sandbox-policy`](../packages/sandbox/sandbox-policy), [`session-persistence`](../packages/session/session-persistence), [`session-projection`](../packages/session/session-projection), [`session-projection-cache`](../packages/session/session-projection-cache), [`user-approval`](../packages/interaction/user-approval) |
@@ -644,6 +657,7 @@ flowchart TD
 | [`tmux-context`](../packages/context/tmux-context) | `context` | [`session`](../packages/core/session) |
 | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team) | `experimental` | [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt) |
 | [`tool-call-timeout-policy`](../packages/guard/timeout-policy) | `guard` | [`llm`](../packages/llm/llm) |
+| [`daemon`](../packages/host/daemon) | `host` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`host-directory-picker-auto`](../packages/host/directory-picker-auto) | `host` | [`client-ui-directory-picker-browse`](../packages/client/ui-directory-picker-browse), [`client-ui-directory-picker-native`](../packages/client/ui-directory-picker-native), [`host-directory-picker-browse`](../packages/host/directory-picker-browse), [`host-directory-picker-native`](../packages/host/directory-picker-native) |
 | [`tool-ask-user`](../packages/interaction/tool-ask-user) | `interaction` | [`agent`](../packages/core/agent) |
 | [`lsp-stdio`](../packages/lsp/lsp-stdio) | `lsp` | [`brand`](../packages/util/brand) |
@@ -660,6 +674,7 @@ flowchart TD
 | [`client-ui-conversation`](../packages/client/ui-conversation) | `client` | [`api-remotes`](../packages/api/remotes), [`goal`](../packages/goal/goal), [`permission-presets`](../packages/interaction/permission-presets), [`plan-mode`](../packages/plan/plan-mode), [`session-stats`](../packages/session/session-stats), [`token-meter`](../packages/llm/token-meter), [`tool-todo`](../packages/todo/tool-todo) |
 | [`client-ui-renderer`](../packages/client/ui-renderer) | `client` | [`client-runtime`](../packages/client/runtime) |
 | [`client-ui-settings-runtimes`](../packages/client/ui-settings-runtimes) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-settings-stats`](../packages/client/ui-settings-stats) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants), [`token-meter`](../packages/llm/token-meter) |
 | [`client-ui-skill`](../packages/client/ui-skill) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-tool`](../packages/client/ui-tool) |
 | [`client-ui-subagent`](../packages/client/ui-subagent) | `client` | [`client-ui-input-trigger`](../packages/client/ui-input-trigger), [`subagent`](../packages/subagent/subagent), [`token-meter`](../packages/llm/token-meter) |
 | [`acp-demo`](../packages/examples/acp-demo) | `examples` | [`session-query`](../packages/session-query/session-query) |

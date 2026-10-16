@@ -95,6 +95,12 @@
     - id: llm-pi-ai
       name: '@deepseek-ai/dsh-llm-pi-ai'
 
+    # Local Cursor model runtime. The plugin always declares the route for the
+    # settings surface and activates it only when `cursor-agent` is executable
+    # in the Host subprocess world.
+    - id: llm-cursor-cli
+      name: '@deepseek-ai/dsh-llm-cursor-cli'
+
     - id: session-persistence-jsonl
       name: '@deepseek-ai/dsh-session-persistence-jsonl'
       config:
