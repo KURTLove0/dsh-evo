@@ -307,10 +307,9 @@
   margin: 0;
   padding: 0 7px 3px;
   color: var(--dsw-alias-label-tertiary);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 18px;
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 .moduleItems {
@@ -350,6 +349,25 @@
   padding-left: 0;
   padding-top: 0;
   border-top: 0;
+}
+
+/* The configuration module nav seat: above the foot's divider, below the
+   browsing region — the owner draws its own group chrome. */
+.configArea {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  margin-left: -4px;
+  margin-right: calc(-1 * var(--dsh-sidebar-inline-padding));
+  padding-left: 4px;
+  overflow: hidden;
+}
+
+.collapsed .configArea {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
 }
 
 /* Footer seats: additive actions stack above Settings. Each occupant owns its

@@ -1,6 +1,6 @@
-- dialog "Settings":
+- dialog "Config":
   - navigation:
-    - text: Settings
+    - text: Config
     - button "General":
       - img
       - text: General

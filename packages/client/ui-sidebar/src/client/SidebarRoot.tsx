@@ -201,6 +201,12 @@ export function SidebarRoot({
         })}
       </div>
 
+      {/* The configuration module nav sits between the browsing region and
+          the foot in both sidebar widths. */}
+      <div className={css.configArea}>
+        {renderSlot('sidebar.config', { wide })}
+      </div>
+
       {/* Footer actions stack above Settings in both sidebar widths. */}
       <div className={css.footArea}>
         <div className={css.footerActions}>

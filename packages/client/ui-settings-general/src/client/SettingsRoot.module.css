@@ -1,50 +1,8 @@
-/* Settings shell (figma 501:29904 mask context / 501:29947 panel): sidebar
-   foot trigger row + centered 1080x700 modal panel. The trigger uses the
-   sidebar foot's 42px row / 36px rail circle rhythm; the
-   panel is a two-column layout — 188px nav rail + content column with a
-   54px header and the 24px-padded options area. */
-
-/* Trigger row: the 42px foot-row box shared with the Cordis footer action. */
-.trigger {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: calc(100% + 4px);
-  height: 42px;
-  margin: 4px -2px;
-  padding: 0 10px 0 8px;
-  box-sizing: border-box;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  overflow: hidden;
-  color: var(--dsw-alias-label-primary);
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 22px;
-}
-
-.trigger:hover {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
-/* Rail trigger: the same 36x36 circle box as the other rail controls. */
-.trigger.rail {
-  width: 36px;
-  height: 36px;
-  margin: 8px 0 10px;
-  justify-content: center;
-  gap: 0;
-  padding: 0;
-  border-radius: 50%;
-}
-
-.triggerLabel {
-  overflow: hidden;
-  white-space: nowrap;
-}
+/* Settings shell (figma 501:29904 mask context / 501:29947 panel): centered
+   1080x700 modal panel. The panel is a two-column layout while the Settings
+   module is open — 188px nav rail + content column with a 54px header and
+   the 24px-padded options area; a single-page module drops the rail and the
+   content column fills the panel. */
 
 /* Full-viewport layer (figma Mask 501:29946 #000@24%): mask tokens match the
    Modal primitive (--dsw-alias-bg-mask-1 + --dsw-mask-blur). */
@@ -66,9 +24,9 @@
 
 /* Panel (figma Settings 501:29947): r24, white, lv3 shadow (figma effects
    match --dsw-shadow-lv3 exactly); figma's 1080x700 is shrunk to 800 wide.
-   One height for every section, taken from the viewport rather than the
-   content: sections differ by hundreds of pixels (a settings list against the
-   composition editor), and a content-sized panel would resize under the
+   One height for every module, taken from the viewport rather than the
+   content: a single-page module fills the whole column, the Settings module
+   keeps the nav rail, and a content-sized panel would resize under the
    pointer on every nav click. Whatever does not fit scrolls in `.options`. */
 .panel {
   position: relative;

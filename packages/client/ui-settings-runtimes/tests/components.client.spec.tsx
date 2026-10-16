@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-/** Section rendering over a scripted wire face: rows, liveness, and the loaded-models view. */
+/** Section rendering over a scripted wire face: summary strip, table rows, liveness, and the loaded-models view. */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
-import { DAEMON_INSTALL_COMMAND, DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy } from '../src/client/RuntimesSection.tsx'
-import { SidebarRuntimeAction } from '../src/client/SidebarRuntimeAction.tsx'
+import {
+  DAEMON_INSTALL_COMMAND, DAEMON_START_COMMAND, RuntimesSection, modelsCountCopy, summaryCountsCopy,
+} from '../src/client/RuntimesSection.tsx'
 import type { RuntimesSectionInjected } from '../src/client/RuntimesSection.tsx'
 import { RuntimesSettingsStore } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
@@ -23,8 +24,8 @@ function fail<T>(message: string): RpcResponse<T> {
 }
 
 const DIRECTORY = [
-  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true },
-  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false },
+  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: 'llm-claude-cli', settingsPath: ['claude'], active: true, declared: false, localCommand: 'claude' },
+  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: 'llm-claude-cli', settingsPath: ['codex'], active: false, declared: true, localCommand: 'codex' },
 ]
 
 /** One provider-group entry of the host model catalog. */
@@ -69,18 +70,52 @@ describe('RuntimesSection', () => {
     expect(document.body.textContent).toBe('')
   })
 
-  it('renders each live runtime row with liveness, route id, and loaded models', async () => {
+  it('renders the summary strip with whole-deployment counts and daemon presence', async () => {
     await mountSection()
-    // Live runtime: name, route id, both loaded models, and the count caption.
+    // One live row whose listing succeeded: one runtime, one online, daemon up.
+    expect(screen.getByText(summaryCountsCopy(en.summaryCounts, 1, 1))).toBeTruthy()
+    expect(screen.getByText(en.daemonChipRunning)).toBeTruthy()
+    expect(screen.queryByText(en.daemonChipStopped)).toBeNull()
+  })
+
+  it('counts a failed listing as not online and flips the daemon chip when no daemon runs', async () => {
+    await mountSection({
+      models: () => Promise.resolve(ok({
+        groups: [],
+        failures: [{ id: 'claude-cli', name: 'Claude CLI', message: 'the CLI is not installed' }],
+      })),
+      providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })),
+    })
+    expect(screen.getByText(summaryCountsCopy(en.summaryCounts, 1, 0))).toBeTruthy()
+    expect(screen.getByText(en.daemonChipStopped)).toBeTruthy()
+    expect(screen.queryByText(en.daemonChipRunning)).toBeNull()
+  })
+
+  it('renders the table with its column heads', async () => {
+    await mountSection()
+    expect(screen.getByRole('table')).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: en.colService })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: en.colHealth })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: en.colModels })).toBeTruthy()
+    expect(screen.getByRole('columnheader', { name: en.colCommand })).toBeTruthy()
+  })
+
+  it('renders each live runtime row with identity, origin tag, health, models, and command', async () => {
+    await mountSection()
+    // Live runtime: name, route id, origin tag, both loaded models, the count
+    // caption, the local command, and the online health word.
     expect(screen.getByText('Claude CLI')).toBeTruthy()
     expect(screen.getByText('claude-cli')).toBeTruthy()
+    expect(screen.getByText(en.tagBuiltin)).toBeTruthy()
     expect(screen.getByText('sonnet-4-5')).toBeTruthy()
     expect(screen.getByText('opus-4-6')).toBeTruthy()
     expect(screen.getByText(modelsCountCopy(en.modelsCount, 2))).toBeTruthy()
+    expect(screen.getByText('claude')).toBeTruthy()
     expect(screen.getByRole('img', { name: en.statusActive })).toBeTruthy()
     // The dormant codex route renders nowhere: it is a configuration
     // candidate for the Models page, not a runtime this deployment can call.
     expect(screen.queryByText('Codex CLI')).toBeNull()
+    expect(screen.queryByText(en.tagCustom)).toBeNull()
   })
 
   it('renders the empty-catalog caption for a live runtime with no models', async () => {
@@ -91,20 +126,23 @@ describe('RuntimesSection', () => {
     expect(screen.queryByText(modelsCountCopy(en.modelsCount, 0))).toBeNull()
   })
 
-  it('renders the catalog failure text on the failing live row', async () => {
+  it('renders the catalog failure on the failing live row as its health', async () => {
     await mountSection({
       models: () => Promise.resolve(ok({
         groups: [],
         failures: [{ id: 'claude-cli', name: 'Claude CLI', message: 'the CLI is not installed' }],
       })),
     })
-    expect(screen.getByRole('alert').textContent).toBe(`${en.modelsFailure}: the CLI is not installed`)
+    expect(screen.getByRole('alert').textContent).toContain('the CLI is not installed')
+    expect(screen.getByRole('img', { name: en.statusFailed })).toBeTruthy()
+    expect(screen.queryByRole('img', { name: en.statusActive })).toBeNull()
   })
 
   it('renders the empty-deployment notice when the directory declares nothing', async () => {
     await mountSection({ providers: () => Promise.resolve(ok({ providers: [] as never, daemonRunning: true })) })
     expect(screen.getByText(en.empty)).toBeTruthy()
     expect(screen.queryByText(en.statusActive)).toBeNull()
+    expect(screen.queryByRole('table')).toBeNull()
   })
 
   it('renders the daemon hint while no sensing daemon runs, with install and start steps', async () => {
@@ -172,30 +210,14 @@ describe('RuntimesSection', () => {
   })
 })
 
-describe('SidebarRuntimeAction', () => {
-  it('names the side panel and returns focus to its trigger after Escape', () => {
-    const controller = new RuntimesSettingsStore(scriptedFace())
-    render(<SidebarRuntimeAction
-      wide
-      useSessions={(() => undefined) as never}
-      useWorkspaces={(() => undefined) as never}
-      controller={controller}
-      useSnapshot={bindSnapshotSelector(controller.store)}
-      t={t}
-    />)
-    const trigger = screen.getByRole('button', { name: en.nav })
-    fireEvent.click(trigger)
-    const panel = screen.getByRole('dialog', { name: en.title })
-    expect(panel.querySelector('h2')?.textContent).toBe(en.title)
-    fireEvent.keyDown(panel, { key: 'Escape' })
-    expect(screen.queryByRole('dialog', { name: en.title })).toBeNull()
-    expect(document.activeElement).toBe(trigger)
-  })
-})
-
-describe('modelsCountCopy', () => {
+describe('copy templating', () => {
   it('spells the one count placeholder', () => {
     expect(modelsCountCopy('{count} model(s)', 3)).toBe('3 model(s)')
     expect(modelsCountCopy('{count} 个模型', 12)).toBe('12 个模型')
+  })
+
+  it('spells the total and online placeholders', () => {
+    expect(summaryCountsCopy('{total} runtime(s) · {online} online', 8, 7)).toBe('8 runtime(s) · 7 online')
+    expect(summaryCountsCopy('{total} 个运行时 · {online} 个在线', 8, 7)).toBe('8 个运行时 · 7 个在线')
   })
 })

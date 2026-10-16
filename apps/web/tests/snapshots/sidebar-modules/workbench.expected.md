@@ -4,7 +4,3 @@
     - img
     - text: Business workflow
     - img
-  - button "Runtimes":
-    - img
-    - text: Runtimes
-    - img

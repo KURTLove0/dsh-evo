@@ -41,7 +41,7 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
 
   /** The settings dialog, opened on the Agent-presets section. */
   function settingsDialog(): Locator {
-    return page.getByRole('dialog', { name: '设置' })
+    return page.getByRole('dialog', { name: '配置' })
   }
 
   /** Tokenize the lane-owned preset root after general aria normalization. */
@@ -82,7 +82,7 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
 
   it('offers the roster with copy as the only way to create', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-preset-authoring-section'))
-    await page.getByRole('button', { name: '设置', exact: true }).click()
+    await page.getByRole('navigation', { name: '配置' }).getByRole('button', { name: '设置', exact: true }).click()
     const dialog = settingsDialog()
     await dialog.waitFor({ timeout: 10_000 })
     await dialog.getByRole('button', { name: 'Agent 预设' }).click()
@@ -247,7 +247,7 @@ describe('web e2e: agent-preset authoring is a host-side copy', () => {
     // the way to a composed host session.
     await settingsDialog().getByRole('button', { name: '关闭' }).last().click()
     await connectFreshWorkspaceZh(page, scaffold.workspaceCwd)
-    await page.getByRole('button', { name: '设置', exact: true }).click()
+    await page.getByRole('navigation', { name: '配置' }).getByRole('button', { name: '设置', exact: true }).click()
     const dialog = settingsDialog()
     await dialog.waitFor({ timeout: 10_000 })
     await dialog.getByRole('button', { name: 'Agent 预设' }).click()

@@ -29,6 +29,13 @@ export interface RuntimeRow {
   settingsNs: string
   /** Whether the route is registered and its models are requestable (always true here). */
   active: boolean
+  /**
+   * Whether the owning adapter knows this route only because configuration declared it; absent
+   * when the adapter draws no such distinction.
+   */
+  declared: boolean | undefined
+  /** The executable a local-CLI runtime shells out to; absent for remote API providers. */
+  localCommand: string | undefined
   /** Models the live runtime currently loads; absent until a load succeeds. */
   models: RuntimeModel[] | undefined
   /** Catalog failure text when the live runtime failed to list its models. */
@@ -115,6 +122,8 @@ export class RuntimesSettingsStore {
             displayName: entry.displayName,
             settingsNs: entry.settingsNs,
             active: entry.active,
+            declared: entry.declared,
+            localCommand: entry.localCommand,
             models,
             failure: group === undefined ? failed.get(entry.provider) : undefined,
           }]

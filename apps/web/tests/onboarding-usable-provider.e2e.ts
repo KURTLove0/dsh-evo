@@ -49,8 +49,8 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await credentialStep.getByRole('button', { name: '稍后配置' }).click()
     await credentialStep.waitFor({ state: 'detached', timeout: 15_000 })
 
-    await page.getByRole('button', { name: '设置', exact: true }).click()
-    const settings = page.getByRole('dialog', { name: '设置' })
+    await page.getByRole('navigation', { name: '配置' }).getByRole('button', { name: '设置', exact: true }).click()
+    const settings = page.getByRole('dialog', { name: '配置' })
     await settings.waitFor({ timeout: 10_000 })
     // The onboarding step no longer navigates into Settings on dismissal, so
     // enter the Models section explicitly before exercising its normal cards.
@@ -87,7 +87,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
 
   it('stops prompting for DeepSeek once the other provider can serve requests', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-onboarding-other-provider'))
-    const settings = page.getByRole('dialog', { name: '设置' })
+    const settings = page.getByRole('dialog', { name: '配置' })
     await settings.getByRole('textbox', { name: 'API 密钥', exact: true }).fill('sk-e2e-minimax')
     await settings.getByRole('button', { name: '保存', exact: true }).click()
     await settings.getByText('已保存 minimax-cn。', { exact: true }).waitFor({ timeout: 15_000 })
@@ -113,7 +113,7 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
 
     // The Models page agrees: DeepSeek stays a row rather than reopening its
     // setup card over a user who already has somewhere to send a request.
-    await page.getByRole('button', { name: '设置', exact: true }).click()
+    await page.getByRole('navigation', { name: '配置' }).getByRole('button', { name: '设置', exact: true }).click()
     await settings.waitFor({ timeout: 10_000 })
     await settings.getByRole('button', { name: '模型' }).click()
     await settings.getByRole('button', { name: '编辑 DeepSeek (deepseek-official)' }).waitFor({ timeout: 10_000 })

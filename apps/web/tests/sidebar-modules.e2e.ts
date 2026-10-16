@@ -34,13 +34,14 @@ describe('web e2e: sidebar workbench modules', () => {
     await scaffold?.close()
   })
 
-  it('shows both first-level modules and opens each panel from the sidebar', async () => {
+  it('shows the workbench module and opens its panel from the sidebar', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules'))
     const nav = page.getByRole('navigation', { name: 'Workbench' })
     const workflow = nav.getByRole('button', { name: 'Business workflow' })
-    const runtimes = nav.getByRole('button', { name: 'Runtimes' })
     await workflow.waitFor()
-    await runtimes.waitFor()
+    // The Workbench carries the business-workflow module alone: the runtimes
+    // module row lives under the sidebar's config nav, not here.
+    expect(await nav.getByRole('button').count()).toBe(1)
     const snapshot = await captureStableAria(page, 'nav[aria-label="Workbench"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(NAV_EXPECTED, snapshot, MODE)
 
@@ -59,35 +60,25 @@ describe('web e2e: sidebar workbench modules', () => {
     await workflowPanel.getByRole('button', { name: 'Close business workflow' }).click()
     await workflowPanel.waitFor({ state: 'detached' })
     await expect.poll(() => workflow.evaluate(element => element === document.activeElement)).toBe(true)
-
-    await runtimes.click()
-    const runtimePanel = page.getByRole('dialog', { name: 'Runtimes' })
-    await runtimePanel.waitFor()
-    await runtimePanel.getByRole('heading', { name: 'Runtimes' }).waitFor()
-    await expect.poll(() => runtimePanel.getByRole('button', { name: 'Refresh runtimes' })
-      .evaluate(element => element === document.activeElement)).toBe(true)
-    await runtimePanel.getByRole('button', { name: 'Close runtimes' }).click()
-    await runtimePanel.waitFor({ state: 'detached' })
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
-  it('keeps both module panels inside narrow viewports without horizontal overflow', async () => {
+  it('keeps the module panel inside narrow viewports without horizontal overflow', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules-narrow'))
     for (const width of [320, 375, 414, 768]) {
       await page.setViewportSize({ width, height: 760 })
       const nav = page.getByRole('navigation', { name: 'Workbench' })
-      for (const name of ['Business workflow', 'Runtimes']) {
-        await nav.getByRole('button', { name }).click()
-        const panel = page.getByRole('dialog', { name })
-        await panel.waitFor()
-        const bounds = await panel.boundingBox()
-        expect(bounds).not.toBeNull()
-        expect(bounds!.x).toBeGreaterThanOrEqual(0)
-        expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
-        expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-        await page.keyboard.press('Escape')
-        await panel.waitFor({ state: 'detached' })
-      }
+      const workflow = nav.getByRole('button', { name: 'Business workflow' })
+      await workflow.click()
+      const panel = page.getByRole('dialog', { name: 'Business workflow' })
+      await panel.waitFor()
+      const bounds = await panel.boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
+      expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      await page.keyboard.press('Escape')
+      await panel.waitFor({ state: 'detached' })
     }
   }, 60_000)
 })

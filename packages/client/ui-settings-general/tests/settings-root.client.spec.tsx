@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { SettingsRootComponentProps } from '../src/client/shell-contract.ts'
 import { SettingsRoot } from '../src/client/SettingsRoot.tsx'
+import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
 
@@ -12,11 +13,13 @@ type Step = { id: string; order: number }
 
 /** Slot-content stand-ins: the shell renders whatever the seats contribute. */
 const SEAT_CONTENT: Record<string, string> = {
-  'settings.trigger': 'Settings',
   'settings.header': 'Settings Title',
   'settings.action': 'Open configuration file',
   'settings.close': 'Close',
 }
+
+// The shell-owned copy seat, stubbed from the real dictionary.
+const t = ((key: string) => (en as Record<string, string>)[key] ?? key) as SettingsRootComponentProps['t']
 
 function mount({
   wide = true,
@@ -49,10 +52,22 @@ function mount({
       byId: { 'active-session': { blank: false } },
     })) as never
   const unusedHook = (() => { throw new Error('unused by SettingsRoot') }) as never
+  // The sidebar config nav's request source, standing in for the bound
+  // usePanelRequests hook; request() plays a nav click through the same
+  // observable contract.
+  let pendingRequest: string | null = null
+  const requestListeners = new Set<() => void>()
+  const request = (section: string): void => {
+    act(() => {
+      pendingRequest = section
+      for (const fn of [...requestListeners]) fn()
+    })
+  }
   const props: SettingsRootComponentProps = {
     useSessions,
     useWorkspaces: unusedHook,
     wide,
+    t,
     useOnboardingSteps: select => select(steps),
     useSections: (select) => {
       const [, force] = useState(0)
@@ -63,6 +78,19 @@ function mount({
       }, [])
       return select(current)
     },
+    usePanelRequests: ((select: (s: string | null) => unknown) => {
+      const [, force] = useState(0)
+      useEffect(() => {
+        const listener = () => { force(n => n + 1) }
+        requestListeners.add(listener)
+        return () => { requestListeners.delete(listener) }
+      }, [])
+      return select(pendingRequest)
+    }) as never,
+    consumePanelRequest: () => {
+      pendingRequest = null
+      for (const fn of [...requestListeners]) fn()
+    },
     renderSlot,
   }
   const view = render(<SettingsRoot {...props} />)
@@ -72,28 +100,33 @@ function mount({
       for (const fn of [...listeners]) fn()
     })
   }
-  return { view, renderSlot, bump, listeners }
+  // The module-level openPanel() helper rides the latest mount's request.
+  lastRequest = request
+  return { view, renderSlot, bump, listeners, request }
 }
+
+let lastRequest: ((section: string) => void) | undefined
 
 function openPanel() {
-  fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  // The panel opens through the sidebar config nav's request, standing in
+  // for a module-row click.
+  lastRequest?.('general')
 }
 
-describe('SettingsRoot trigger', () => {
-  it('renders the trigger seat content as the accessible name (no aria-label of its own)', () => {
-    const { renderSlot } = mount()
-    const trigger = screen.getByRole('button', { name: 'Settings' })
-    expect(trigger.hasAttribute('aria-label')).toBe(false)
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: true })
-    expect(trigger.getAttribute('aria-expanded')).toBe('false')
-    fireEvent.click(trigger)
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Settings', expanded: true })).toBeTruthy()
+describe('SettingsRoot', () => {
+  it('renders nothing until a request opens the panel — no foot trigger of its own', () => {
+    mount()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(document.querySelector('button')).toBeNull()
   })
 
-  it('hands the rail state to the trigger seat', () => {
-    const { renderSlot } = mount({ wide: false })
-    expect(renderSlot).toHaveBeenCalledWith('settings.trigger', { wide: false })
+  it('hands the panel request through and consumes it once', () => {
+    const { request } = mount()
+    request('general')
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    // The consumed request never re-opens a closed panel.
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 })
 
@@ -162,6 +195,62 @@ describe('SettingsPanel close paths', () => {
 })
 
 describe('SettingsPanel navigation', () => {
+  it('opens on the sidebar config nav request once, then clears the request', () => {
+    const { request } = mount({
+      rows: [
+        { id: 'general', order: 0, label: 'General' },
+        { id: 'runtimes', order: 15, label: 'Runtimes page' },
+      ],
+    })
+    // A closed panel opens straight on the requested section.
+    request('runtimes')
+    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByTestId('section-runtimes')).toBeTruthy()
+    // The consumed request never re-opens a closed panel.
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    // A later request re-opens on its own section.
+    request('general')
+    expect(screen.getByTestId('section-general')).toBeTruthy()
+  })
+
+  it('shows one module at a time: a single-page module drops the rail', () => {
+    const { request } = mount({
+      rows: [
+        { id: 'general', order: 0, label: 'General' },
+        { id: 'runtimes', order: 15, label: 'Runtimes page' },
+        { id: 'stats', order: 16, label: 'Statistics page' },
+      ],
+    })
+    request('runtimes')
+    // The module page fills the panel: no nav rail, no other module's nav.
+    expect(screen.getByTestId('section-runtimes')).toBeTruthy()
+    expect(screen.queryByRole('navigation')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'General' })).toBeNull()
+    // The dialog keeps its accessible name on the hidden title node.
+    expect(screen.getByRole('dialog', { name: 'Settings Title' })).toBeTruthy()
+    request('stats')
+    expect(screen.getByTestId('section-stats')).toBeTruthy()
+    expect(screen.queryByRole('navigation')).toBeNull()
+    // A Settings-module request brings the rail back for its own pages.
+    request('general')
+    expect(screen.getByRole('navigation')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'General' }).getAttribute('aria-current')).toBe('true')
+    // The rail lists the Settings module's pages only — never the other
+    // modules' rows.
+    expect(screen.queryByRole('button', { name: 'Runtimes page' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Statistics page' })).toBeNull()
+  })
+
+  it('keeps aria-current working across section switches', () => {
+    mount()
+    openPanel()
+    expect(screen.getByRole('button', { name: 'General' }).getAttribute('aria-current')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Models' }))
+    expect(screen.getByRole('button', { name: 'Models' }).getAttribute('aria-current')).toBe('true')
+    expect(screen.getByRole('button', { name: 'General' }).getAttribute('aria-current')).toBeNull()
+  })
+
   it('projects rows, marks the first active, and renders only that section', () => {
     mount()
     openPanel()

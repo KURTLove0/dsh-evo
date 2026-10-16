@@ -1,0 +1,10 @@
+- dialog "配置":
+  - text: 配置
+  - button "打开配置文件"
+  - button "关闭":
+    - img
+    - text: 关闭
+  - heading "统计" [level=2]
+  - paragraph: 本机全部持久会话的用量汇总。
+  - text: 会话数 2 1 个已开始对话 Token 用量 42.3K 输入 41.5K · 输出 800 · 缓存读 40K 费用 — 暂无计费数据源，暂无法统计费用。
+  - button "刷新统计"

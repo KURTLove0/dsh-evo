@@ -6,7 +6,7 @@
  * reference graph closes a cycle through ui-sidebar → ui-layout → ui-theme.
  * The settings SLOT types (what registrants contribute) stay in ui-settings.
  */
-import type { HostObservable, InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { HostObservable, InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 // Type-only: pulls ui-sidebar's SlotMap merge (the 'sidebar.settings' entry)
 // into every program that sees this contract.
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -29,7 +29,8 @@ export interface SettingsOnboardingStep {
 /**
  * Registrant-private injected share of the settings shell (assembled in
  * apply): the ledger's nav-row projection as a hooks-compartment source —
- * the shell reads no locale state and subscribes through the bound hook.
+ * the shell reads no locale state and subscribes through the bound hook —
+ * plus the sidebar config nav's pending open-panel requests.
  */
 export type SettingsRootInjected = {
   hooks: {
@@ -37,19 +38,25 @@ export type SettingsRootInjected = {
     sections: HostObservable<readonly SettingsSectionRow[]>
     /** settings.onboarding ledger projected into coordinator order. */
     onboardingSteps: HostObservable<readonly SettingsOnboardingStep[]>
+    /** Pending open-panel request from the sidebar config nav (null when idle). */
+    panelRequests: HostObservable<string | null>
   }
+  /** Consume the pending open-panel request after the panel acted on it. */
+  consumePanelRequest: () => void
 }
 
 /**
  * Full component props of the settings shell root: the sidebar owner share
- * (wide/rail state) plus the declared render shares and the injected face
- * (hooks compartment bound to useSections). No store is registered — modal
- * open state and active section id are component-local viewing state.
+ * (wide/rail state) plus the declared render shares, the shell-owned copy
+ * seats (the `settings` dictionary, registered with `locale: NS`), and the
+ * injected face (hooks compartment bound to useSections). No store is
+ * registered — modal open state and active section id are component-local
+ * viewing state.
  */
 export type SettingsRootComponentProps =
   PropsRuntime<'sidebar.settings'>
+  & PropsLocale<'settings'>
   & PropsRenderSlots<
-    | 'settings.trigger'
     | 'settings.header'
     | 'settings.action'
     | 'settings.close'

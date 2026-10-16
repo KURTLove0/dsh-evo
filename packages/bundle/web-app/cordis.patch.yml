@@ -208,6 +208,11 @@
     - id: ui-settings-runtimes
       name: '@deepseek-ai/dsh-client-ui-settings-runtimes'
 
+    # Statistics page: sessions and provider token usage aggregated over the
+    # session listing; the cost card is an explicit no-billing-source placeholder.
+    - id: ui-settings-stats
+      name: '@deepseek-ai/dsh-client-ui-settings-stats'
+
     - id: ui-settings-plugin-inventory
       name: '@deepseek-ai/dsh-client-ui-settings-plugin-inventory'
 

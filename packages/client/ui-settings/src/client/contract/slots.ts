@@ -13,15 +13,6 @@
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
     /**
-     * The sidebar-foot trigger row content: icon + label, supplied as slot
-     * content (the accessible name comes from the content — rail state
-     * renders the label visually hidden). The shell renders the button
-     * chrome and owns open state. Absent contribution degrades to an
-     * icon-only button without an accessible name (broken-composition state;
-     * the shipped composition always registers the seat).
-     */
-    'settings.trigger': { kind: 'single'; scope: 'root'; owner: SettingsTriggerOwnerProps }
-    /**
      * The panel title text seat. Content renders inside the nav heading row;
      * the dialog's accessible name points at that node via aria-labelledby.
      * Absent contribution leaves the heading empty.
@@ -46,6 +37,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * re-registers with fresh text on locale change, so the shell never
      * subscribes locale state; the ledger bump doubles as the shell's
      * re-render trigger). Sections render inside the panel content column.
+     * The shell's nav rail places entries by the section ids it claims
+     * (`runtimes` and `stats` each render as their own top-level module row
+     * under the "配置" title; every other id nests under the Settings module
+     * row) — the module order and the Settings module label are shell chrome,
+     * so a registrant never declares them.
      * (`settings.general.item`, declared by ui-settings-general's General
      * entry, is typed in the locale package — the common dependency of every
      * item registrant; the shell neither declares nor renders it.)
@@ -98,12 +94,6 @@ export interface SettingsGeneralItemOwnerProps {
 export interface SettingsPluginsTabOwnerProps {
   /** Marker field: tab owner props are intentionally empty. */
   children?: never
-}
-
-/** Owner share of the trigger content seat: the sidebar column state. */
-export interface SettingsTriggerOwnerProps {
-  /** Whether the sidebar renders wide content (false = 56px rail, icon only). */
-  wide: boolean
 }
 
 /** Owner share of the header title seat (the shell supplies nothing). */

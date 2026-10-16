@@ -12,8 +12,8 @@ function fail<T>(message: string): RpcResponse<T> {
 }
 
 const DIRECTORY = [
-  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, localCommand: 'claude', present: true },
-  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: false, localCommand: 'codex', present: true },
+  { provider: 'claude-cli', displayName: 'Claude CLI', settingsNs: '', settingsPath: [], active: true, declared: false, localCommand: 'claude', present: true },
+  { provider: 'codex-cli', displayName: 'Codex CLI', settingsNs: '', settingsPath: [], active: false, declared: true, localCommand: 'codex', present: true },
   { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
 ]
 
@@ -53,6 +53,8 @@ describe('RuntimesSettingsStore', () => {
         displayName: 'Claude CLI',
         settingsNs: '',
         active: true,
+        declared: false,
+        localCommand: 'claude',
         models: [{ id: 'sonnet-4-5', name: 'Sonnet 4.5' }],
         failure: undefined,
       },
@@ -61,6 +63,8 @@ describe('RuntimesSettingsStore', () => {
         displayName: 'DeepSeek',
         settingsNs: 'llm-deepseek',
         active: true,
+        declared: undefined,
+        localCommand: undefined,
         models: [],
         failure: undefined,
       },

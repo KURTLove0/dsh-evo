@@ -1,4 +1,4 @@
-/** Ownerless-copy registrations: the five seats, dictionaries, thunked labels, and HMR recovery. */
+/** Ownerless-copy registrations: the four seats, dictionaries, thunked labels, and HMR recovery. */
 import { Context } from '@deepseek-ai/cordis'
 import { describe, expect, it, vi } from 'vitest'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
@@ -7,7 +7,7 @@ import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { TestRemote } from '@deepseek-ai/dsh-client-test-runtime'
 import { apply as settingsApply, inject as settingsInject } from '@deepseek-ai/dsh-client-ui-settings/client'
 import { apply, inject } from '@deepseek-ai/dsh-client-ui-settings-general/client'
-import { CloseLabel, HeaderContent, TriggerContent } from '../src/client/chrome.tsx'
+import { CloseLabel, HeaderContent } from '../src/client/chrome.tsx'
 import { GeneralSection } from '../src/client/GeneralSection.tsx'
 import { SettingsDocumentAction } from '../src/client/SettingsDocumentAction.tsx'
 import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocumentAction.tsx'
@@ -18,7 +18,6 @@ import type { SettingsDocumentActionInjected } from '../src/client/SettingsDocum
 
 /** The seats this plugin fills for a loopback browser (slot name → expected component). */
 const SEATS = [
-  ['settings.trigger', TriggerContent],
   ['settings.header', HeaderContent],
   ['settings.action', SettingsDocumentAction],
   ['settings.close', CloseLabel],
@@ -55,13 +54,12 @@ async function bench(isLoopback = true) {
   return { ctx, slots: ctx.get('slots') as SlotRegistry, locale, settingsDescribe, settingsOpenDocument }
 }
 
-/** Declare the shell's six child slots the way ui-settings' entry does. */
+/** Declare the shell's five child slots the way ui-settings' entry does. */
 function declare(slots: SlotRegistry): () => void {
   return slots.register(
     {
       name: 'root',
       children: {
-        'settings.trigger': { kind: 'single', scope: 'root' },
         'settings.header': { kind: 'single', scope: 'root' },
         'settings.action': { kind: 'list', scope: 'root' },
         'settings.close': { kind: 'single', scope: 'root' },
@@ -82,7 +80,7 @@ describe('ui-settings-general apply', () => {
     expect(inject).toEqual(['slots', 'locale', 'connection', 'settingsScope'])
   })
 
-  it('fills all five seats for declarations before or after apply', async () => {
+  it('fills all four seats for declarations before or after apply', async () => {
     const before = await bench()
     declare(before.slots)
     await before.ctx.plugin({ inject: [...inject], apply }).await()
@@ -126,7 +124,7 @@ describe('ui-settings-general apply', () => {
     declare(b.slots)
     const fiber = b.ctx.plugin({ inject: [...inject], apply })
     await fiber.await()
-    expect(b.locale.bind('settings')('title')).toBe('设置')
+    expect(b.locale.bind('settings')('title')).toBe('配置')
     b.locale.setLocale('en')
     expect(b.locale.bind('settings')('close')).toBe('Close')
     b.locale.setLocale('zh')

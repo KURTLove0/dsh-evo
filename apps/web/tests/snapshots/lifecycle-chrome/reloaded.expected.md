@@ -3,6 +3,9 @@
     - button "Reply with the single word" [disabled]
   - img
   - text: Standard mode
+  - button "Business workflow":
+    - text: Business workflow
+    - img
   - button "Session log":
     - text: Session log
     - img

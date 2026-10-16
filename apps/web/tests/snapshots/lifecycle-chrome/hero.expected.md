@@ -4,6 +4,12 @@
 - button "New session":
   - img
   - text: New Session
+- navigation "Workbench":
+  - heading "Workbench" [level=2]
+  - button "Business workflow":
+    - img
+    - text: Business workflow
+    - img
 - text: Workspaces
 - button "Search sessions":
   - img
@@ -17,9 +23,17 @@
     - img
     - text: workspace
   - treeitem "New Session" [selected]
-- button "Settings":
-  - img
-  - text: Settings
+- navigation "Config":
+  - heading "Config" [level=2]
+  - button "Runtimes":
+    - img
+    - text: Runtimes
+  - button "Statistics":
+    - img
+    - text: Statistics
+  - button "Settings":
+    - img
+    - text: Settings
 - text: Til Further Notice
 - button "Choose workspace":
   - img

@@ -46,12 +46,14 @@ describe('RuntimesSection theme styles', () => {
     expect((bare.match(/\}/g) ?? []).length).toBe((bare.match(/\{/g) ?? []).length)
   })
 
-  it('keeps the runtime row outlined rather than filled', () => {
-    // The model chips inside a row carry the module fill; filling the row too
-    // would erase the chips' boundary against the panel background.
-    expect(block('.rowCard')).toContain('border: 1px solid var(--dsw-alias-border-l2)')
-    expect(block('.rowCard')).not.toMatch(/\bbackground\s*:/)
+  it('keeps the summary strip and the cards outlined rather than filled', () => {
+    // The model chips and the origin tags carry the module fill; filling the
+    // strip or a card too would erase the chips' boundary against the panel
+    // background.
+    expect(block('.summary')).toContain('border: 1px solid var(--dsw-alias-border-l2)')
+    expect(block('.summary')).not.toMatch(/\bbackground\s*:/)
     expect(block('.modelChip')).toContain('background: var(--dsw-alias-bg-module-platform)')
+    expect(block('.tagBuiltin')).toContain('background: var(--dsw-alias-bg-module-platform)')
   })
 
   it('never falls back to a literal colour', () => {

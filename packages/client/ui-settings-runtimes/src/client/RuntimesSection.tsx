@@ -1,14 +1,17 @@
 /**
  * Runtimes settings section: the model runtimes this deployment can call,
- * rendered as read-only rows joined from the configurable-provider directory
- * and the host model catalog. Every row is a live runtime showing its loaded
- * models inline — a dormant route is a configuration candidate that belongs
- * to the Models page, and a local CLI the host cannot find is no runtime
- * here. Model selection itself stays with the composer's picker — this page
- * reports and links, it never routes.
+ * rendered as a read-only table joined from the configurable-provider
+ * directory and the host model catalog. A summary strip above the table
+ * carries the whole-deployment figures the rows already prove (runtime and
+ * online counts, daemon presence); every row is a live runtime showing its
+ * loaded models inline — a dormant route is a configuration candidate that
+ * belongs to the Models page, and a local CLI the host cannot find is no
+ * runtime here. Model selection itself stays with the composer's picker —
+ * this page reports and links, it never routes.
  */
 
 import { useState, type ReactNode } from 'react'
+import clsx from 'clsx'
 import type { InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RuntimesSettingsStore, RuntimeRow } from './store.ts'
 import type { en } from './locales.ts'
@@ -36,10 +39,7 @@ export interface RuntimesSectionInjected {
  * Props delivered by the slot outlet: the inject face spread flat (the
  * renderer erases the share boundary at the render call).
  */
-export type RuntimesSectionProps = Partial<InjectFace<RuntimesSectionInjected>> & {
-  /** Hide the section heading when its parent panel already labels the dialog. */
-  showTitle?: boolean
-}
+export type RuntimesSectionProps = Partial<InjectFace<RuntimesSectionInjected>>
 
 type RuntimesSectionFace = InjectFace<RuntimesSectionInjected>
 
@@ -48,18 +48,23 @@ export function modelsCountCopy(template: string, count: number): string {
   return template.replace('{count}', () => String(count))
 }
 
+/** Replace the total and online placeholders in the summary caption. */
+export function summaryCountsCopy(template: string, total: number, online: number): string {
+  return template.replace('{total}', () => String(total)).replace('{online}', () => String(online))
+}
+
 /**
  * Render the Runtimes section content column.
  * @param props - slot-delivered injected dependencies.
  * @returns the section, or null while the shell has not injected yet.
  */
 export function RuntimesSection(props: RuntimesSectionProps): ReactNode {
-  const { controller, useSnapshot, t, showTitle = true } = props
+  const { controller, useSnapshot, t } = props
   if (controller === undefined || useSnapshot === undefined || t === undefined) return null
-  return <Loaded injected={{ controller, useSnapshot, t }} showTitle={showTitle} />
+  return <Loaded injected={{ controller, useSnapshot, t }} />
 }
 
-function Loaded({ injected, showTitle }: { injected: RuntimesSectionFace; showTitle: boolean }): ReactNode {
+function Loaded({ injected }: { injected: RuntimesSectionFace }): ReactNode {
   const { controller, t } = injected
   const state = injected.useSnapshot(snapshot => snapshot)
 
@@ -69,7 +74,7 @@ function Loaded({ injected, showTitle }: { injected: RuntimesSectionFace; showTi
     const errorText = state.error ?? ''
     return (
       <div className={styles['section']}>
-        {showTitle ? <h2 className={styles['title']}>{t('title')}</h2> : null}
+        <h2 className={styles['title']}>{t('title')}</h2>
         <p className={styles['error']}>{`${t('loadFailed')}: ${errorText}`}</p>
         <button type="button" className={styles['secondaryButton']} onClick={() => { void controller.load() }}>
           {t('retry')}
@@ -80,20 +85,125 @@ function Loaded({ injected, showTitle }: { injected: RuntimesSectionFace; showTi
 
   return (
     <div className={styles['section']}>
-      {showTitle ? <h2 className={styles['title']}>{t('title')}</h2> : null}
+      <h2 className={styles['title']}>{t('title')}</h2>
       <p className={styles['intro']}>{t('intro')}</p>
       {state.status === 'idle' || state.status === 'loading'
         ? <p className={styles['empty']} role="status">{t('loading')}</p>
         : null}
       {state.status === 'ready' && !state.daemonRunning ? <DaemonHint t={t} /> : null}
-      {state.rows.length === 0 && state.status === 'ready'
+      {state.status === 'ready' && state.rows.length === 0
         ? <p className={styles['empty']}>{t('empty')}</p>
-        : (
-          <ul className={styles['rows']}>
-            {state.rows.map(row => <RuntimeCard key={row.provider} row={row} t={t} />)}
-          </ul>
-        )}
+        : null}
+      {state.status === 'ready' && state.rows.length > 0
+        ? (
+          <>
+            <SummaryStrip rows={state.rows} daemonRunning={state.daemonRunning} t={t} />
+            <table className={styles['table']}>
+              <thead>
+                <tr>
+                  <th className={styles['colService']} scope="col">{t('colService')}</th>
+                  <th className={styles['colHealth']} scope="col">{t('colHealth')}</th>
+                  <th className={styles['colModels']} scope="col">{t('colModels')}</th>
+                  <th className={styles['colCommand']} scope="col">{t('colCommand')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.rows.map(row => <RuntimeRowView key={row.provider} row={row} t={t} />)}
+              </tbody>
+            </table>
+          </>
+        )
+        : null}
     </div>
+  )
+}
+
+/** Whole-deployment figures the rows already prove, plus daemon presence. */
+function SummaryStrip({ rows, daemonRunning, t }: {
+  rows: readonly RuntimeRow[]
+  daemonRunning: boolean
+  t: (key: keyof typeof en) => string
+}): ReactNode {
+  // A row carries failure text exactly when its listing failed, so the
+  // failure-free rows are the online ones — no second health fact exists.
+  const online = rows.filter(row => row.failure === undefined).length
+  return (
+    <div className={styles['summary']} role="status">
+      <span className={styles['summaryCounts']}>{summaryCountsCopy(t('summaryCounts'), rows.length, online)}</span>
+      <span
+        className={clsx(
+          styles['daemonChip'],
+          daemonRunning ? styles['daemonChipOn'] : styles['daemonChipOff'],
+        )}
+      >
+        {daemonRunning ? t('daemonChipRunning') : t('daemonChipStopped')}
+      </span>
+    </div>
+  )
+}
+
+/** One runtime table row: identity, health, the models it loads, its command. */
+function RuntimeRowView({ row, t }: { row: RuntimeRow; t: (key: keyof typeof en) => string }): ReactNode {
+  return (
+    <tr className={styles['row']}>
+      <td className={styles['serviceCell']}>
+        <span className={styles['serviceIdentity']}>
+          <span className={styles['serviceName']}>{row.displayName}</span>
+          <span className={styles['serviceRoute']}>{row.provider}</span>
+        </span>
+        {row.declared === true ? <span className={styles['tagCustom']}>{t('tagCustom')}</span> : null}
+        {row.declared === false ? <span className={styles['tagBuiltin']}>{t('tagBuiltin')}</span> : null}
+      </td>
+      <td className={styles['healthCell']}>
+        {row.failure === undefined
+          ? (
+            <span className={styles['healthOnline']}>
+              <span
+                className={clsx(styles['stateDot'], styles['stateDotActive'])}
+                role="img"
+                aria-label={t('statusActive')}
+                title={t('statusActive')}
+              />
+              {t('statusActive')}
+            </span>
+          )
+          : (
+            <span className={styles['healthFailed']} role="alert">
+              <span
+                className={clsx(styles['stateDot'], styles['stateDotFailed'])}
+                role="img"
+                aria-label={t('statusFailed')}
+                title={t('statusFailed')}
+              />
+              {t('statusFailed')}
+              <span className={styles['healthDetail']}>{row.failure}</span>
+            </span>
+          )}
+      </td>
+      <td className={styles['modelsCell']}>
+        {row.failure !== undefined
+          ? <span className={styles['absent']}>—</span>
+          : row.models === undefined || row.models.length === 0
+            ? <span className={styles['modelsEmpty']}>{t('modelsEmpty')}</span>
+            : (
+              <div className={styles['models']}>
+                <ul className={styles['modelList']}>
+                  {row.models.map(model => (
+                    <li key={model.id} className={styles['modelItem']}>
+                      <span className={styles['modelChip']} title={model.name}>{model.id}</span>
+                    </li>
+                  ))}
+                </ul>
+                <span className={styles['modelsCount']}>{modelsCountCopy(t('modelsCount'), row.models.length)}</span>
+              </div>
+            )}
+      </td>
+      <td className={styles['commandCell']}>
+        {row.localCommand === undefined
+          ? <span className={styles['absent']}>—</span>
+          : <code className={styles['commandName']} title={row.localCommand}>{row.localCommand}</code>}
+      </td>
+    </tr>
   )
 }
 
@@ -137,49 +247,5 @@ function HintCommandRow({ label, command, t }: { label: string; command: string;
         </button>
       </span>
     </span>
-  )
-}
-
-/** One runtime row: identity, liveness, and the models it currently loads. */
-function RuntimeCard({ row, t }: { row: RuntimeRow; t: (key: keyof typeof en) => string }): ReactNode {
-  return (
-    <li className={styles['rowCard']}>
-      <div className={styles['rowHead']}>
-        <span className={styles['rowIdentity']}>
-          <span
-            className={`${styles['stateDot']} ${styles['stateDotActive']}`}
-            role="img"
-            aria-label={t('statusActive')}
-            title={t('statusActive')}
-          />
-          <span className={styles['rowName']}>{row.displayName}</span>
-          <span className={styles['rowRoute']}>{row.provider}</span>
-        </span>
-        <span className={styles['rowStatus']}>{t('statusActive')}</span>
-      </div>
-      <div className={styles['runtimeBody']}>
-        {row.failure !== undefined
-          ? <p className={styles['failure']} role="alert">{`${t('modelsFailure')}: ${row.failure}`}</p>
-          : (
-            <div className={styles['models']}>
-              <span className={styles['modelsHeading']}>{t('modelsHeading')}</span>
-              {row.models === undefined || row.models.length === 0
-                ? <span className={styles['modelsEmpty']}>{t('modelsEmpty')}</span>
-                : (
-                  <ul className={styles['modelList']}>
-                    {row.models.map(model => (
-                      <li key={model.id} className={styles['modelItem']}>
-                        <span className={styles['modelChip']} title={model.name}>{model.id}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              {row.models !== undefined && row.models.length > 0
-                ? <span className={styles['modelsCount']}>{modelsCountCopy(t('modelsCount'), row.models.length)}</span>
-                : null}
-            </div>
-          )}
-      </div>
-    </li>
   )
 }

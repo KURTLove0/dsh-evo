@@ -1,0 +1,85 @@
+/* The configuration module nav: one caption title over module rows, in the
+ * sidebar's row vocabulary (42px rows, 36px rail circles, `border-l2`
+ * hairlines). Every color resolves through a `--dsw-alias-*` token. */
+
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Group title: the workspace section-title rhythm (14/400/20, tertiary) —
+   the sidebar's three group titles read as one set. */
+.configTitle {
+  margin: 0;
+  padding: 0 7px 3px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.configItems {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Rail state: icon circles stack under the browsing region's rail column. */
+.configItems.rail {
+  align-items: center;
+}
+
+/* One module row: the Workbench action-row geometry (42px, r9). */
+.configRow {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ds-transition-duration) var(--ds-ease-in-out), border-color var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+
+.configRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l2);
+}
+
+.configRow:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 1px;
+}
+
+.configRow > svg:first-child {
+  flex: none;
+}
+
+.configRowLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Rail circle: the same 36x36 box as the other rail controls. */
+.configRow.rowRail {
+  width: 36px;
+  height: 36px;
+  margin: 0 0 8px;
+  padding: 0;
+  justify-content: center;
+}

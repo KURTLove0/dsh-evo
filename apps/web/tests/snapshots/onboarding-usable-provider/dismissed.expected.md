@@ -1,6 +1,6 @@
-- dialog "设置":
+- dialog "配置":
   - navigation:
-    - text: 设置
+    - text: 配置
     - button "通用设置":
       - img
       - text: 通用设置
@@ -18,7 +18,8 @@
     - img
     - text: 关闭
   - heading "模型" [level=2]
-  - paragraph: 填入各提供方的 API 密钥即可使用其模型。
+  - paragraph: 本地运行时展示其加载的模型；模型 API 提供方在下方以密钥配置。
+  - heading "模型 API" [level=3]
   - list:
     - listitem:
       - text: DeepSeek

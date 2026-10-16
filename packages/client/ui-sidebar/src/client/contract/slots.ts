@@ -41,6 +41,15 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'sidebar.workspaces': { kind: 'single'; scope: 'root'; owner: SidebarSectionOwnerProps }
     /**
+     * The configuration module nav rendered between the browsing region and
+     * the foot: a titled group of module rows (runtimes / statistics /
+     * settings) whose clicks open the configuration panel on their section.
+     * Declared by this package's 'sidebar' entry; ui-settings-general registers
+     * the occupant. The sidebar passes only its column state — it holds no
+     * settings state.
+     */
+    'sidebar.config': { kind: 'single'; scope: 'root'; owner: SidebarConfigOwnerProps }
+    /**
      * The settings seat at the sidebar foot. Declared by this package's
      * 'sidebar' entry; ui-settings registers its trigger row + modal panel.
      * The sidebar passes only its column state — it holds no settings state.
@@ -92,6 +101,12 @@ export interface SidebarFooterActionOwnerProps {
   wide: boolean
 }
 
+/** Owner share of the configuration module nav rendered above the foot. */
+export interface SidebarConfigOwnerProps {
+  /** Whether the sidebar renders wide content (false = 56px rail). */
+  wide: boolean
+}
+
 /** Owner share of a first-level module action rendered beside New Session. */
 export interface SidebarSessionActionOwnerProps {
   /** Whether the sidebar renders wide content (false = 56px rail). */
@@ -126,6 +141,7 @@ export type SidebarRootComponentProps =
     | 'sidebar.brand.name'
     | 'sidebar.session.action'
     | 'sidebar.workspaces'
+    | 'sidebar.config'
     | 'sidebar.settings'
     | 'sidebar.footer.action'
   >

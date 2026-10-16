@@ -868,6 +868,16 @@ export const IconRuntimeOutline16 = ({ size = 16, className }: IconProps) => (
   </svg>
 )
 
+/** ic_ds_stats_outline_16 (ascending bars): a three-bar chart contour, for usage and statistics surfaces. */
+export const IconStatsOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M2.5 14.25V9.5Q2.5 8.5 3.5 8.5H4.25Q5.25 8.5 5.25 9.5V14.25H2.5ZM6.5 14.25V7Q6.5 6 7.5 6H8.25Q9.25 6 9.25 7V14.25H6.5ZM10.5 14.25V4.5Q10.5 3.5 11.5 3.5H12.25Q13.25 3.5 13.25 4.5V14.25H10.5Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
 /** ic_ds_archive_outline_20 (figma extract): lidded box + label slot. The export's
  *  0.11px stroke ring around the box contour is dropped — it restates the same
  *  contour in the same ink, which currentColor already carries. */

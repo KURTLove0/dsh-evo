@@ -1,6 +1,6 @@
-- dialog "设置":
+- dialog "配置":
   - navigation:
-    - text: 设置
+    - text: 配置
     - button "通用设置":
       - img
       - text: 通用设置

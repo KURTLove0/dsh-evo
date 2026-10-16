@@ -41,7 +41,6 @@ function injectedOf(slots: SlotRegistry): SettingsRootInjected {
 
 /** The shell's child declarations (chrome, actions, sections, and onboarding overlays). */
 const CHILD_SPECS = {
-  'settings.trigger': { kind: 'single', scope: 'root' },
   'settings.header': { kind: 'single', scope: 'root' },
   'settings.action': { kind: 'list', scope: 'root' },
   'settings.close': { kind: 'single', scope: 'root' },
@@ -134,7 +133,7 @@ describe('ui-settings apply', () => {
     // declaration while our local disposer variable goes stale.
     redeclare()
     expect(b.slots.entries('sidebar.settings')).toHaveLength(0)
-    expect(b.slots.spec('settings.trigger')).toBeUndefined()
+    expect(b.slots.spec('settings.header')).toBeUndefined()
     declare(b.slots)
     await Promise.resolve()
     expect(b.slots.entries('sidebar.settings')[0]!.component).toBe(SettingsRoot)
