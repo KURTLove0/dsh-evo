@@ -1,0 +1,6 @@
+- dialog "Discard unsaved changes?":
+  - heading "Discard unsaved changes?" [level=2]
+  - button "Keep editing":
+    - img
+  - button "Keep editing"
+  - button "Discard changes"

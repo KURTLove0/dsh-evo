@@ -54,7 +54,7 @@ interface StreamableHttpConfig {
 type Config = StdioConfig | StreamableHttpConfig
 ```
 
-`serverName` is the stable local identity that namespaces this server's tools in the model-facing name (below). It is deliberately user configuration, NOT the remote `serverInfo.name`: the remote name is untrusted input, is not unique across deployments (prod and staging instances of one server report the same name), and may change on server upgrade — none of which may silently rename model-facing tools. A duplicate `serverName` across live instances is a configuration error: the later instance fails at load with an actionable message, never silent shadowing or skipping. A short `serverName` (`gh`) is also the knob for shortening public names.
+`serverName` is the stable local identity that namespaces this server's tools in the model-facing name (below). It is deliberately user configuration, NOT the remote `serverInfo.name`: the remote name is untrusted input, is not unique across deployments (prod and staging instances of one server report the same name), and may change on server upgrade — none of which may silently rename model-facing tools. A duplicate `serverName` across live instances in the same registration scope is a configuration error: the later instance fails at load with an actionable message, never silent shadowing or skipping. Independent agent scopes reuse names under the [business-agent composition decision](2026-10-20-business-agent-composition.md). A short `serverName` (`gh`) is also the knob for shortening public names.
 
 Example `cordis.yml` usage:
 
@@ -90,7 +90,7 @@ Boot-time from `cordis.yml`. HMR (`@cordisjs/plugin-hmr`) provides hot-swap: edi
 Every MCP tool has two names:
 
 - `rawName` — the exact MCP `Tool.name`, used only on the wire (`tools/call`).
-- `publicName` — the globally unique model-facing name registered in the `ToolRuntime`:
+- `publicName` — the model-facing name unique within a `ToolRuntime` scope:
 
       mcp__<serverName>__<rawName>
 
@@ -131,7 +131,7 @@ Tools are never silently skipped; which tools are available never depends on plu
 ### Naming invariants
 
 1. Every MCP tool has the stable identity `(serverName, rawName)`; every active identity has exactly one public name.
-2. Public names are deterministic, globally unique, and satisfy the DeepSeek 64-char `[A-Za-z0-9_-]` contract.
+2. Public names are deterministic, unique within a `ToolRuntime` scope, and satisfy the DeepSeek 64-char `[A-Za-z0-9_-]` contract.
 3. MCP `tools/call` always receives the original raw name.
 4. Connecting, disconnecting, or re-syncing an unrelated server never renames an existing tool.
 5. Registration order never determines which tool is available.

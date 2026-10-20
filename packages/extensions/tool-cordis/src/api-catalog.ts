@@ -2352,6 +2352,18 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'command', description: 'operation with an expected revision for edits.' }],
         returns: 'committed identities; execution remains host-owned.',
       },
+      {
+        signature: 'abstract runtimes(): Promise<AgentRuntime[]>',
+        description: 'Discover local CLI services from the live provider directory.',
+        parameters: [],
+        returns: 'declared local routes, native defaults, model choices, and availability.',
+      },
+      {
+        signature: 'abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>',
+        description: 'Discover selectable skills through the deployment composition in a workspace.',
+        parameters: [{ name: 'workspaceId', description: 'workspace whose project and deployment skills are merged.' }],
+        returns: 'user-invocable skill summaries without creating an agent or session.',
+      },
     ],
   },
   {
@@ -2974,12 +2986,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type AgentCancelCause = {\n    readonly kind: \'user\';\n} | {\n    readonly kind: \'parent\';\n} | {\n    readonly kind: \'hook\';\n    readonly reason: string;\n} | {\n    readonly kind: \'disposed\';\n};',
   },
   {
+    name: 'AgentCapabilities',
+    declaration: 'export interface AgentCapabilities {\n    skills: {\n        name: string;\n        description: string;\n        source: string;\n    }[];\n}',
+  },
+  {
     name: 'AgentCommand',
     declaration: 'export type AgentCommand = {\n    kind: \'create\';\n    definition: AgentDefinition;\n} | {\n    kind: \'save\';\n    id: WorkbenchAgentId;\n    revision: number;\n    definition: AgentDefinition;\n} | {\n    kind: \'copy\';\n    id: WorkbenchAgentId;\n    name: string;\n} | {\n    kind: \'archive\';\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n} | {\n    kind: \'run\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'design\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'retry\';\n    runId: AgentRunId;\n} | {\n    kind: \'stop\';\n    runId: AgentRunId;\n};',
   },
   {
     name: 'AgentDefinition',
-    declaration: 'export interface AgentDefinition {\n    name: string;\n    avatar: string;\n    description: string;\n    instructions: string;\n    runtime: \'harness\';\n    model?: {\n        provider: string;\n        model: string;\n        reasoningEffort?: string | undefined;\n    } | undefined;\n    skills: string[];\n    starters: {\n        label: string;\n        prompt: string;\n    }[];\n    concurrency: number;\n}',
+    declaration: 'export interface AgentDefinition {\n    name: string;\n    avatar: string;\n    description: string;\n    instructions: string;\n    runtime: string;\n    model?: {\n        provider: string;\n        model: string;\n        reasoningEffort?: string | undefined;\n    } | undefined;\n    skills: string[];\n    mcpServers: AgentMcpServer[];\n    starters: {\n        label: string;\n        prompt: string;\n    }[];\n    concurrency: number;\n}',
   },
   {
     name: 'AgentDirectory',
@@ -2996,6 +3012,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentInteraction',
     declaration: 'export interface AgentInteraction {\n    readonly id: string;\n    readonly kind: \'command\' | \'file-change\' | \'web-search\' | \'tool\' | \'agent\' | \'other\';\n    readonly title: string;\n    readonly status: \'started\' | \'completed\' | \'failed\' | \'interrupted\';\n    readonly detail?: string;\n    readonly startedAt?: number;\n    readonly completedAt?: number;\n}',
+  },
+  {
+    name: 'AgentMcpServer',
+    declaration: 'export type AgentMcpServer = {\n    name: string;\n    transport: \'stdio\';\n    command: string;\n    args: string[];\n    env: AgentMcpVariable[];\n} | {\n    name: string;\n    transport: \'streamable-http\';\n    url: string;\n    headers: AgentMcpVariable[];\n};',
+  },
+  {
+    name: 'AgentMcpVariable',
+    declaration: 'export interface AgentMcpVariable {\n    name: string;\n    value: string;\n}',
   },
   {
     name: 'AgentOptions',
@@ -3016,6 +3040,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentRunId',
     declaration: 'export type AgentRunId = Branded<\'AgentRunId\'>;',
+  },
+  {
+    name: 'AgentRuntime',
+    declaration: 'export interface AgentRuntime {\n    id: string;\n    name: string;\n    command: string;\n    available: boolean;\n    defaultModel?: string;\n    models: {\n        id: string;\n        name: string;\n    }[];\n    error?: string;\n}',
   },
   {
     name: 'AgentSetup',
@@ -3799,7 +3827,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmConfigurableProvider',
-    declaration: 'export interface LlmConfigurableProvider {\n    provider: string;\n    displayName: string;\n    settingsNs: string;\n    settingsPath: readonly string[];\n    declared?: boolean;\n    localCommand?: string;\n}',
+    declaration: 'export interface LlmConfigurableProvider {\n    provider: string;\n    displayName: string;\n    settingsNs: string;\n    settingsPath: readonly string[];\n    declared?: boolean;\n    localCommand?: string;\n    defaultModel?: string;\n}',
   },
   {
     name: 'LlmDiscoveredModel',

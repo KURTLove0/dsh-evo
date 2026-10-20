@@ -510,6 +510,7 @@ describe('Cursor CLI adapter', () => {
       settingsNs: '',
       settingsPath: [],
       localCommand: command,
+      defaultModel: 'auto',
     }])
 
     const llm = context.llm

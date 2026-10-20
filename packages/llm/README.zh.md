@@ -13,6 +13,7 @@ LLM（大语言模型）seam 及其提供方适配器。`llm` 包同时承担 Se
 | [`llm-pi-ai/`](llm-pi-ai/README.zh.md) | 多提供方 pi-ai 适配器 | 注册到 `ctx.llm` |
 | [`llm-claude-cli/`](llm-claude-cli/README.zh.md) | 本地 CLI 运行时（claude + codex） | 注册到 `ctx.llm` |
 | [`llm-cursor-cli/`](llm-cursor-cli/README.zh.md) | 本地 Cursor agentic 运行时 | 注册到 `ctx.llm` |
+| [`llm-codex-cli/`](llm-codex-cli/README.zh.md) | 本地 Codex app-server 运行时 | 注册到 `ctx.llm` |
 
 适配器在 seam 上注册提供方路由；重试与 token 测量仍是独立消费方。子 README 负责路由、元数据、回放和提供方协议细节；[LLM 架构决策](../../.agents/notes/implemented/architecture/2026-06-13-twin-llm-adapters.zh.md)说明设计原理。
 

@@ -16,7 +16,19 @@ Branded identity for one submitted task or design request.
 
 ## AgentDefinition
 
-Editable name, avatar, display-only description, instructions, native runtime, optional model route and reasoning effort, skill names, up to three labelled starter prompts, and a positive concurrency limit.
+Editable name, avatar, display-only description, instructions, native runtime, optional model route and reasoning effort, skill names, MCP servers, up to three labelled starter prompts, and a positive concurrency limit.
+
+## AgentMcpServer
+
+A named task-owned stdio connection with a command, arguments, and environment values, or a Streamable HTTP connection with an HTTP(S) endpoint and headers. Stdio uses the task workspace as its working directory.
+
+## AgentMcpVariable
+
+A name and value used for one explicitly supplied environment variable or HTTP header.
+
+## AgentCapabilities
+
+User-invocable skill names, descriptions, and sources discovered through the configured runtime and selected workspace before identity creation.
 
 ## WorkbenchAgent
 
@@ -66,7 +78,22 @@ abstract snapshot(id?: WorkbenchAgentId): Promise<AgentDirectory>
  * @returns committed identities; execution remains host-owned.
  */
 abstract command(command: AgentCommand): Promise<AgentReceipt>
+
+/**
+ * Discover local CLI services from the live provider directory.
+ * @returns declared local routes, native defaults, model choices, and availability.
+ */
+abstract runtimes(): Promise<AgentRuntime[]>
+
+/**
+ * Discover selectable skills through the deployment composition in a workspace.
+ * @param workspaceId - workspace whose project and deployment skills are merged.
+ * @returns user-invocable skill summaries without creating an agent or session.
+ */
+abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
 ```
+
+Types: [WorkspaceId](workspace.md)
 
 Source: [`packages/business/workbench-agent/src/service.ts`](../../packages/business/workbench-agent/src/service.ts)
 

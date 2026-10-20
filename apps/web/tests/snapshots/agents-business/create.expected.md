@@ -1,0 +1,87 @@
+- dialog "Create agent":
+  - heading "Create agent" [level=2]
+  - button "Cancel":
+    - img
+  - img
+  - strong: Account reviewer
+  - paragraph: Define its responsibilities and connect the knowledge and tools it needs.
+  - navigation "Configuration sections":
+    - button "Identity"
+    - button "Execution"
+    - button "Instructions"
+    - button "Skills 1"
+    - button "MCP servers 1"
+    - button "Settings"
+  - group:
+    - heading "Identity" [level=3]
+    - paragraph: Give your agent a clear identity and purpose.
+    - text: Name
+    - textbox "Name": Account reviewer
+    - text: Avatar text
+    - textbox "Avatar text"
+    - text: Description
+    - textbox "Description Display only; never enters the model prompt."
+    - text: Display only; never enters the model prompt.
+    - heading "Execution" [level=3]
+    - paragraph: Choose a local runtime and optionally override its default model.
+    - text: Runtime
+    - img
+    - combobox "Runtime":
+      - option "Choose a local runtime"
+      - option "Local scripted runtime" [selected]
+    - text: Local service · /Users/kurt/.nvm/versions/node/v22.22.2/bin/node Model
+    - combobox "Model":
+      - option "Default (runtime)" [selected]
+      - option "DeepSeek-V4-Flash"
+    - text: Models belong to the selected runtime. The system default stays unchanged.
+    - button "Refresh runtimes"
+    - heading "Instructions" [level=3]
+    - text: Instructions
+    - textbox "Instructions Provided to the agent on every execution.": Prepare a revenue report for the requested business customer.
+    - text: Provided to the agent on every execution.
+    - region "Choose skills":
+      - heading "Choose skills" [level=3]
+      - paragraph: Discover skills by workspace. Selected names resolve on each task, and their bodies accompany the agent instructions.
+      - text: Skill source workspace
+      - combobox "Skill source workspace":
+        - option "workspace" [selected]
+      - searchbox "Search skills"
+      - checkbox "account-review Calculate customer revenue from business records" [checked]
+      - strong: account-review
+      - text: Calculate customer revenue from business records
+      - button "Refresh skill catalog"
+    - text: Skills
+    - textbox "Skills": account-review
+    - text: One skill name per line; loaded from the selected workspace at execution.
+    - region "MCP servers":
+      - heading "MCP servers" [level=3]
+      - paragraph: Connect business tools and data. Each task owns its connections; a connection failure stops the task. Environment and header values are stored in the current host configuration.
+      - group "MCP server 1":
+        - text: MCP server 1 Server name 1
+        - textbox "Server name 1": business
+        - text: Transport 1
+        - combobox "Transport 1":
+          - option "Local process · stdio" [selected]
+          - option "Streamable HTTP"
+        - text: Command 1
+        - textbox "Command 1": node
+        - text: Arguments 1
+        - textbox "Arguments 1 One argument per line, passed directly without shell expansion. The working directory is the task workspace.": {{businessServer}}
+        - text: One argument per line, passed directly without shell expansion. The working directory is the task workspace.
+        - heading "Environment variables" [level=4]
+        - text: Variable name 1.1
+        - textbox "Variable name 1.1": REPORT_PREFIX
+        - text: Variable value 1.1
+        - textbox "Variable value 1.1": Customer revenue
+        - button "Remove variable 1.1"
+        - button "Add variable 1"
+        - button "Remove MCP server 1"
+      - button "Add MCP server"
+    - heading "Settings" [level=3]
+    - text: Concurrency limit
+    - spinbutton "Concurrency limit": "6"
+    - heading "Conversation starters" [level=3]
+    - paragraph: Up to three. Selecting one only fills the task composer.
+    - button "Add starter"
+  - button "Cancel"
+  - button "Save"

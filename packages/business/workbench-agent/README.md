@@ -6,15 +6,23 @@ Independent workbench collaborators, with a replaceable service, native Harness 
 
 ## Configuration and execution
 
-`runtimePreset` is required: it provisions the deployment's native tools, never identifies a workbench agent. Capacity defaults are 200 identities, 10,000 runs, eight active runs, six concurrent tasks per new identity, and 1 MiB per serialized record. All are configurable. The directory exposes the effective concurrency defaults and ceiling.
+`runtimePreset` is required: it provisions the deployment's native tools, never identifies a workbench agent. Capacity defaults are 200 identities, 10,000 runs, eight active runs, six concurrent tasks per new identity, and 1 MiB per serialized record. All are configurable. The directory exposes the effective concurrency defaults and ceiling. `mcpToolCallTimeoutMs` bounds identity-owned MCP tool calls and defaults to 60,000 ms.
 
 Names are unique, including archived identities. Edits compare the captured revision; conflicts reject without overwriting another editor. Copies receive new identities and empty histories. Archive preserves history, rejects new tasks, and cancels unfinished work; restore re-enables assignment.
 
 Each submitted task receives a durable queued record and an independently owned session. The scheduler enforces global and per-agent concurrency and serializes tasks sharing a workspace directory. It captures configuration when starting execution; edits affect subsequent starts. A run covers its submitted message through whole-agent idle, including any follow-up or steering delivered during that interval. Stop marks the run cancelled and requests cancellation; its capacity remains occupied until cleanup completes. Retry creates a new record using the current configuration.
 
-Instructions and selected skill bodies enter the session through logged context messages. Description and avatar are display-only. Missing or non-user-invocable skills fail execution explicitly. The runtime uses the selected model or resolves the deployment default at execution. Transcript persistence must succeed before completion is reported. Host restart marks running records interrupted; queued tasks remain eligible. Provider teardown cancels and drains live sessions before closing storage.
+Instructions and selected skill bodies enter the session through logged context messages. Description and avatar are display-only. Missing or non-user-invocable skills fail execution explicitly. The runtime field names a declared local provider service. Execution uses that service with its declared native default or a model override whose provider must match the selected service. Missing services and undeclared defaults fail explicitly; the global default model is never substituted. Transcript persistence must succeed before completion is reported. Host restart marks running records interrupted; queued tasks remain eligible. Provider teardown cancels and drains live sessions before closing storage.
+
+`capabilities(workspaceId)` discovers user-invocable skills from the configured runtime's standing scope and the selected project directory, without creating an identity, session, or model turn. Execution resolves those names through the task agent's inherited scope, so project and preset skills selected in the editor remain available to the task.
+
+Each definition includes `mcpServers`. Stdio entries supply a name, command, argument array, and named environment values; Streamable HTTP entries supply a name, HTTP(S) URL, and named headers. Names are unique within the definition. Variables and headers reject duplicate names, and headers compare names without case. Task startup mounts the existing MCP client plugin under the task's scope and awaits every connection before publishing the agent. Stdio uses the task workspace and a scrubbed parent environment plus explicit values. A failed required connection rolls back all earlier connections and fails the run before a model request. Completion, cancellation, and teardown close the task's connections; independent tasks can reuse the same server names.
+
+MCP environment and header values are stored in the host domain, captured in run definitions, and copied with the identity. They are returned to configuration consumers, but excluded from model context and the history summary. The browser masks their input values. The storage domain is version 3; older data is rejected rather than migrated.
 
 AI design tasks run with no tools, request a complete configuration as strict JSON, and retain the validated candidate in history. Only an explicit subsequent Save changes the identity; malformed candidates fail the design run. The Remote API uses the same service operations as other consumers.
+
+`runtimes()` reads local services from the same LLM provider directory used by Runtimes, including availability, advisory models, and provider-declared defaults. A catalog failure is displayed against its service. API providers without a local command are excluded.
 
 ## Model Experience
 
@@ -22,11 +30,11 @@ AI design tasks run with no tools, request a complete configuration as strict JS
 
 #### What the model sees
 
-A logged user-role context begins with `Agent: {name}`, `Identity: {id}`, and `Revision: {revision}`, followed by instructions and each selected `Skill: {name}` body. The submitted task follows as its own message. Display descriptions are excluded.
+A logged user-role context begins with `Agent: {name}`, `Identity: {id}`, and `Revision: {revision}`, followed by instructions and each selected `Skill: {name}` rendered through the skill service's canonical `skill_content` block, including resource-base guidance for referenced scripts and files. The submitted task follows as its own message. Display descriptions are excluded. Connected MCP tools join the task's scoped tool directory through the existing MCP bridge; environment and header values are not injected.
 
 #### Token effect
 
-One context message per task session; its token cost grows with the instructions and loaded skill bodies. Transcript replay preserves the captured text.
+One context message per task session; its token cost grows with the instructions and loaded skill bodies. MCP tool schemas add the bridge's normal tool-directory cost. Transcript replay preserves the captured text.
 
 #### KV Cache effect
 
@@ -41,7 +49,7 @@ The builder receives the following instruction, followed by the generated config
 ##### Builder instruction
 
 ```markdown
-Design an agent configuration from the user's request. Return ONLY a JSON object matching this schema. Use runtime harness. Suggest no skills unless the user names them. Do not execute tasks. The result is a draft for human review.
+Design an agent configuration from the user's request. Return ONLY a JSON object matching this schema. Keep runtime {selected runtime}. Keep its model provider unchanged. Suggest no skills unless the user names them. Do not execute tasks. The result is a draft for human review.
 ```
 
 #### Token effect
@@ -54,6 +62,6 @@ Design uses an independent session and does not alter a task session's reusable 
 
 ## Known Limitations and Deferred Work
 
-- The shipped provider runs on the current Harness host. External CLI runtimes, runtime environment/argument/MCP management, multi-user Access rules, issues, mentions, squads, and scheduled triggers require their own providers and product capabilities.
+- Local execution uses the current host’s registered CLI providers. Remote runtime execution, per-identity runtime environment/argument management, multi-user Access rules, issues, mentions, squads, and scheduled triggers require their own providers and product capabilities.
 - Identity creation is manual; AI design operates on a saved identity and returns a reviewable candidate.
 - Queued and interrupted records retain task text and snapshots; capacity rejects new tasks rather than deleting history automatically.

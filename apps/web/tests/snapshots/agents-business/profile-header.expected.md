@@ -1,0 +1,11 @@
+- img
+- heading "Account reviewer" [level=1]
+- text: Idle
+- paragraph: No description
+- text: Default (runtime) Local scripted runtime Capacity 0/6
+- button "Assign a task":
+  - img
+  - text: Assign a task
+- button "Edit"
+- button "Duplicate"
+- button "Archive"

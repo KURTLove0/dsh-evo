@@ -13,6 +13,7 @@ The LLM seam and its provider adapters. The `llm` package owns both the Service 
 | [`llm-pi-ai/`](llm-pi-ai/README.md) | Multi-provider pi-ai adapter | registers on `ctx.llm` |
 | [`llm-claude-cli/`](llm-claude-cli/README.md) | Local CLI runtimes (claude + codex) | registers on `ctx.llm` |
 | [`llm-cursor-cli/`](llm-cursor-cli/README.md) | Local Cursor agentic runtime | registers on `ctx.llm` |
+| [`llm-codex-cli/`](llm-codex-cli/README.md) | Installed Codex app-server runtime | registers on `ctx.llm` |
 
 Adapters register provider routes on the seam; retry and token measurement remain separate consumers. The child READMEs own routing, metadata, replay, and provider-wire details; the [LLM architecture decisions](../../.agents/notes/implemented/architecture/2026-06-13-twin-llm-adapters.md) own the rationale.
 

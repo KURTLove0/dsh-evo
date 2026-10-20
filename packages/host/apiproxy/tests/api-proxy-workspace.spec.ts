@@ -476,6 +476,29 @@ describe('session creation and Workspace membership', () => {
 })
 
 describe('Host Workspace increments', () => {
+  it('retains workspace-owned sessions after activation disposal and removes unattached sessions', async () => {
+    const { api, ctx, root } = await harness()
+    const workspace = await ctx.workspaceRegistry.create(stageDir(root, 'retained'))
+    const id = SessionId('retained-activation')
+    const owned = ctx.plugin({ inject: ['sessions'], apply(inner: Context) { inner.sessions.create(id, { meta: { cwd: workspace.path } }) } })
+    await owned.await()
+    await workspace.attachSession(id)
+    const abort = new AbortController()
+    const stream = api.events.host(request({}), abort.signal)[Symbol.asyncIterator]()
+    const idle = nextHostFrame(stream)
+    await owned.dispose()
+    expect((await idle).payload).toEqual({ type: 'host/session-status', sessionId: id, running: false })
+    const added = nextHostFrame(stream)
+    const transientId = SessionId('transient-activation')
+    const transient = ctx.plugin({ inject: ['sessions'], apply(inner: Context) { inner.sessions.create(transientId) } })
+    await transient.await()
+    expect((await added).payload).toMatchObject({ type: 'host/session-added', sessionId: transientId })
+    const removed = nextHostFrame(stream)
+    await transient.dispose()
+    expect((await removed).payload).toEqual({ type: 'host/session-removed', sessionId: transientId })
+    abort.abort()
+  })
+
   it('projects subagent origin in attached summaries and creation increments', async () => {
     const { api, ctx } = await harness()
     const abort = new AbortController()

@@ -6,17 +6,17 @@ import z from '@deepseek-ai/schemastery'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { installModelSelection, type AgentHandle } from '@deepseek-ai/dsh-agent'
-import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-agent-presets'
 import type {} from '@deepseek-ai/dsh-session-persistence'
 import type {} from '@deepseek-ai/dsh-workspace'
-import type {} from '@deepseek-ai/dsh-skill'
+import { renderSkillContent } from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-tools'
 import type { Domain } from '@deepseek-ai/dsh-storage-domain'
+import * as McpClient from '@deepseek-ai/dsh-mcp-client'
 import { WorkbenchAgents } from './service.ts'
 import { agentDomain, definitionSchema } from './schema.ts'
 import { WorkbenchAgentGateway } from './gateway.ts'
-import type { AgentCommand, AgentDefinition, AgentDirectory, AgentReceipt, AgentRun, AgentRunId, WorkbenchAgent, WorkbenchAgentId } from './types.ts'
+import type { AgentCapabilities, AgentCommand, AgentDefinition, AgentDirectory, AgentReceipt, AgentRun, AgentRunId, AgentRuntime, WorkbenchAgent, WorkbenchAgentId } from './types.ts'
 
 export type * from './types.ts'
 export { WorkbenchAgents } from './service.ts'
@@ -36,10 +36,12 @@ export interface Config {
   maxRecordBytes: number
   /** Default concurrency for a blank editor. */
   defaultConcurrency: number
+  /** Timeout for tools exposed by identity-owned MCP connections, in milliseconds. */
+  mcpToolCallTimeoutMs: number
 }
 
 /** Required native execution capabilities. */
-export const inject = ['storageDomain', 'agents', 'sessions', 'sessionPersistence', 'workspaceRegistry', 'agentPresets', 'agentDefaultModel', 'skills', 'llm', 'tools']
+export const inject = ['storageDomain', 'agents', 'sessions', 'sessionPersistence', 'workspaceRegistry', 'agentPresets', 'skills', 'llm', 'tools']
 /** Validated runtime settings. */
 export const Config: z<Config> = z.object({
   runtimePreset: z.string().required(),
@@ -48,6 +50,7 @@ export const Config: z<Config> = z.object({
   maxRuns: z.number().step(1).min(1).default(10000),
   maxRecordBytes: z.number().step(1).min(1024).default(1_048_576),
   defaultConcurrency: z.number().step(1).min(1).default(6),
+  mcpToolCallTimeoutMs: z.number().step(1).min(1).default(60_000),
 })
 
 interface ActiveRun {
@@ -118,6 +121,39 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
     })
   }
 
+  async capabilities(workspaceId: AgentRun['workspaceId']): Promise<AgentCapabilities> {
+    if (this.closing) throw new Error('Agent runtime is unloading.')
+    const workspace = this.owner.workspaceRegistry.get(workspaceId)
+    if (workspace === undefined || await workspace.status() !== 'ok') throw new Error('Workspace directory is unavailable.')
+    const scope = await this.owner.agentPresets.standingKeyFor(this.config.runtimePreset)
+    const skills = await this.owner.skills.list({ cwd: workspace.path, scope })
+    return { skills: skills.filter(skill => skill.invocation.userInvocable)
+      .map(({ name, description, source }) => ({ name, description, source })).sort((a, b) => a.name.localeCompare(b.name)) }
+  }
+
+  async runtimes(): Promise<AgentRuntime[]> {
+    if (this.closing) throw new Error('Agent runtime is unloading.')
+    const active = new Set(this.owner.llm.listProviders().map(provider => provider.id))
+    const entries = this.owner.llm.listConfigurableProviders().filter(entry => entry.localCommand !== undefined)
+    return Promise.all(entries.map(async (entry) => {
+      const runtime: AgentRuntime = { id: entry.provider, name: entry.displayName, command: entry.localCommand as string,
+        available: active.has(entry.provider), models: [],
+        ...(entry.defaultModel === undefined ? {} : { defaultModel: entry.defaultModel }),
+      }
+      if (!runtime.available) return runtime
+      try { runtime.models = (await this.owner.llm.listModels(entry.provider)).map(({ id, name }) => ({ id, name })) }
+      catch (error) { runtime.error = message(error); runtime.available = false }
+      return runtime
+    }))
+  }
+
+  private localRuntime(id: string) {
+    const runtime = this.owner.llm.listConfigurableProviders().find(entry => entry.provider === id && entry.localCommand !== undefined)
+    if (runtime === undefined) throw new Error('Unknown local runtime service. Choose a service from Runtimes.')
+    if (!this.owner.llm.listProviders().some(provider => provider.id === id)) throw new Error(`Local runtime ${id} is unavailable.`)
+    return runtime
+  }
+
   private queue<T>(action: () => T | Promise<T>): Promise<T> {
     const result = this.tail.then(action)
     this.tail = result.then(() => {}, () => {})
@@ -145,8 +181,11 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
     if ([...this.domain.table('agents').entries()].map(([, agent]) => agent).some(agent => agent.id !== except && agent.name.toLocaleLowerCase() === definition.name.toLocaleLowerCase()))
       throw new Error('An agent with this name already exists.')
     if (definition.concurrency > this.config.maxActiveRuns) throw new Error(`Concurrency cannot exceed ${this.config.maxActiveRuns}.`)
-    if (definition.model !== undefined && !this.owner.llm.listProviders().some(provider => provider.id === definition.model?.provider))
-      throw new Error('Unknown model provider.')
+    const runtime = this.localRuntime(definition.runtime)
+    if (definition.model !== undefined && definition.model.provider !== runtime.provider)
+      throw new Error('Model provider must match the selected local runtime.')
+    if (definition.model === undefined && runtime.defaultModel === undefined)
+      throw new Error('This runtime has no declared default model. Select a model explicitly.')
     return definition
   }
 
@@ -281,8 +320,11 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
       if (run === undefined) return
       const workspace = this.owner.workspaceRegistry.get(run.workspaceId)
       if (workspace === undefined || await workspace.status() !== 'ok') throw new Error('Workspace directory is unavailable.')
+      const runtime = this.localRuntime(run.definition.runtime)
       const selected = run.definition.model
-      const model = selected === undefined ? this.owner.agentDefaultModel.currentSelection() : {
+      if (selected !== undefined && selected.provider !== runtime.provider) throw new Error('Model provider must match the selected local runtime.')
+      if (selected === undefined && runtime.defaultModel === undefined) throw new Error('This runtime has no declared default model. Select a model explicitly.')
+      const model = selected === undefined ? { provider: runtime.provider, model: runtime.defaultModel as string } : {
         provider: selected.provider, model: selected.model,
         ...(selected.reasoningEffort === undefined ? {} : { reasoningEffort: ReasoningEffortId(selected.reasoningEffort) }),
       }
@@ -290,6 +332,20 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
         sessionId: run.sessionId, meta: { cwd: workspace.path, agentPreset: this.config.runtimePreset }, agentOptions: model, signal,
         setup: async (scope) => {
           await this.owner.agentPresets.mount(scope, this.config.runtimePreset)
+          if (run.purpose !== 'design') {
+            for (const server of run.definition.mcpServers) {
+              signal.throwIfAborted()
+              const connection: McpClient.Config = {
+                serverName: server.name,
+                toolCallTimeoutMs: this.config.mcpToolCallTimeoutMs,
+                failOnStartupError: true,
+                ...server.transport === 'stdio'
+                  ? { transport: 'stdio', command: server.command, args: server.args, env: Object.fromEntries(server.env.map(item => [item.name, item.value])), cwd: workspace.path }
+                  : { transport: 'streamable-http', url: server.url, headers: Object.fromEntries(server.headers.map(item => [item.name, item.value])) },
+              }
+              await scope.plugin(McpClient, connection).await()
+            }
+          }
           if (run.purpose === 'design') scope.effect(() => scope.tools.restrict({ allow: [] }), 'agent builder has no task tools')
           scope.effect(() => installModelSelection(scope, { current: model, assembled: undefined }), 'agent model selection')
         },
@@ -303,13 +359,13 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
       disposeError = agent.ctx.on('agent/error', ({ error }) => { failure = message(error) })
       const context = [`Agent: ${run.definition.name}\nIdentity: ${run.agentId}\nRevision: ${run.definition.revision}`, run.definition.instructions]
       for (const name of run.purpose === 'design' ? [] : run.definition.skills) {
-        const skill = await this.owner.skills.get(name, { cwd: workspace.path, scope: agent.ctx, signal })
+        const skill = await this.owner.skills.get(name, { cwd: workspace.path, scope: agent, signal })
         if (skill === undefined || !skill.invocation.userInvocable) throw new Error(`Skill ${name} is unavailable in this runtime.`)
-        context.push(`Skill: ${name}\n${skill.content}`)
+        context.push(`Skill: ${name}\n${renderSkillContent(skill)}`)
       }
       signal.throwIfAborted()
       agent.inject(createUserMessage({ content: [{ type: 'text', text: run.purpose === 'design'
-        ? `Design an agent configuration from the user's request. Return ONLY a JSON object matching this schema. Use runtime harness. Suggest no skills unless the user names them. Do not execute tasks. The result is a draft for human review.\n${JSON.stringify(definitionSchema.toJSONSchema())}`
+        ? `Design an agent configuration from the user's request. Return ONLY a JSON object matching this schema. Keep runtime ${JSON.stringify(run.definition.runtime)}. Keep its model provider unchanged. Suggest no skills unless the user names them. Do not execute tasks. The result is a draft for human review.\n${JSON.stringify(definitionSchema.toJSONSchema())}`
         : context.join('\n\n') }], source: { kind: 'plugin', plugin: 'dsh-workbench-agent' } }))
       agent.followup(createUserMessage({ content: [{ type: 'text', text: run.prompt }], source: { kind: 'user' } }))
       await agent.whenIdle()

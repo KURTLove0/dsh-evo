@@ -2,12 +2,12 @@
 
 [English](README.md) | 中文
 
-DeepSeek Harness LLM seam 的本地 Claude CLI 与 Codex CLI 运行时。插件检测已安装命令并注册对应 provider 路由，不读取或写入 `settings.yaml`。每个子进程继承所选 CLI 的用户认证、原生配置与运行时集成。当前 profile 的 `cordis.yml` 条目仍可按部署需要覆盖可执行文件、provider id、环境变量、超时、重试策略与回退目录。
+DeepSeek Harness LLM seam 的本地 Claude CLI 与 Codex CLI 运行时。两个路由均不读取或写入 `settings.yaml`。Claude 挂载即注册 provider 路由；codex 驱动仅通过显式 `codex:` 组合条目声明路由，基于存在探测的 `codex-cli` 激活由 `dsh-base` 中专用的 `dsh-llm-codex-cli` 插件负责。每个子进程继承所选 CLI 的用户认证、原生配置与运行时集成。当前 profile 的 `cordis.yml` 条目仍可按部署需要覆盖可执行文件、provider id、环境变量、超时、重试策略与回退目录。
 
 - **`claude`**（ClaudeCliAdapter，默认 provider 为 `claude-cli`）：每次请求启动一个 `claude -p --output-format stream-json` 子进程。Harness 工具通过包内只提供 schema 的 MCP 桥暴露，Claude 内置工具被禁用；首个 assistant 帧后结束进程，因此工具执行与审批仍由 harness 负责。有会话 cwd 时，子进程在该目录运行，从而应用 Claude 的用户配置与项目配置。
 - **`codex`**（CodexCliAdapter，默认 provider 为 `codex-cli`）：每次请求启动一个 `codex app-server --listen stdio://` 子进程，并驱动 `initialize` → `thread/start` → `turn/start` → `turn/completed`。它继承用户的 Codex 登录态、`config.toml`、MCP server、skill 与原生 Agent 工具。请求 cwd 与 harness sandbox 策略作用于临时 thread。命令、文件修改、网页搜索、MCP 或动态工具调用以及 Agent 协作会保留为 provider 无关的轨迹交互记录。
 
-默认命令一旦安装即可激活对应路由，不需要任何插件配置；显式驱动字段只覆盖该运行时。Codex 模型发现调用已安装 app-server 的 `model/list`，因此模型 id、名称、输入模态与推理等级跟随正在运行的 CLI 配置；只有模型未提供某字段时才使用配置目录作为回退；原生列表未提供的已配置模型会追加进目录，保持可选。一次探测在 `codex.catalogCacheMs` 毫秒内（默认 60000，0 表示每次调用都重新探测）服务所有目录读取；未配置请求截止时间的探测以 30000ms 为上限——探测是短生命周期 RPC，不是原生 Agent 运行。Claude 的 stream-json 没有等价的模型列表方法，因此仍使用配置的回退目录。Claude 的 `timeoutMs` 默认值为 300000。Codex 单次请求可包含完整的原生 Agent 运行，因此默认不设墙钟截止时间；需要限制时，部署可设置正数 `codex.timeoutMs`。两种驱动的 normal 重试模式默认最多重试五次。
+Claude 在配置的命令可于本机解析时激活 adapter，已安装的默认命令因此无需任何插件配置；codex 驱动仅通过显式 `codex:` 条目激活——默认 `codex-cli` 路由基于存在探测的激活由 `dsh-base` 的 `dsh-llm-codex-cli` 负责，这里再次声明会在两者同时挂载时被 provider 目录的去重检查拒绝。Codex 模型发现调用已安装 app-server 的 `model/list`，因此模型 id、名称、输入模态与推理等级跟随正在运行的 CLI 配置；只有模型未提供某字段时才使用配置目录作为回退；原生列表未提供的已配置模型会追加进目录，保持可选。一次探测在 `codex.catalogCacheMs` 毫秒内（默认 60000，0 表示每次调用都重新探测）服务所有目录读取；未配置请求截止时间的探测以 30000ms 为上限——探测是短生命周期 RPC，不是原生 Agent 运行。Claude 的 stream-json 没有等价的模型列表方法，因此仍使用配置的回退目录。Claude 的 `timeoutMs` 默认值为 300000。Codex 单次请求可包含完整的原生 Agent 运行，因此默认不设墙钟截止时间；需要限制时，部署可设置正数 `codex.timeoutMs`。两种驱动的 normal 重试模式默认最多重试五次。
 
 每次请求在 CLI 会话层面都是无状态的。Harness 从持久会话日志重放对话历史；Codex 使用临时 app-server thread，Claude 使用新的 print-mode 进程。`attributionHeaders()` 不适用，因为两者都是本地子进程传输，而非 provider HTTP 请求。
 

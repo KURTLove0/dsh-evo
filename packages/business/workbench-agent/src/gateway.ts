@@ -2,7 +2,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from './service.ts'
-import type { AgentCommand, AgentDirectory, AgentReceipt, WorkbenchAgentId } from './types.ts'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import type { AgentCapabilities, AgentCommand, AgentDirectory, AgentReceipt, AgentRuntime, WorkbenchAgentId } from './types.ts'
 
 /** Available without an active conversation or initiating model. */
 export class WorkbenchAgentGateway extends TypertRemoteService {
@@ -24,4 +25,21 @@ export class WorkbenchAgentGateway extends TypertRemoteService {
    */
   @Remote('command')
   command(request: AgentCommand): Promise<AgentReceipt> { return this.ctx.workbenchAgents.command(request) }
+  /**
+   * Discover capabilities for the creation and configuration forms.
+   * @param request - selected workspace.
+   * @returns skills available through the native runtime.
+   */
+  @Remote('capabilities')
+  capabilities(request: { workspaceId: WorkspaceId }): Promise<AgentCapabilities> {
+    return this.ctx.workbenchAgents.capabilities(request.workspaceId)
+  }
+  /**
+   * Read the local runtime services available to identity configuration.
+   * @param _request - empty catalog request.
+   * @returns live local provider routes and their model catalogs.
+   */
+  @Remote('runtimes')
+  runtimes(_request: Record<string, never>): Promise<AgentRuntime[]> { return this.ctx.workbenchAgents.runtimes() }
+
 }

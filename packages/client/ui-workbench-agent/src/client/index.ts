@@ -35,6 +35,8 @@ export function apply(ctx: ClientContext): void {
     inject: (): AgentPageInjected => ({
       hooks: { agentDirectory: directory }, refresh,
       command: command => directory.command(command), select: id => directory.select(id),
+      runtimes: async () => unwrap(await ctx.remote.workbenchAgentGateway.runtimes({})),
+      capabilities: async workspaceId => unwrap(await ctx.remote.workbenchAgentGateway.capabilities({ workspaceId })),
       closePage: () => { ctx.layout.closePage() },
       openSession: (id) => { ctx.sessions.open(id); ctx.layout.closePage() },
     }),

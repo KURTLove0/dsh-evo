@@ -34,6 +34,8 @@ Interrogating an endpoint is configuration-time work over a *draft*, keyed by se
 
 Provider and model metadata is a discovery surface, not a routing whitelist. `registerAdapter()` still owns provider exclusivity and captures the adapter's retry policy for each route, while an adapter may accept model ids absent from `listModels()`; consumers must not reject a request because its model is unlisted. Returned selector metadata is detached and invalid or duplicate adapter entries fail with `INVALID_ADAPTER` or `INVALID_CATALOG`.
 
+Local runtime directory entries may declare `defaultModel`, an adapter-owned id representing the native default selection. Without it, consumers require an explicit model; catalog order does not imply a default.
+
 Every topology commit point — adapter routes registering or disposing, directory entries appearing or withdrawing — emits the payload-free `llm/adapters-updated` event after the mutation, so consumers re-read `listProviders()`/`listModels()`/`listConfigurableProviders()` instead of polling. Observer failures are contained (logged, non-vetoing); only `INVARIANT`-coded failures rethrow after the fan-out.
 
 Exact-model metadata is a separate correctness query, not a catalog decoration or global LLM setting. `resolveModelInfo()` asks the adapter that owns the exact provider/model route once; an adapter can describe an unlisted dynamic model, and absent `context`, `defaultMaxTokens`, or `reasoning` fields preserve unknown capacity, provider-owned output defaults, or unavailable reasoning capability. Invalid identity, context, output default, or reasoning metadata fails with `INVALID_MODEL_INFO`, `INVALID_MODEL_CONTEXT`, `INVALID_MODEL_MAX_TOKENS`, or `INVALID_MODEL_REASONING`.

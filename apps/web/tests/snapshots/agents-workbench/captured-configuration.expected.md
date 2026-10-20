@@ -1,0 +1,16 @@
+- group:
+  - text: Configuration at execution · Configuration revision 3
+  - term: Name
+  - definition: Security reviewer
+  - term: Runtime
+  - definition: deepseek-official
+  - term: Model
+  - definition: Default (runtime)
+  - term: Concurrency limit
+  - definition: "6"
+  - term: Skills
+  - definition: unavailable-workbench-skill
+  - term: MCP servers
+  - definition: —
+  - heading "Instructions" [level=3]
+  - text: Read the diff and check authorization.

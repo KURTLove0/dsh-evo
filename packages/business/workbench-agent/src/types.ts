@@ -3,6 +3,33 @@ import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
+/** Named transport value supplied explicitly when starting an MCP server. */
+export interface AgentMcpVariable {
+  name: string
+  value: string
+}
+
+/** One execution-owned MCP connection; stdio uses the task workspace as cwd. */
+export type AgentMcpServer =
+  | { name: string; transport: 'stdio'; command: string; args: string[]; env: AgentMcpVariable[] }
+  | { name: string; transport: 'streamable-http'; url: string; headers: AgentMcpVariable[] }
+
+/** Local provider route shared with the runtime directory. */
+export interface AgentRuntime {
+  id: string
+  name: string
+  command: string
+  available: boolean
+  defaultModel?: string
+  models: { id: string; name: string }[]
+  error?: string
+}
+
+/** Workspace-specific capabilities available while configuring an identity. */
+export interface AgentCapabilities {
+  skills: { name: string; description: string; source: string }[]
+}
+
 /** Stable identity retained across edits, copies, and run history. */
 export type WorkbenchAgentId = Branded<'WorkbenchAgentId'>
 /** One submitted task and its whole-agent execution interval. */
@@ -14,9 +41,10 @@ export interface AgentDefinition {
   avatar: string
   description: string
   instructions: string
-  runtime: 'harness'
+  runtime: string
   model?: { provider: string; model: string; reasoningEffort?: string | undefined } | undefined
   skills: string[]
+  mcpServers: AgentMcpServer[]
   starters: { label: string; prompt: string }[]
   concurrency: number
 }

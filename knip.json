@@ -690,6 +690,16 @@
         "@deepseek-ai/dsh-settings",
         "@deepseek-ai/schemastery"
       ]
+    },
+    "packages/llm/llm-codex-cli": {
+      "entry": [
+        "tests/**/*.spec.ts",
+        "tests/**/*.e2e.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tests/**/*.ts"
+      ]
     }
   }
 }

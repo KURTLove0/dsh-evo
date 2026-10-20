@@ -54,7 +54,7 @@ interface StreamableHttpConfig {
 type Config = StdioConfig | StreamableHttpConfig
 ```
 
-`serverName` 是稳定的本地标识，用于在模型可见名称（见下文）中为该服务器的工具提供命名空间。它有意设计为用户配置，而非远端的 `serverInfo.name`：远端名称是不可信输入、跨部署不唯一（同一服务器的生产和预发布实例报告相同名称）、且可能在服务器升级时变化——这些都不得静默重命名模型可见工具。多个活跃实例使用重复的 `serverName` 属于配置错误：后加载的实例在启动时以可操作的错误消息失败，绝不静默覆盖或跳过。短 `serverName`（如 `gh`）也是缩短公开名称的配置手段。
+`serverName` 是稳定的本地标识，用于在模型可见名称（见下文）中为该服务器的工具提供命名空间。它有意设计为用户配置，而非远端的 `serverInfo.name`：远端名称是不可信输入、跨部署不唯一（同一服务器的生产和预发布实例报告相同名称）、且可能在服务器升级时变化——这些都不得静默重命名模型可见工具。同一注册作用域内多个活跃实例使用重复的 `serverName` 属于配置错误：后加载的实例在启动时以可操作的错误消息失败，绝不静默覆盖或跳过。独立 agent 作用域依据[业务 agent 组装决策](2026-10-20-business-agent-composition.zh.md)复用名称。短 `serverName`（如 `gh`）也是缩短公开名称的配置手段。
 
 `cordis.yml` 用法示例：
 
@@ -90,7 +90,7 @@ type Config = StdioConfig | StreamableHttpConfig
 每个 MCP 工具有两个名称：
 
 - `rawName`——MCP `Tool.name` 的原始值，仅用于协议通信（`tools/call`）。
-- `publicName`——在 `ToolRuntime` 中注册的全局唯一模型可见名称：
+- `publicName`——在 `ToolRuntime` 作用域内唯一的模型可见名称：
 
       mcp__<serverName>__<rawName>
 
@@ -131,7 +131,7 @@ MCP 仅保证工具名在[单个服务器内](https://modelcontextprotocol.io/sp
 ### 命名不变式
 
 1. 每个 MCP 工具拥有稳定标识 `(serverName, rawName)`；每个活跃标识恰好对应一个公开名称。
-2. 公开名称是确定性的、全局唯一的，且满足 DeepSeek 64 字符 `[A-Za-z0-9_-]` 约定。
+2. 公开名称是确定性的、在 `ToolRuntime` 作用域内唯一的，且满足 DeepSeek 64 字符 `[A-Za-z0-9_-]` 约定。
 3. MCP `tools/call` 始终接收原始的 raw name。
 4. 连接、断开或重新同步不相关的服务器永远不会重命名已有工具。
 5. 注册顺序永远不决定哪个工具可用。

@@ -1,0 +1,7 @@
+- tabpanel "MCP servers 1":
+  - heading "MCP servers" [level=2]
+  - paragraph: Connect business tools and data. Each task owns its connections; a connection failure stops the task. Environment and header values are stored in the current host configuration.
+  - strong: business
+  - text: stdio
+  - code: node
+  - button "Edit capabilities"

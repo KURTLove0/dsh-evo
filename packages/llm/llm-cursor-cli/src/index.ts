@@ -603,6 +603,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     settingsNs: '',
     settingsPath: [],
     localCommand: resolved.localCommand,
+    defaultModel: 'auto',
   }])
   let command: string
   try {

@@ -16,7 +16,19 @@
 
 ## AgentDefinition
 
-可编辑的名称、头像、仅展示简介、指令、原生运行时、可选模型路由和推理级别、技能名、最多三个带标题开场提示及正数并发上限。
+可编辑的名称、头像、仅展示简介、指令、原生运行时、可选模型路由和推理级别、技能名、MCP 服务、最多三个带标题开场提示及正数并发上限。
+
+## AgentMcpServer
+
+具名且由任务持有的 stdio 连接，包含命令、参数和环境变量值；或包含 HTTP(S) 端点与请求头的 Streamable HTTP 连接。stdio 使用任务工作区作为工作目录。
+
+## AgentMcpVariable
+
+一个显式提供的环境变量或 HTTP 请求头的名称和值。
+
+## AgentCapabilities
+
+创建身份前，通过配置的运行时和所选工作区发现的允许用户调用的技能名称、简介和来源。
 
 ## WorkbenchAgent
 
@@ -66,7 +78,22 @@ abstract snapshot(id?: WorkbenchAgentId): Promise<AgentDirectory>
  * @returns committed identities; execution remains host-owned.
  */
 abstract command(command: AgentCommand): Promise<AgentReceipt>
+
+/**
+ * Discover local CLI services from the live provider directory.
+ * @returns declared local routes, native defaults, model choices, and availability.
+ */
+abstract runtimes(): Promise<AgentRuntime[]>
+
+/**
+ * Discover selectable skills through the deployment composition in a workspace.
+ * @param workspaceId - workspace whose project and deployment skills are merged.
+ * @returns user-invocable skill summaries without creating an agent or session.
+ */
+abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
 ```
+
+Types: [WorkspaceId](workspace.zh.md)
 
 Source: [`packages/business/workbench-agent/src/service.ts`](../../packages/business/workbench-agent/src/service.ts)
 

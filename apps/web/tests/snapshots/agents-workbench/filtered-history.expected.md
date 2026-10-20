@@ -1,0 +1,17 @@
+- region "Run history":
+  - group "Work type":
+    - button "All work" [pressed]
+    - button "Task run"
+    - button "Configuration design"
+    - text: Shown / total 0 / 1
+  - searchbox "Search tasks, errors, or workspaces"
+  - text: Run status
+  - combobox "Run status":
+    - option "All statuses"
+    - option "Queued"
+    - option "Running"
+    - option "Completed" [selected]
+    - option "Failed"
+    - option "Cancelled"
+    - option "Interrupted"
+  - paragraph: No matching runs

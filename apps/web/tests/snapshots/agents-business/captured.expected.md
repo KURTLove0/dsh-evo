@@ -1,0 +1,16 @@
+- group:
+  - text: Configuration at execution · Configuration revision 1
+  - term: Name
+  - definition: Account reviewer
+  - term: Runtime
+  - definition: deepseek-official
+  - term: Model
+  - definition: Default (runtime)
+  - term: Concurrency limit
+  - definition: "6"
+  - term: Skills
+  - definition: account-review
+  - term: MCP servers
+  - definition: business · stdio
+  - heading "Instructions" [level=3]
+  - text: Prepare a revenue report for the requested business customer.

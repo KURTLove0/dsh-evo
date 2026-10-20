@@ -1,6 +1,7 @@
 /** Replaceable management and execution service for workbench agents. */
 import { Context, Service } from '@deepseek-ai/cordis'
-import type { AgentCommand, AgentDirectory, AgentReceipt, WorkbenchAgentId } from './types.ts'
+import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
+import type { AgentCapabilities, AgentCommand, AgentDirectory, AgentReceipt, AgentRuntime, WorkbenchAgentId } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -24,4 +25,15 @@ export abstract class WorkbenchAgents extends Service {
    * @returns committed identities; execution remains host-owned.
    */
   abstract command(command: AgentCommand): Promise<AgentReceipt>
+  /**
+   * Discover local CLI services from the live provider directory.
+   * @returns declared local routes, native defaults, model choices, and availability.
+   */
+  abstract runtimes(): Promise<AgentRuntime[]>
+  /**
+   * Discover selectable skills through the deployment composition in a workspace.
+   * @param workspaceId - workspace whose project and deployment skills are merged.
+   * @returns user-invocable skill summaries without creating an agent or session.
+   */
+  abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
 }

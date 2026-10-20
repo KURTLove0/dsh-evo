@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { Config } from '@deepseek-ai/dsh-mcp-client'
+import { createScope, scopeOf } from '@deepseek-ai/dsh-scope'
 
 // ---- Mock MCP SDK ----
 
@@ -236,6 +237,24 @@ describe('apply (plugin lifecycle)', () => {
 
     expect(ctx.tools.get('mcp__srv__remote')).toBeDefined()
     expect(other.tools.get('mcp__srv__remote')).toBeDefined()
+  })
+
+  it('allows independent agent scopes to reuse a server name without sharing tools', async () => {
+    const first = createScope(ctx, {})
+    const second = createScope(ctx, {})
+    const mount = (scope: Context) => scope.plugin({ inject, apply }, stdioConfig).await()
+    await mount(first.ctx)
+    await mount(second.ctx)
+    expect(ctx.tools.get('mcp__srv__remote', scopeOf(first.ctx))).toBeDefined()
+    expect(ctx.tools.get('mcp__srv__remote', scopeOf(second.ctx))).toBeDefined()
+    expect(ctx.tools.get('mcp__srv__remote')).toBeUndefined()
+    await expect(mount(first.ctx)).rejects.toThrow('already in use')
+    await first.dispose()
+    expect(ctx.tools.get('mcp__srv__remote', scopeOf(second.ctx))).toBeDefined()
+    await second.dispose()
+    const replacement = createScope(ctx, {})
+    await mount(replacement.ctx)
+    await replacement.dispose()
   })
 
   it('logs error and registers no tools when connect fails; dispose closes the client', async () => {

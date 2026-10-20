@@ -1,0 +1,39 @@
+- main "Agents":
+  - img
+  - heading "Agents" [level=1]
+  - paragraph: Configure collaborators, assign tasks, and inspect every execution.
+  - button "Back to chat"
+  - button "Refresh"
+  - button "New agent":
+    - img
+    - text: New agent
+  - term: Available
+  - definition: "2"
+  - term: Running
+  - definition: "0"
+  - term: Queued
+  - definition: "0"
+  - term: Runtime
+  - definition: Available
+  - searchbox "Search agents"
+  - group "Agents":
+    - button "Available" [pressed]
+    - button "Working"
+    - button "Has queued work"
+    - button "Archived"
+  - text: Sort
+  - combobox "Sort":
+    - option "Name" [selected]
+    - option "Recently updated"
+  - region "Agents":
+    - list:
+      - listitem:
+        - button "Security reviewer" [pressed]:
+          - img
+          - strong: Security reviewer
+          - text: Reviews source changes unavailable-workbench-skill Available · Capacity 0/6
+      - listitem:
+        - button "Writer":
+          - img
+          - strong: Writer
+          - text: Reviews source changes unavailable-workbench-skill Available · Capacity 0/6

@@ -106,7 +106,7 @@ function callToolUncached(
  *
  * @param serverName - Stable local namespace from plugin config.
  * @param rawName - The MCP server's own tool name.
- * @returns The globally unique, model-facing ToolRuntime name.
+ * @returns The model-facing ToolRuntime name, unique within its registration scope.
  */
 export function publicToolName(serverName: string, rawName: string): string {
   const joined = `mcp__${serverName}__${rawName}`

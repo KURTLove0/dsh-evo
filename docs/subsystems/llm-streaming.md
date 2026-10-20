@@ -462,6 +462,8 @@ interface LlmConfigurableProvider {
    * retargets the command moves the presence answer with it.
    */
   localCommand?: string
+  /** Native default model id for a local runtime; omission requires an explicit model selection. */
+  defaultModel?: string
 }
 ```
 

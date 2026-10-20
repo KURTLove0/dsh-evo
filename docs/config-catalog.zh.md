@@ -918,6 +918,78 @@ export interface Config {
 
 来源：[`packages/jobs/jobs-local/src/index.ts:31`](../packages/jobs/jobs-local/src/index.ts)
 
+<a id="deepseek-aidsh-llm-codex-cli"></a>
+
+## `@deepseek-ai/dsh-llm-codex-cli`
+
+依赖： `llm` · `subprocess`
+
+```ts config-catalog
+/** Native process and catalog limits owned by the deployment. */
+export interface Config {
+  /** Installed executable name or absolute path. */
+  command: string
+  /** Local provider route. */
+  provider: string
+  /** Maximum duration of one native turn, in milliseconds. */
+  timeoutMs: number
+  /** Maximum duration of a model catalog request, in milliseconds. */
+  catalogTimeoutMs: number
+  /** Reuse a successful native catalog for this duration, in milliseconds. */
+  catalogCacheMs: number
+  /** Process-tree termination grace, in milliseconds. */
+  graceMs: number
+  /** Retained native stderr diagnostic bytes per process. */
+  diagnosticMaxBytes: number
+}
+```
+
+来源： [`packages/llm/llm-codex-cli/src/index.ts:12`](../packages/llm/llm-codex-cli/src/index.ts)
+
+<a id="deepseek-aidsh-llm-cursor-cli"></a>
+
+## `@deepseek-ai/dsh-llm-cursor-cli`
+
+依赖： `llm` · `subprocess`
+
+```ts config-catalog
+/** Cursor CLI plugin configuration. */
+export interface Config {
+  /** Executable name or absolute path. */
+  command?: string
+  /** Provider route registered when the executable is present. */
+  provider?: string
+  /** Hard deadline for one request. */
+  timeoutMs?: number
+  /** Hard deadline for one native model-catalog probe. */
+  catalogTimeoutMs?: number
+  /** Operator arguments appended before adapter-owned protocol flags. */
+  extraArgs?: string[]
+  /** Explicit child environment layered after the shared credential scrub. */
+  env?: Record<string, string>
+  /** Fallback advisory catalog merged after models reported by the CLI. */
+  models?: CursorCliCatalogModel[]
+  /** Provider-owned model-request retry policy. */
+  retryPolicy?: RetryPolicyConfig
+}
+
+/** One configured fallback model advertised when native discovery is unavailable. */
+export interface CursorCliCatalogModel {
+  /** Model id accepted by Cursor's `--model` option. */
+  id: string
+  /** Selector label; defaults to {@link id}. */
+  name?: string
+  /** Optional selector detail. */
+  description?: string
+  /** Known combined request and response capacity. */
+  contextWindow?: number
+}
+```
+
+Depends on: [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
+
+来源： [`packages/llm/llm-cursor-cli/src/index.ts:58`](../packages/llm/llm-cursor-cli/src/index.ts)
+
 <a id="deepseek-aidsh-llm-deepseek"></a>
 
 ## `@deepseek-ai/dsh-llm-deepseek`
@@ -1367,7 +1439,7 @@ export interface StdioConfig {
   /**
    * Stable local namespace for this server's model-facing tool names
    * (`mcp__<serverName>__<rawName>`). Must match `[A-Za-z0-9_-]{1,32}` and be
-   * unique across live mcp-client instances.
+   * unique across live mcp-client instances in the same registration scope.
    */
   serverName: string
   /** Executable used to start the server. */
@@ -1393,7 +1465,7 @@ export interface StreamableHttpConfig {
   /**
    * Stable local namespace for this server's model-facing tool names
    * (`mcp__<serverName>__<rawName>`). Must match `[A-Za-z0-9_-]{1,32}` and be
-   * unique across live mcp-client instances.
+   * unique across live mcp-client instances in the same registration scope.
    */
   serverName: string
   /** MCP endpoint URL. */
@@ -1421,7 +1493,7 @@ export interface ReconnectConfig {
 }
 ```
 
-来源：[`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
+来源：[`packages/mcp/mcp-client/src/index.ts:97`](../packages/mcp/mcp-client/src/index.ts)
 
 <a id="deepseek-aidsh-message-feedback"></a>
 
@@ -3194,6 +3266,34 @@ export interface Config {
 
 来源：[`packages/web/web-search-perplexity/src/index.ts:32`](../packages/web/web-search-perplexity/src/index.ts)
 
+<a id="deepseek-aidsh-workbench-agent"></a>
+
+## `@deepseek-ai/dsh-workbench-agent`
+
+依赖： `storageDomain` · `agents` · `sessions` · `sessionPersistence` · `workspaceRegistry` · `agentPresets` · `skills` · `llm` · `tools`
+
+```ts config-catalog
+/** Deployment-owned runtime composition and storage capacity. */
+export interface Config {
+  /** Fixed plugin composition used to provision the native runtime. Never an agent identity. */
+  runtimePreset: string
+  /** Maximum simultaneous native runs across agents. */
+  maxActiveRuns: number
+  /** Maximum retained identities. */
+  maxAgents: number
+  /** Maximum retained run records; overflow rejects new work. */
+  maxRuns: number
+  /** Maximum serialized record bytes, including configuration and task text. */
+  maxRecordBytes: number
+  /** Default concurrency for a blank editor. */
+  defaultConcurrency: number
+  /** Timeout for tools exposed by identity-owned MCP connections, in milliseconds. */
+  mcpToolCallTimeoutMs: number
+}
+```
+
+来源： [`packages/business/workbench-agent/src/index.ts:26`](../packages/business/workbench-agent/src/index.ts)
+
 <a id="deepseek-aidsh-workflow-worker-thread"></a>
 
 ## `@deepseek-ai/dsh-workflow-worker-thread`
@@ -3336,6 +3436,7 @@ export interface Config {
 - `@deepseek-ai/dsh-client-ui-primitives`（[`packages/client/ui-primitives/src/index.ts`](../packages/client/ui-primitives/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-slots`（[`packages/client/ui-slots/src/index.ts`](../packages/client/ui-slots/src/index.ts)）
 - `@deepseek-ai/dsh-client-web`（[`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts)）
+- `@deepseek-ai/dsh-client-ui-workbench-agent`（[`packages/client/ui-workbench-agent/src/index.ts`](../packages/client/ui-workbench-agent/src/index.ts)）
 - `@deepseek-ai/dsh-cmdline`（[`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts)）
 - `@deepseek-ai/dsh-code-runtime-python`（[`packages/code-runtime/code-runtime-python/src/index.ts`](../packages/code-runtime/code-runtime-python/src/index.ts)）
 - `@deepseek-ai/dsh-home-paths`（[`packages/util/home-paths/src/index.ts`](../packages/util/home-paths/src/index.ts)）
