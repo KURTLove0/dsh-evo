@@ -65,9 +65,8 @@ try {
     overwrite: true,
     ignore: (path: string) => IGNORE_DIRS.test(path) || IGNORE_FILES.test(path),
     extraResource: [marker],
-    // Same brand icon as the dist build, extension-less so packager appends
-    // the platform suffix (.icns on darwin, .png elsewhere).
-    icon: 'build/icon',
+    // Same PNG brand icon as the running shell and dist build.
+    icon: 'build/icon.png',
     electronVersion: electronVersion(),
   })
   for (const path of appPaths) console.log(`pack: ${path}`)

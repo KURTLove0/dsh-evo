@@ -112,6 +112,7 @@ import {
   hasApiRemoteSubagentOwner,
   inspectApiRemoteSession,
 } from '@deepseek-ai/dsh-api-remotes'
+import { readRuntimePeers } from './runtime-management.ts'
 import { commandPresent, probeDaemonHealth } from '@deepseek-ai/dsh-daemon'
 import { canOpenNativePath, openNativePath, openNativeTextFile } from './native-path-opener.ts'
 
@@ -586,6 +587,11 @@ function directoryError(error: unknown): RpcError {
 
 /** Resolved Agent model and project-directory defaults consumed by the API implementation. */
 export interface ApiProxyDefaults {
+  /** Deadline for one remote runtime directory request, in milliseconds. */
+  runtimePeerTimeoutMs?: number
+  /** Settle configured runtime adapters before reading the directory. */
+  runtimeReady?: () => Promise<void>
+
   /**
    * The model selection a session starts from when its own log names none. Read on
    * every access rather than captured, so a default saved during this process
@@ -2200,6 +2206,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async models(request) {
+        await defaults.runtimeReady?.()
         const { sessionId } = request.payload
         const found = await agentFor(sessionId)
         if ('error' in found) return err(request, found.error)
@@ -3296,7 +3303,15 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
     },
 
     llm: {
+      async runtimePeers(request, signal) {
+        try {
+          return ok(request, { peers: await readRuntimePeers(ctx, request.payload.url, defaults.runtimePeerTimeoutMs ?? 5000, signal) })
+        } catch (error) {
+          return err(request, { code: 'internal', message: error instanceof Error ? error.message : String(error), details: {} })
+        }
+      },
       async providers(request) {
+        await defaults.runtimeReady?.()
         const registered = ctx.llm.listProviders()
         const active = new Set(registered.map(provider => provider.id))
         const directory = ctx.llm.listConfigurableProviders()
@@ -3338,6 +3353,7 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
       },
 
       async models(request) {
+        await defaults.runtimeReady?.()
         return ok(request, await buildModelCatalog(ctx))
       },
 

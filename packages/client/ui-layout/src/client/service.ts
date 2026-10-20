@@ -21,6 +21,12 @@ export type PanelActions = BoundActions<ReturnType<typeof createLayoutStore>>
  * only).
  */
 export interface ILayout {
+  /** Open a registered shell.page entry in the main column.
+   * @param page - keyed slot entry name.
+   */
+  openPage(page: string): void
+  /** Return to the conversation without changing the selected session. */
+  closePage(): void
   /** Toggle the sidebar panel (closed ⟷ contract default width). */
   toggleSidebar(): void
   /** Open the details panel (no-op when already open). */
@@ -42,6 +48,18 @@ export class LayoutController implements ILayout {
    */
   attachPanels(actions: PanelActions): void {
     this.#panels = actions
+  }
+
+  /** Open a registered main page.
+   * @param page - keyed slot entry name.
+   */
+  openPage(page: string): void {
+    this.#require().openPage(page)
+  }
+
+  /** Return to the selected conversation. */
+  closePage(): void {
+    this.#require().closePage()
   }
 
   /** Toggle the sidebar panel (closed ⟷ contract default width). */

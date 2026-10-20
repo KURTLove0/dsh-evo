@@ -13,6 +13,7 @@ import type {
   CaseResult,
   ClarificationGap,
   CompositionIssue,
+  StepInput,
   VerificationSummary,
 } from '@deepseek-ai/dsh-business-workflow/types'
 
@@ -38,7 +39,7 @@ export interface ToolBusinessWorkflowClarifiedData {
   readonly gaps: readonly ClarificationGap[]
 }
 
-/** The board projection of one accepted step: its display identity plus explicit waits. */
+/** The board projection of one accepted step and the context its executor receives. */
 export interface ToolBusinessWorkflowBoardStep {
   /** The step id (edge endpoints reference it). */
   readonly id: string
@@ -46,6 +47,12 @@ export interface ToolBusinessWorkflowBoardStep {
   readonly title: string
   /** Ids of steps this step explicitly waits for. */
   readonly dependsOn: readonly string[]
+  /** The instruction given to the delegated step executor. */
+  readonly instruction?: string
+  /** Named input sources resolved when this step runs. */
+  readonly inputs?: readonly StepInput[]
+  /** Requirement objective ids served by this step. */
+  readonly objectives?: readonly string[]
 }
 
 /** Records one composition verdict: acceptance or the structural issues that rejected the draft. */

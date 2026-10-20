@@ -206,12 +206,14 @@ describe('SettingsPanel navigation', () => {
     request('runtimes')
     expect(screen.getByRole('dialog')).toBeTruthy()
     expect(screen.getByTestId('section-runtimes')).toBeTruthy()
+    expect(screen.queryByText('Open configuration file')).toBeNull()
     // The consumed request never re-opens a closed panel.
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).toBeNull()
     // A later request re-opens on its own section.
     request('general')
     expect(screen.getByTestId('section-general')).toBeTruthy()
+    expect(screen.getByText('Open configuration file')).toBeTruthy()
   })
 
   it('shows one module at a time: a single-page module drops the rail', () => {

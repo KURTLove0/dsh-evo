@@ -999,3 +999,44 @@ def test_client_reports_missing_bundled_runtime_dependency(monkeypatch: pytest.M
 
     with pytest.raises(FileNotFoundError, match="Install deepseek-harness-runtime-bin"):
         HarnessClient().start()
+
+
+def test_workflow_checkpoint_preserves_payload_without_changing_response(tmp_path: Path) -> None:
+    fixture = Path(__file__).resolve().parents[3] / "packages/sdk/client/tests/fixtures/business-workflow-checkpoint.json"
+    checkpoint = json.loads(fixture.read_text())
+    script = tmp_path / "workflow_runtime.py"
+    script.write_text('''
+import json
+import os
+import sys
+
+for line in sys.stdin:
+    msg = json.loads(line)
+    method = msg.get("method")
+    if method == "initialize":
+        result = {"serverInfo": {"name": "workflow-runtime"}}
+    elif method == "session/prompt":
+        session = msg["params"]["sessionId"]
+        events = [
+            {"type": "agent/inbox/spliced", "data": {"target": "next-turn", "start": 0, "inserted": [{"id": "message-1"}]}},
+            {"type": "business-workflow/checkpoint", "data": json.load(open(os.environ["CHECKPOINT_FIXTURE"]))},
+            {"type": "assistant/message", "data": {"message": {"role": "assistant", "content": [{"type": "text", "text": "workflow is waiting"}]}}},
+            {"type": "turn/end", "data": {"turn": 0, "reason": {"kind": "completed"}}},
+        ]
+        for event in events:
+            print(json.dumps({"jsonrpc": "2.0", "method": "session.event", "params": {"sessionId": session, "event": event}}), flush=True)
+        print(json.dumps({"jsonrpc": "2.0", "method": "session.status", "params": {"sessionId": session, "status": "idle"}}), flush=True)
+        result = {"messageId": "message-1"}
+    else:
+        result = {}
+    print(json.dumps({"jsonrpc": "2.0", "id": msg["id"], "result": result}), flush=True)
+    if method == "shutdown":
+        break
+'''.strip())
+    with DeepSeekHarness(
+        launch_args_override=(sys.executable, str(script)),
+        env={"CHECKPOINT_FIXTURE": str(fixture)},
+    ) as harness:
+        result = harness.run("inspect", session_id="checkpoint-session")
+    assert next(event["data"] for event in result.events if event["type"] == "business-workflow/checkpoint") == checkpoint
+    assert result.final_response == "workflow is waiting"

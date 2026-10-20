@@ -1,17 +1,10 @@
-/**
- * Runtimes settings page store: one snapshot joining the configurable-provider
- * directory (`llm.providers`) with the host-scoped model catalog
- * (`llm.models` — the models each live runtime currently loads). Only LIVE
- * routes are runtimes this deployment can call: a dormant route is a
- * configuration candidate that belongs to the Models page, and a local-CLI
- * runtime whose command the host could not find on this machine can never
- * serve a request from here — neither gets a row. The host stays the single
- * fact source; the page is read-only, so every refresh is a whole re-read
- * rather than a write-back join.
- */
-
+/** Runtime directory, remote connection checks, and revision-checked profile writes. */
 import type {
-  IApiClient, ModelProviderGroup,
+  IApiClient,
+  ModelProviderGroup,
+  RuntimePeerView,
+  SettingsNamespaceView,
+  SettingsPathOpView,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
@@ -42,9 +35,29 @@ export interface RuntimeRow {
   failure: string | undefined
 }
 
+/** A user-owned Cursor protocol executable profile. */
+export interface RuntimeProfile {
+  name: string
+  command: string
+  args: string[]
+  enabled: boolean
+}
+
+/** Settings persisted by the host runtime manager. */
+interface ManagementConfiguration {
+  profiles: Record<string, RuntimeProfile>
+  peers: Record<string, { name: string; url: string }>
+}
+
 /** Page snapshot. */
 export interface RuntimesSettingsState {
   status: 'idle' | 'loading' | 'ready' | 'error'
+  writable: boolean
+  saving: boolean
+  managementError: string | null
+  profiles: Record<string, RuntimeProfile>
+  peers: RuntimePeerView[]
+  revision: number
   /** Whole-load failure text. */
   error: string | null
   /** Runtime rows in directory declaration order. */
@@ -72,7 +85,16 @@ export function messageOf(error: unknown): string {
 export class RuntimesSettingsStore {
   /** The snapshot the section renders from (uSES-safe store). */
   readonly store: SnapshotStore<RuntimesSettingsState> = createSnapshotStore<RuntimesSettingsState>({
-    status: 'idle', error: null, rows: [], daemonRunning: true,
+    status: 'idle',
+    error: null,
+    rows: [],
+    daemonRunning: true,
+    writable: false,
+    saving: false,
+    managementError: null,
+    profiles: {},
+    peers: [],
+    revision: 0,
   })
 
   /** Latest load wins; an older response never overwrites a newer one. */
@@ -81,9 +103,7 @@ export class RuntimesSettingsStore {
   /**
    * @param api - the wire face (llm domain).
    */
-  constructor(
-    private readonly api: Pick<IApiClient, 'llm'>,
-  ) {}
+  constructor(private readonly api: Pick<IApiClient, 'llm' | 'settings'>) {}
 
   /**
    * Refresh the whole page snapshot: the provider directory and the host model
@@ -94,11 +114,21 @@ export class RuntimesSettingsStore {
    */
   async load(): Promise<void> {
     const generation = ++this.generation
-    this.store.update((s) => { s.status = 'loading'; s.error = null })
+    this.store.update((s) => {
+      s.status = 'loading'
+      s.error = null
+    })
     try {
-      const [providersResponse, modelsResponse] = await Promise.all([
+      const [providersResponse, modelsResponse, management] = await Promise.all([
         this.api.llm.providers({}),
         this.api.llm.models({}),
+        this.loadManagement().then((management) => {
+          if (generation === this.generation)
+            this.store.update((s) => {
+              Object.assign(s, management)
+            })
+          return management
+        }),
       ])
       if (!providersResponse.result.ok) throw new Error(providersResponse.result.error.message)
       if (!modelsResponse.result.ok) throw new Error(modelsResponse.result.error.message)
@@ -108,6 +138,7 @@ export class RuntimesSettingsStore {
       const catalog = new Map(groups.map(group => [group.id, group]))
       const failed = new Map(failures.map(failure => [failure.id, failure.message]))
       this.store.update((s) => {
+        Object.assign(s, management)
         s.status = 'ready'
         s.error = null
         s.daemonRunning = daemonRunning
@@ -117,16 +148,18 @@ export class RuntimesSettingsStore {
           if (!entry.active || entry.present === false) return []
           const group = catalog.get(entry.provider)
           const models = group === undefined ? undefined : group.models.map(model => ({ ...model }))
-          return [{
-            provider: entry.provider,
-            displayName: entry.displayName,
-            settingsNs: entry.settingsNs,
-            active: entry.active,
-            declared: entry.declared,
-            localCommand: entry.localCommand,
-            models,
-            failure: group === undefined ? failed.get(entry.provider) : undefined,
-          }]
+          return [
+            {
+              provider: entry.provider,
+              displayName: management.profiles[entry.provider]?.name ?? entry.displayName,
+              settingsNs: entry.settingsNs,
+              active: entry.active,
+              declared: management.profiles[entry.provider] === undefined ? entry.declared : true,
+              localCommand: entry.localCommand,
+              models,
+              failure: group === undefined ? failed.get(entry.provider) : undefined,
+            },
+          ]
         })
       })
     } catch (error) {
@@ -136,5 +169,102 @@ export class RuntimesSettingsStore {
         s.error = messageOf(error)
       })
     }
+  }
+
+  private async loadManagement(): Promise<
+    Pick<RuntimesSettingsState, 'writable' | 'revision' | 'profiles' | 'peers' | 'managementError'>
+  > {
+    try {
+      const [settings, peers] = await Promise.all([this.api.settings.describe({}), this.api.llm.runtimePeers({})])
+      if (!settings.result.ok) throw new Error(settings.result.error.message)
+      if (!peers.result.ok) throw new Error(peers.result.error.message)
+      const view = settings.result.value.namespaces.find(entry => entry.ns === 'runtime-management')
+      if (view === undefined) throw new Error('Runtime management is unavailable on this host.')
+      const config = view.value as ManagementConfiguration
+      return {
+        writable: settings.result.value.writable,
+        revision: view.revision,
+        profiles: config.profiles,
+        peers: peers.result.value.peers,
+        managementError: null,
+      }
+    } catch (error) {
+      const held = this.store.getSnapshot()
+      return {
+        writable: false,
+        revision: held.revision,
+        profiles: { ...held.profiles },
+        peers: [...held.peers],
+        managementError: messageOf(error),
+      }
+    }
+  }
+
+  private async mutate(ops: SettingsPathOpView[]): Promise<void> {
+    const state = this.store.getSnapshot()
+    if (!state.writable) throw new Error('Runtime settings are read-only.')
+    if (state.saving) throw new Error('A runtime change is already being saved.')
+    this.store.update((s) => {
+      s.saving = true
+    })
+    try {
+      const response = await this.api.settings.mutate({
+        ns: 'runtime-management',
+        ops,
+        expectedRevision: state.revision,
+      })
+      if (!response.result.ok) throw new Error(response.result.error.message)
+      this.acceptManagement(response.result.value)
+      await this.load()
+    } finally {
+      this.store.update((s) => {
+        s.saving = false
+      })
+    }
+  }
+
+  private acceptManagement(view: SettingsNamespaceView): void {
+    ++this.generation
+    const config = view.value as ManagementConfiguration
+    this.store.update((s) => {
+      s.revision = view.revision
+      s.profiles = config.profiles
+    })
+  }
+
+  /**
+   * Validate a remote dsh host before saving its connection.
+   * @param name - machine label.
+   * @param url - HTTP origin, normally a local SSH tunnel.
+   * @returns the connected machine; failed checks never persist a peer.
+   */
+  async connect(name: string, url: string): Promise<RuntimePeerView> {
+    const checked = await this.api.llm.runtimePeers({ url })
+    if (!checked.result.ok) throw new Error(checked.result.error.message)
+    const peer = checked.result.value.peers[0]
+    if (peer === undefined) throw new Error('No runtime machine answered.')
+    if (peer.error !== undefined) throw new Error(peer.error)
+    await this.mutate([{ op: 'set', path: ['peers', encodeURIComponent(peer.url)], value: { name, url: peer.url } }])
+    return { ...peer, name }
+  }
+
+  /**
+   * Save a custom executable profile through host validation and adapter mounting.
+   * @param id - provider route, prefixed with runtime-.
+   * @param profile - Cursor-compatible executable and arguments.
+   * @returns settlement after reloading the committed directory.
+   */
+  saveProfile(id: string, profile: RuntimeProfile): Promise<void> {
+    return this.mutate([{ op: 'set', path: ['profiles', id], value: profile }])
+  }
+
+  /**
+   * Remove a user profile or disconnect a remote machine; native runtimes are never removed.
+   * @param kind - persisted settings collection.
+   * @param id - provider route or canonical remote origin.
+   * @returns settlement after the committed removal is reloaded.
+   */
+  remove(kind: 'profiles' | 'peers', id: string): Promise<void> {
+    return this.mutate([{ op: 'unset', path: [kind, kind === 'peers' ? encodeURIComponent(id) : id] }])
   }
 }

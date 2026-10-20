@@ -108,6 +108,42 @@
   margin: 0;
   padding: 4px 0 2px;
   overflow: auto;
+  max-height: 320px;
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
+
+.stepDetail {
+  min-width: 0;
+  margin: 2px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.stepHeading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.stepId,
+.stepEmpty { color: var(--dsw-alias-label-tertiary); }
+
+.stepInstruction,
+.stepObjectives,
+.stepEmpty { margin: 8px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.stepGroup { margin-top: 10px; }
+
+.stepGroup ul { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; padding: 0; list-style: none; }
+
+.stepGroup li { display: flex; flex-wrap: wrap; gap: 2px 8px; overflow-wrap: anywhere; }
+
+.traceDetail { white-space: pre-wrap; }

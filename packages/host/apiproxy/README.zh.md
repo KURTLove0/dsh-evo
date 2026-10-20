@@ -66,6 +66,12 @@ Workspace 列表与 Session 列表是相互独立的重连基线。`workspace.cr
 
 `AbstractApiClient` 持有全部协议不变量：签发 rpcId、包装／解包信封、Zod 解析、SSE 帧解码、一元请求超时，以及按微任务批处理的信封观测（`subscribeEnvelopes`）；平台子类只提供 `doFetch` 传输环节。`InProcessApiClient` 以 `toFetchHandler(api)` 为基础，仍是同构接点：它运行完整的协议序列化与校验路径而不经过网络，供需要该路径的调用方和载体测试使用。产品的 `dsh --profile headless` 是直连 core 的入口，不挂载本包。
 
+## 运行时管理
+
+存在设置提供方时，网关注册 `runtime-management` 设置命名空间。`peers` 字典保存机器名称和 HTTP 地址；`profiles` 以 `runtime-` 提供方 ID 保存名称、命令、参数数组和启用状态。通过验证的设置将现有 Cursor CLI（命令行界面）适配器作为子插件挂载和释放。提供方和目录读取与设置监听器等待同一个串行协调流程。浏览器的[运行时页面](../../client/ui-settings-runtimes/README.zh.md)负责管理表单及其限制说明。
+
+`llm.runtimePeers` 通过常规 RPC 传输读取已保存的机器，或检查一个草稿地址，验证主机、提供方和模型回复。连接失败时保留机器身份和诊断信息。地址拒绝凭据、路径、查询参数和片段，远程请求拒绝重定向。`runtimePeerTimeoutMs` 限制每次远程请求的时间，默认 5000ms。Web 传输将该方法限制为回环访问；远程主机可以通过 SSH 隧道连接。
+
 ## 模型体验
 
 无。该包定义客户端与宿主间的 wire 约定和载体，其中没有任何内容会进入模型请求。

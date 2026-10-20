@@ -18,6 +18,12 @@
     persona: >-
       You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.
 
+# The workbench subpath mounts nested Remote services; Typert discovery needs
+# their owning package because it scans package-root Loader entries.
+- id: typert-loader
+  config:
+    packages: ['@deepseek-ai/dsh-business-workflow-local', '@deepseek-ai/dsh-workbench-agent']
+
 # TODO: Re-enable shared HMR for Web after its reload lifecycle is tested.
 - id: hmr
   disabled: true
@@ -60,6 +66,21 @@
       name: '@deepseek-ai/dsh-storage-domain'
       config:
         backend: json
+
+    - id: workbench-agents
+      name: '@deepseek-ai/dsh-workbench-agent'
+      config:
+        runtimePreset: standard
+
+    - id: ui-workbench-agent
+      name: '@deepseek-ai/dsh-client-ui-workbench-agent'
+
+    - id: workflow-workbench
+      name: '@deepseek-ai/dsh-business-workflow-local/workbench'
+      config:
+        presets: [standard]
+        generatorPreset: standard
+        subagentProvider: spawn
 
     - id: message-feedback
       name: '@deepseek-ai/dsh-message-feedback'
@@ -203,8 +224,7 @@
     - id: ui-settings-models
       name: '@deepseek-ai/dsh-client-ui-settings-models'
 
-    # Runtimes page: the model runtimes this deployment can call (directory
-    # liveness + loaded models), read-only beside the Models configuration.
+    # Runtime machines, remote dsh connections, and custom executable profiles.
     - id: ui-settings-runtimes
       name: '@deepseek-ai/dsh-client-ui-settings-runtimes'
 

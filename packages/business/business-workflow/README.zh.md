@@ -4,6 +4,12 @@
 
 业务工作流能力 seam（`ctx.businessWorkflows`）的 Service Definition：通过三大能力 —— 需求澄清、工作流编排、效果验证 —— 把一条业务诉求变成一份经过验证的步骤编排的契约。本包只持有契约；请以插件形式加载 Service Provider（如 [`@deepseek-ai/dsh-business-workflow-local`](../business-workflow-local/README.zh.md)），模型经由 [`@deepseek-ai/dsh-tool-business-workflow`](../tool-business-workflow/README.zh.md) 访问该 seam。
 
+## 工作空间工作台
+
+`./workbench` 入口声明 `WorkflowWorkbench`（`ctx.workflowWorkbench`）。`command`、`snapshot` 和 `validate` 支持独立目录、可编辑草稿、不可变发布版本、生成候选、正式运行与验收用例运行。管理命令明确携带工作空间、修订号、发布版本或节点执行身份，不依赖当前会话。`./workbench-types` 提供浏览器安全的数据类型，`./definition` 校验支持的编辑字段。验收输入使用 JSON 值。
+
+发布版本固定一份草稿。每次运行固定版本、输入和模型配置，编辑不会改变历史流程图与结果。Agent 和人工确认节点使用明确的依赖与输入绑定。运行状态、节点状态与验收断言结果分别记录。同一验证批次的用例共享批次 ID，各自拥有运行 ID 和输出。运行的审计会话保存 `business-workflow/checkpoint`，实际子会话记录模型上下文。
+
 ## 三大能力
 
 一条记录在封闭的阶段联合类型 —— `clarifying`、`ready`、`composed`、`verified` —— 中流转：
@@ -50,5 +56,6 @@
 
 ## Known Limitations and Deferred Work
 
-- **记录仅存于调用方** —— seam 未定义持久化或跨重启标识；耐久后端需要自行设计，且可能要求扩展契约。
+- 会话流水线的记录由调用方持有；工作空间工作台要求提供方持久化定义与运行身份。
+
 - **验证试运行由调用方提供** —— seam 自身不执行任何工作；想要 worker 侧执行的 provider 必须包装自己的 runner，`signal` 取消之外的每步资源上限尚未进入契约。

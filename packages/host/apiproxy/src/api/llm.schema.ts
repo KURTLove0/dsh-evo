@@ -65,3 +65,14 @@ export const llmDiscoverModelsRequestSchema = z.object({
 export const llmDiscoverModelsValueSchema = z.object({
   models: z.array(discoveredModelViewSchema),
 }) satisfies z.ZodType<Wire<ResponseValue<'llm.discoverModels'>>>
+
+/** One remote machine's validated runtime directory. */
+export const runtimePeerViewSchema = z.object({
+  url: z.url(), name: z.string().min(1), version: z.string().optional(), cwd: z.string().optional(),
+  providers: z.array(configurableProviderViewSchema), groups: z.array(modelProviderGroupSchema),
+  failures: z.array(modelCatalogFailureSchema), error: z.string().optional(),
+})
+/** llm.runtimePeers accepts an optional draft HTTP origin. */
+export const llmRuntimePeersRequestSchema = z.object({ url: z.url().optional() })
+/** llm.runtimePeers retains unreachable machines with connection errors. */
+export const llmRuntimePeersValueSchema = z.object({ peers: z.array(runtimePeerViewSchema) })

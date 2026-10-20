@@ -42,3 +42,7 @@ API_REMOTE_FORWARDED_EVENTS satisfies readonly TypertForwardableEvent[]
 
 /** Host plugin body; the selected contributions mount only in Client environments. */
 export function apply(): void {}
+
+export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'
+
+export type {} from '@deepseek-ai/dsh-workbench-agent'

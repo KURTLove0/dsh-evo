@@ -123,6 +123,7 @@ function scriptedApi(overrides: {
       ...overrides.credentials,
     },
     llm: {
+      runtimePeers: r => ok(r, { peers: [] }),
       providers: r => ok(r, { providers: [], daemonRunning: false }),
       models: r => ok(r, { groups: [], failures: [] }),
       discoverModels: err,

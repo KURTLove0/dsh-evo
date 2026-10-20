@@ -8,6 +8,12 @@ Service Definition：[dsh-business-workflow](../../packages/business/business-wo
 
 来源：seam 词汇位于 [`packages/business/business-workflow/src/types.ts`](../../packages/business/business-workflow/src/types.ts)。
 
+## 工作空间定义与运行
+
+`WorkflowWorkbench` 在会话流水线之外提供工作空间独立目录。[浏览器安全类型](../../packages/business/business-workflow/src/workbench-types.ts)区分 `WorkflowDocument`（草稿与修订号）、`WorkflowVersion`（不可变发布版本）、`WorkflowRun`（固定版本、输入、执行配置、输出与断言）、`WorkflowAttempt`（节点实际执行背景）及 `WorkflowOperation`（带来源修订号的 AI 候选）。Agent 和人工确认节点复用下文明确的依赖与输入来源规则。
+
+`command` 支持 create/save/publish/archive/generate/start/verify/cancel/decide。保存和发布携带 `expectedRevision`，人工决策携带 `runId` 与 `attemptId`。`snapshot` 读取已提交目录和选中记录历史，`validate` 报告需求与流程图问题。存储、取消、恢复和资源限制见[持久化提供方](../../packages/business/business-workflow-local/README.zh.md#持久化工作台入口)。
+
 ## 阶段联合
 
 一条记录在封闭阶段联合中流转；阶段事件只在变化时发出：
@@ -174,9 +180,57 @@ abstract list(): BusinessWorkflowSnapshot[]
 
 Source: [`packages/business/business-workflow/src/index.ts`](../../packages/business/business-workflow/src/index.ts)
 
+<a id="ctxworkflowworkbench--workflowworkbench-abstract-seam"></a>
+
+### `ctx.workflowWorkbench` — `WorkflowWorkbench` (abstract seam)
+
+Providers persist before returning receipts and own work beyond any client connection.
+
+```ts cordis-catalog
+/**
+ * Read the directory and selected workflow's runs and operations.
+ * @param id - selected workflow; omit to read only the directory.
+ * @returns committed state and server-authorized presets.
+ */
+abstract snapshot(id?: WorkflowId): Promise<WorkflowWorkbenchSnapshot>
+
+/**
+ * Apply a management action independently from the caller's conversation.
+ * @param request - full command; edits require the currently committed revision.
+ * @returns affected identities after persistence; background work remains service-owned.
+ */
+abstract command(request: WorkflowCommand): Promise<WorkflowReceipt>
+
+/**
+ * Check a definition without saving or starting work.
+ * @param definition - draft or generated candidate.
+ * @returns requirement and topology diagnostics.
+ */
+abstract validate(definition: WorkflowDefinition): WorkflowValidation
+```
+
+Source: [`packages/business/business-workflow/src/workbench.ts`](../../packages/business/business-workflow/src/workbench.ts)
+
 <a id="business-workflow-events"></a>
 
 ### `business-workflow/*` events
+
+<a id="business-workflowchanged--emit"></a>
+
+#### `business-workflow/changed` — emit
+
+A durable workflow mutation is available for snapshot refresh.
+
+```ts cordis-catalog
+/**
+ * A durable workflow mutation is available for snapshot refresh.
+ * @param workflowId - workflow whose definition, run, or candidate changed.
+ * @mode emit
+ */
+'business-workflow/changed'(workflowId: WorkflowId): void
+```
+
+Source: [`packages/business/business-workflow/src/workbench-types.ts`](../../packages/business/business-workflow/src/workbench-types.ts)
 
 <a id="business-workflowstage--emit"></a>
 

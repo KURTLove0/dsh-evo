@@ -106,6 +106,9 @@
     },
     {
       "path": "../daemon"
+    },
+    {
+      "path": "../../llm/llm-cursor-cli"
     }
   ]
 }

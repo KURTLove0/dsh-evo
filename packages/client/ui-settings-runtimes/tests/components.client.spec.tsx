@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** Section rendering over a scripted wire face: summary strip, table rows, liveness, and the loaded-models view. */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
@@ -39,7 +39,9 @@ function scriptedFace(overrides: {
   models?: () => Promise<RpcResponse<CatalogAnswer>>
 } = {}) {
   return {
+    settings: { describe: () => Promise.resolve(ok({ writable: true, hasDocument: true, namespaces: [{ ns: 'runtime-management', revision: 0, value: { profiles: {}, peers: {} } }] })) },
     llm: {
+      runtimePeers: () => Promise.resolve(ok({ peers: [] })),
       providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: true }))),
       models: overrides.models ?? (() => Promise.resolve(ok({
         groups: [
@@ -56,7 +58,10 @@ async function mountSection(overrides: Parameters<typeof scriptedFace>[0] = {}) 
   const controller = new RuntimesSettingsStore(face)
   await controller.load()
   const view = render(<RuntimesSection
-    controller={controller}
+    load={() => controller.load()}
+    connect={(name, url) => controller.connect(name, url)}
+    saveProfile={(id, profile) => controller.saveProfile(id, profile)}
+    remove={(kind, id) => controller.remove(kind, id)}
     useSnapshot={bindSnapshotSelector(controller.store)}
     t={t}
   />)
@@ -126,6 +131,49 @@ describe('RuntimesSection', () => {
     expect(screen.queryByText(modelsCountCopy(en.modelsCount, 0))).toBeNull()
   })
 
+  it('previews three models per runtime and expands each list independently', async () => {
+    const models = Array.from({ length: 5 }, (_, index) => ({ id: `model-${index}`, name: `Model ${index}` }))
+    await mountSection({
+      providers: () => Promise.resolve(ok({
+        providers: DIRECTORY.map(provider => ({ ...provider, active: true })),
+        daemonRunning: true,
+      })),
+      models: () => Promise.resolve(ok({
+        groups: DIRECTORY.map(provider => ({ id: provider.provider, name: provider.displayName, models })),
+        failures: [],
+      })),
+    })
+    const [first, second] = screen.getAllByRole('row').slice(1).map(row => within(row))
+    expect(first!.getAllByRole('listitem')).toHaveLength(3)
+    expect(first!.getByText(modelsCountCopy(en.modelsCount, 5))).toBeTruthy()
+    expect(first!.queryByText('model-3')).toBeNull()
+    const toggle = first!.getByRole('button', { name: en.expandModels })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+    expect(document.getElementById(toggle.getAttribute('aria-controls')!)).toBe(first!.getByRole('list'))
+    fireEvent.click(toggle)
+    expect(first!.getAllByRole('listitem')).toHaveLength(5)
+    expect(first!.getByText('model-4')).toBeTruthy()
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    expect(second!.getAllByRole('listitem')).toHaveLength(3)
+    fireEvent.click(first!.getByRole('button', { name: en.collapseModels }))
+    expect(first!.getAllByRole('listitem')).toHaveLength(3)
+    expect(first!.queryByText('model-4')).toBeNull()
+    expect(first!.getByText(modelsCountCopy(en.modelsCount, 5))).toBeTruthy()
+  })
+
+  it.each([1, 2, 3])('shows all %i models without an expand button', async (count) => {
+    await mountSection({
+      models: () => Promise.resolve(ok({
+        groups: [{ id: 'claude-cli', name: 'Claude CLI', models: Array.from({ length: count }, (_, index) => ({
+          id: `model-${index}`, name: `Model ${index}`,
+        })) }],
+        failures: [],
+      })),
+    })
+    expect(within(screen.getByRole('table')).getAllByRole('listitem')).toHaveLength(count)
+    expect(screen.queryByRole('button', { name: en.expandModels })).toBeNull()
+  })
+
   it('renders the catalog failure on the failing live row as its health', async () => {
     await mountSection({
       models: () => Promise.resolve(ok({
@@ -141,12 +189,14 @@ describe('RuntimesSection', () => {
   it('renders the empty-deployment notice when the directory declares nothing', async () => {
     await mountSection({ providers: () => Promise.resolve(ok({ providers: [] as never, daemonRunning: true })) })
     expect(screen.getByText(en.empty)).toBeTruthy()
-    expect(screen.queryByText(en.statusActive)).toBeNull()
+    expect(screen.queryByRole('img', { name: en.statusActive })).toBeNull()
     expect(screen.queryByRole('table')).toBeNull()
   })
 
   it('renders the daemon hint while no sensing daemon runs, with install and start steps', async () => {
     await mountSection({ providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })) })
+    const disclosure = screen.getByText(en.daemonHintTitle).closest('details')!
+    expect(disclosure.open).toBe(false)
     expect(screen.getByText(en.daemonHintTitle)).toBeTruthy()
     expect(screen.getByText(en.daemonHintInstall)).toBeTruthy()
     expect(screen.getByText(en.daemonHintStart)).toBeTruthy()
@@ -160,13 +210,14 @@ describe('RuntimesSection', () => {
     const writeText = vi.fn(() => Promise.resolve())
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
     await mountSection({ providers: () => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: false })) })
+    fireEvent.click(screen.getByText(en.daemonHintTitle))
     const [installCopy, startCopy] = screen.getAllByText(en.daemonHintCopy)
     fireEvent.click(startCopy!)
     expect(writeText).toHaveBeenCalledWith(DAEMON_START_COMMAND)
     fireEvent.click(installCopy!)
     expect(writeText).toHaveBeenCalledWith(DAEMON_INSTALL_COMMAND)
     // Each row confirms independently of the other.
-    expect(screen.getAllByText(en.daemonHintCopied)).toHaveLength(2)
+    expect(await screen.findAllByText(en.daemonHintCopied)).toHaveLength(2)
     delete (navigator as { clipboard?: unknown }).clipboard
   })
 
@@ -187,11 +238,14 @@ describe('RuntimesSection', () => {
     const controller = new RuntimesSettingsStore(face)
     await controller.load()
     render(<RuntimesSection
-      controller={controller}
+      load={() => controller.load()}
+      connect={(name, url) => controller.connect(name, url)}
+      saveProfile={(id, profile) => controller.saveProfile(id, profile)}
+      remove={(kind, id) => controller.remove(kind, id)}
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}
     />)
-    expect(screen.getByRole('heading', { name: en.title })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /^Runtimes/ })).toBeTruthy()
     expect(screen.getByText(/directory down/)).toBeTruthy()
     fireEvent.click(screen.getByText(en.retry))
     await screen.findByText('Claude CLI')
@@ -202,7 +256,10 @@ describe('RuntimesSection', () => {
     const face = scriptedFace()
     const controller = new RuntimesSettingsStore(face)
     render(<RuntimesSection
-      controller={controller}
+      load={() => controller.load()}
+      connect={(name, url) => controller.connect(name, url)}
+      saveProfile={(id, profile) => controller.saveProfile(id, profile)}
+      remove={(kind, id) => controller.remove(kind, id)}
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}
     />)

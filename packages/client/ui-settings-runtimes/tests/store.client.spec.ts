@@ -30,7 +30,9 @@ function api(overrides: {
   models?: () => Promise<RpcResponse<typeof CATALOG>>
 } = {}) {
   const face = {
+    settings: { describe: () => Promise.resolve(ok({ writable: true, hasDocument: true, namespaces: [{ ns: 'runtime-management', revision: 0, value: { profiles: {}, peers: {} } }] })) },
     llm: {
+      runtimePeers: () => Promise.resolve(ok({ peers: [] })),
       providers: overrides.providers ?? (() => Promise.resolve(ok({ providers: DIRECTORY, daemonRunning: true }))),
       models: overrides.models ?? (() => Promise.resolve(ok(CATALOG))),
     },

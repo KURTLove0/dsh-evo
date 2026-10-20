@@ -1,12 +1,10 @@
 /** Package-owned business-workflow event invariants. @module @deepseek-ai/dsh-business-workflow/invariant */
 
+import type {} from './workbench-types.ts'
+import type {} from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
-import type {
-  BusinessWorkflowInfo,
-  BusinessWorkflowStage,
-  VerificationSummary,
-} from './types.ts'
+import type { BusinessWorkflowInfo, BusinessWorkflowStage, VerificationSummary } from './types.ts'
 
 const PACKAGE_NAME = '@deepseek-ai/dsh-business-workflow'
 const STAGES = new Set(['clarifying', 'ready', 'composed', 'verified'])
@@ -49,41 +47,88 @@ function assertStage(stage: string, fail: InvariantFailure): void {
 /** Install stage-transition and verification-consistency checks over the seam's events. */
 const install: InvariantInstaller = (ctx, fail) => {
   const stages = new Map<string, string>()
+  const runs = new Map<string, { sessionId: string; versionId: string; seq: number }>()
+  ctx.on(
+    'session/event',
+    (session, event) => {
+      if (event.type !== 'business-workflow/checkpoint') return
+      const run = event.data
+      const prior = runs.get(run.id)
+      if (run.sessionId !== session.id) fail('workflow checkpoint belongs to another audit session')
+      if (
+        prior !== undefined &&
+        (prior.sessionId !== session.id || prior.versionId !== run.version.id || run.seq !== prior.seq + 1)
+      ) {
+        fail('workflow checkpoint changes its audit, publication, or sequence')
+      }
+      const nodeIds = new Set(run.version.definition.nodes.map(node => node.id))
+      if (
+        run.attempts.length !== nodeIds.size ||
+        run.attempts.some(attempt => !nodeIds.has(attempt.nodeId)) ||
+        new Set(run.attempts.map(attempt => attempt.nodeId)).size !== nodeIds.size
+      ) {
+        fail('workflow attempts do not match the published nodes')
+      }
+      if (
+        run.status === 'succeeded' &&
+        (run.attempts.some(attempt => attempt.status !== 'succeeded') ||
+          run.version.definition.finalOutputs.some(binding => !(binding.name in run.outputs)))
+      ) {
+        fail('successful workflow checkpoint lacks completed nodes or final outputs')
+      }
+      runs.set(run.id, { sessionId: session.id, versionId: run.version.id, seq: run.seq })
+    },
+    { global: true },
+  )
 
-  ctx.on('business-workflow/stage', (info: BusinessWorkflowInfo) => {
-    assertStage(info.stage, fail)
-    const id = String(info.id)
-    const previous = stages.get(id)
-    if (previous !== undefined && !isAdmittedTransition(previous as BusinessWorkflowStage, info.stage)) {
-      fail(`business-workflow/stage for ${JSON.stringify(id)} moves ${JSON.stringify(previous)} to ${JSON.stringify(info.stage)}, which the transition contract does not admit`)
-    }
-    stages.set(id, info.stage)
-  }, { global: true })
+  ctx.on(
+    'business-workflow/stage',
+    (info: BusinessWorkflowInfo) => {
+      assertStage(info.stage, fail)
+      const id = String(info.id)
+      const previous = stages.get(id)
+      if (previous !== undefined && !isAdmittedTransition(previous as BusinessWorkflowStage, info.stage)) {
+        fail(
+          `business-workflow/stage for ${JSON.stringify(id)} moves ${JSON.stringify(previous)} to ${JSON.stringify(info.stage)}, which the transition contract does not admit`,
+        )
+      }
+      stages.set(id, info.stage)
+    },
+    { global: true },
+  )
 
-  ctx.on('business-workflow/verification', (info: BusinessWorkflowInfo, summary: VerificationSummary) => {
-    const id = String(info.id)
-    const stage = stages.get(id)
-    if (stage === undefined) {
-      fail(`business-workflow/verification for ${JSON.stringify(id)} has no prior business-workflow/stage event`)
-      return
-    }
-    assertStage(info.stage, fail)
-    if (stage !== info.stage) {
-      fail(`business-workflow/verification for ${JSON.stringify(id)} carries stage ${JSON.stringify(info.stage)}, but the record's last stage event recorded ${JSON.stringify(stage)}`)
-    }
-    // The report is recorded and any promotion published before this event,
-    // so a passing verification must already read as `verified` and a failing
-    // one must have settled at `composed` (never still claiming `verified`).
-    if (summary.passed !== (info.stage === 'verified')) {
-      fail(`business-workflow/verification for ${JSON.stringify(id)} reports passed=${summary.passed} at stage ${JSON.stringify(info.stage)}`)
-    }
-    if (!Number.isSafeInteger(summary.caseCount) || summary.caseCount < 0) {
-      fail(`business-workflow/verification for ${JSON.stringify(id)} carries a non-natural caseCount`)
-    }
-    if (typeof summary.dryRun !== 'boolean') {
-      fail(`business-workflow/verification for ${JSON.stringify(id)} carries a non-boolean dryRun`)
-    }
-  }, { global: true })
+  ctx.on(
+    'business-workflow/verification',
+    (info: BusinessWorkflowInfo, summary: VerificationSummary) => {
+      const id = String(info.id)
+      const stage = stages.get(id)
+      if (stage === undefined) {
+        fail(`business-workflow/verification for ${JSON.stringify(id)} has no prior business-workflow/stage event`)
+        return
+      }
+      assertStage(info.stage, fail)
+      if (stage !== info.stage) {
+        fail(
+          `business-workflow/verification for ${JSON.stringify(id)} carries stage ${JSON.stringify(info.stage)}, but the record's last stage event recorded ${JSON.stringify(stage)}`,
+        )
+      }
+      // The report is recorded and any promotion published before this event,
+      // so a passing verification must already read as `verified` and a failing
+      // one must have settled at `composed` (never still claiming `verified`).
+      if (summary.passed !== (info.stage === 'verified')) {
+        fail(
+          `business-workflow/verification for ${JSON.stringify(id)} reports passed=${summary.passed} at stage ${JSON.stringify(info.stage)}`,
+        )
+      }
+      if (!Number.isSafeInteger(summary.caseCount) || summary.caseCount < 0) {
+        fail(`business-workflow/verification for ${JSON.stringify(id)} carries a non-natural caseCount`)
+      }
+      if (typeof summary.dryRun !== 'boolean') {
+        fail(`business-workflow/verification for ${JSON.stringify(id)} carries a non-boolean dryRun`)
+      }
+    },
+    { global: true },
+  )
 }
 
 /**

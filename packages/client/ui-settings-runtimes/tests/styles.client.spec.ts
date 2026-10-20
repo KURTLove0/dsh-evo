@@ -20,13 +20,6 @@ const tokens = readdirSync(fileURLToPath(new URL('../../ui-theme/src/styles/', i
   .map(name => readFileSync(fileURLToPath(new URL(`../../ui-theme/src/styles/${name}`, import.meta.url)), 'utf8'))
   .join('\n')
 
-/** The declarations of one top-level rule, by selector. */
-function block(selector: string): string {
-  const match = new RegExp(`^\\${selector} \\{([^}]*)\\}`, 'm').exec(css)
-  if (match === null) throw new Error(`RuntimesSection.module.css has no \`${selector}\` rule`)
-  return match[1] ?? ''
-}
-
 describe('RuntimesSection theme styles', () => {
   it('names only theme variables the token sheets define', () => {
     // Every theme-variable prefix the sheets actually use, not just `--dsw-`:
@@ -44,16 +37,6 @@ describe('RuntimesSection theme styles', () => {
     // sheet loads and the classes still attach.
     const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
     expect((bare.match(/\}/g) ?? []).length).toBe((bare.match(/\{/g) ?? []).length)
-  })
-
-  it('keeps the summary strip and the cards outlined rather than filled', () => {
-    // The model chips and the origin tags carry the module fill; filling the
-    // strip or a card too would erase the chips' boundary against the panel
-    // background.
-    expect(block('.summary')).toContain('border: 1px solid var(--dsw-alias-border-l2)')
-    expect(block('.summary')).not.toMatch(/\bbackground\s*:/)
-    expect(block('.modelChip')).toContain('background: var(--dsw-alias-bg-module-platform)')
-    expect(block('.tagBuiltin')).toContain('background: var(--dsw-alias-bg-module-platform)')
   })
 
   it('never falls back to a literal colour', () => {

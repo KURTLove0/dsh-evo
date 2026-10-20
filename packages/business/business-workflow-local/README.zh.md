@@ -4,6 +4,16 @@
 
 [`@deepseek-ai/dsh-business-workflow`](../business-workflow/README.zh.md) 运行时契约的进程内实现：`LocalBusinessWorkflowRuntime` 把全部记录保存在内存中，签发 `bw-N` 标识，并驱动三能力流水线 —— 基于确定性缺口分析的需求澄清、基于结构校验的编排生成、基于用例门控试运行与验收断言的效果验证。以插件形式加载后注册为 `ctx.businessWorkflows`。
 
+## 持久化工作台入口
+
+工作空间工作流加载 `@deepseek-ai/dsh-business-workflow-local/workbench`，挂载持久化 `workflowWorkbench` 服务与生成的 `workflowGateway` Remote Consumer。Web bundle 使用 `standard` 预设加载此入口。包根入口提供下文的会话工具流水线。
+
+必填配置：`presets` 是服务端允许的执行预设，`generatorPreset` 必须属于该列表，`subagentProvider` 指定已注册的委派提供方。正整数限制为 `maxWorkflows`（200）、`maxRecordBytes`（4194304）、`maxActiveRuns`（8）、`nodeTimeoutMs`（300000）。运行时依赖 storageDomain、会话持久化、工作空间注册表、Agent 工厂、默认模型配置、预设注册表、工具和 subagents。
+
+`business_workflows` 数据域使用格式 1，通过部署选定的存储后端保存草稿与发布版本聚合、运行预留记录和生成操作。修订号检查在串行写队列中执行。每次执行拥有独立审计会话；检查点落盘成功后才启动后续节点或通知客户端。预留记录连接审计创建和索引发布。重启将未完成执行标记为中断，保留已提交的人工等待，并中断未完成的生成操作。审计日志落盘失败后拒绝后续修改，直到 Host 重启；已提交快照仍可查看。不支持的存储格式在打开时拒绝。
+
+节点与验收用例串行执行。同一工作空间同时只允许一个未结束的工作流，包括人工等待；不同工作空间共享 `maxActiveRuns` 限制。人工决策必须指明当前等待的节点执行身份。取消先记录正在停止，终止并清理子任务后再记录已取消。离开页面不取消运行。AI 生成禁用工具，只保留带来源修订号的有效候选，不覆盖草稿。
+
 ## 准入
 
 `maxWorkflows` 是正安全整数，默认 `200`。超出上限的创建在分配标识之前以指明上限的 `CAPACITY` 错误失败；对已有记录的更新不占用容量。`maxTraceChars`（默认 `2000`）封顶验证报告中每步 trace 的详情长度。
@@ -28,3 +38,5 @@
 
 - **记录仅存在于进程内** —— harness 重启会丢失全部业务工作流记录；耐久记录需要实现该 seam 的独立后端。
 - **每次验证内用例串行执行** —— 验收用例逐个执行，用例内的步骤沿依赖拓扑推进；独立用例并发推迟到有消费者需要时再实现。
+
+工作台按单 Host 运行，不支持自动重放节点、单节点重试、条件分支、循环或分布式锁。完整输出随检查点保存，超过 `maxRecordBytes` 的结果会失败；大输出分页查看尚未提供。

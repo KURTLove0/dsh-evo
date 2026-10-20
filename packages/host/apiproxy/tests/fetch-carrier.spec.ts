@@ -272,6 +272,9 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
       },
     },
     llm: {
+      async runtimePeers(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { peers: [] } } }
+      },
       async providers(request) {
         return { rpcId: request.rpcId, result: { ok: true, value: { providers: [], daemonRunning: false } } }
       },
@@ -308,6 +311,11 @@ async function collect<F>(stream: AsyncIterable<RpcRequest<F>>): Promise<RpcRequ
 }
 
 describe('unary round trip (handler ⇄ client, no network)', () => {
+  it('carries runtime peer discovery across both RPC registrations', async () => {
+    expect((await client().llm.runtimePeers({ url: 'http://localhost:4096' })).result)
+      .toEqual({ ok: true, value: { peers: [] } })
+  })
+
   it('carries a success result and echoes the minted rpcId', async () => {
     const response = await client().sessions.list({})
     expect(response.result).toEqual({ ok: true, value: { items: [] } })

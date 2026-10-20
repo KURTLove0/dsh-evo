@@ -66,6 +66,12 @@ Native local-runtime directory rows use an empty `settingsNs` and `settingsPath`
 
 `AbstractApiClient` holds every protocol invariant — rpcId minting, envelope wrap/unwrap, zod parsing, SSE frame decoding, unary timeout, microtask-batched envelope observation (`subscribeEnvelopes`) — while platform subclasses supply only the `doFetch` transport aspect. `InProcessApiClient` over `toFetchHandler(api)` remains the isomorphic point for callers and carrier tests that need the full wire serialization/validation path without a network. Product `dsh --profile headless` is a direct core entry point and does not mount this package.
 
+## Runtime management
+
+The gateway registers the `runtime-management` settings namespace when a settings provider is available. Its `peers` dictionary stores machine names and HTTP origins; `profiles` stores names, commands, argument arrays, and enabled flags under `runtime-` provider IDs. Validated settings mount and dispose the existing Cursor CLI adapter as child plugins. Provider and catalog reads wait for the same serialized reconciliation as settings watchers. The browser's [Runtimes page](../../client/ui-settings-runtimes/README.md) owns the management forms and their limitations.
+
+`llm.runtimePeers` reads saved peers or checks one draft origin through the regular RPC carrier, validating host, provider, and model replies. Failed connections retain their machine identity and diagnostics. Origins reject credentials, paths, queries, and fragments, and remote requests reject redirects. `runtimePeerTimeoutMs` bounds each remote request (default 5000ms). The Web carrier keeps this method loopback-only; remote hosts may be reached through SSH tunnels.
+
 ## Model Experience
 
 None, as the package defines the client↔host wire contract and carriers; nothing here reaches a model request.

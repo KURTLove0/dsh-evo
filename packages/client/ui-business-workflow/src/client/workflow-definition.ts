@@ -33,7 +33,7 @@ export interface BusinessWorkflowChatData {
   readonly issues: readonly CompositionIssue[]
   /** The accepted composition's step count; `0` before one is accepted. */
   readonly stepCount: number
-  /** The accepted composition's board projection (node + edge data); empty before acceptance. */
+  /** The accepted steps with dependency edges and executor context; empty before acceptance. */
   readonly steps: readonly ToolBusinessWorkflowBoardStep[]
   /** The latest verification report; absent before one ran. */
   readonly verification?: {
@@ -104,21 +104,28 @@ export const businessWorkflowDefinition: ConversationNodeDefinition<WorkflowStat
     const state = context.state
     if (match.event.type === 'tool-business-workflow/clarified') {
       const data = match.event.data
-      return { ...state, stage: data.stage, status: nodeStatus(data.stage), revision: data.revision, gaps: data.gaps }
+      return {
+        ...state,
+        stage: data.stage,
+        status: nodeStatus(data.stage),
+        revision: data.revision,
+        gaps: data.gaps,
+        ...data.revision > state.revision
+          ? { issues: [], stepCount: 0, steps: [], verification: undefined }
+          : {},
+      }
     }
     if (match.event.type === 'tool-business-workflow/composed') {
       const data = match.event.data
+      const accepted = data.stepCount > 0 && data.issues.length === 0
       return {
         ...state,
         stage: data.stage,
         status: nodeStatus(data.stage),
         issues: data.issues,
-        stepCount: data.stepCount,
-        // The verdict's board mirrors its stepCount: accepted drafts replace the
-        // board, rejected ones clear it (logs predating the field read as empty).
-        steps: data.steps ?? [],
-        // A re-composition after a requirement revision invalidates the prior report.
-        verification: data.stepCount > 0 ? undefined : state.verification,
+        stepCount: accepted ? data.stepCount : state.stepCount,
+        steps: accepted ? (data.steps ?? []) : state.steps,
+        verification: accepted ? undefined : state.verification,
       }
     }
     if (match.event.type === 'tool-business-workflow/verified') {

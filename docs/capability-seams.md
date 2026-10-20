@@ -198,6 +198,9 @@ flowchart LR
   svc_businessWorkflows["ctx.businessWorkflows<br/>Business-workflow pipeline seam"]
   pkg_business_workflow_local["business-workflow-local"]
   pkg_tool_business_workflow["tool-business-workflow"]
+  pkg_workbench_agent["workbench-agent"]
+  svc_workbenchAgents["ctx.workbenchAgents<br/>Independent workbench agents"]
+  svc_workflowWorkbench["ctx.workflowWorkbench<br/>Workspace workflow workbench"]
   pkg_lsp["lsp"]
   svc_lsp["ctx.lsp<br/>Language-server navigation seam"]
   pkg_lsp_local["lsp-local"]
@@ -221,7 +224,9 @@ flowchart LR
   pkg_bash_local --> svc_shell
   pkg_bash_sandbox --> svc_shell
   pkg_business_workflow --> svc_businessWorkflows
+  pkg_business_workflow --> svc_workflowWorkbench
   pkg_business_workflow_local --> svc_businessWorkflows
+  pkg_business_workflow_local --> svc_workflowWorkbench
   pkg_code_runtime --> svc_codeRuntime
   pkg_code_runtime_worker --> svc_codeRuntime
   pkg_commands --> svc_commands
@@ -311,6 +316,7 @@ flowchart LR
   pkg_web_search_exa --> svc_web
   pkg_web_search_perplexity --> svc_web
   pkg_webserver --> svc_webServer
+  pkg_workbench_agent --> svc_workbenchAgents
   pkg_workflow --> svc_workflowEngine
   pkg_workflow_worker_thread --> svc_workflowEngine
   pkg_workspace --> svc_workspaceRegistry
@@ -427,8 +433,10 @@ flowchart LR
   svc_webServer --> pkg_connection
   svc_webServer --> pkg_hmr
   svc_webServer --> pkg_modules
+  svc_workbenchAgents --> pkg_workbench_agent
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
+  svc_workflowWorkbench --> pkg_business_workflow_local
   svc_workspaceRegistry --> pkg_apiproxy
   svc_fs -. event gate .-> pkg_fs_observation_policy
 ```
@@ -491,6 +499,8 @@ flowchart LR
 | `ctx.clientModules` | `core` | `modules` | - | `hmr` | - | Composes the __DSH_BOOT__ entry graph from an incremental dsh.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers. |
 | `ctx.workflowEngine` | `seam` | [`workflow`](../packages/workflow/workflow) | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | [`tool-workflow`](../packages/workflow/tool-workflow), [`tool-ralph`](../packages/workflow/tool-ralph) | - | One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents. |
 | `ctx.businessWorkflows` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`tool-business-workflow`](../packages/business/tool-business-workflow) | - | One runtime per context owning the clarify/compose/verify stage machine; the model authors requirement and orchestration drafts through the tools, and the verify dry-run delegates each step to a fresh subagent through ctx.subagents. |
+| `ctx.workbenchAgents` | `seam` | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | - | Stable collaborator identities, configuration, and run history are stored independently of plugin presets; the native provider owns queued tasks, transcript sessions, and reviewed AI configuration candidates. |
+| `ctx.workflowWorkbench` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`business-workflow-local`](../packages/business/business-workflow-local) | - | Workspace definitions and immutable publications are independent of conversation records; the provider owns session-backed runs and its Remote consumer exposes management, validation, and inspection to the browser. |
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | `lsp-local` | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |
 | `ctx.apiProxy` | `core` | `apiproxy` | - | `connection` | - | The transport-agnostic host gateway face: it dispatches browser API calls, and each open host stream subscribes to the events it forwards rather than being pushed to through a broadcast verb. |
 | `ctx.dynamicCordisRunner` | `core` | [`cordis-host-runner`](../packages/extensions/cordis-host-runner) | - | [`tool-cordis`](../packages/extensions/tool-cordis) | - | Owns the in-memory definition registry, the vm sandbox for host halves, and the request-run round trip; browser pages reach the same service over the wire through its remote namespace. |

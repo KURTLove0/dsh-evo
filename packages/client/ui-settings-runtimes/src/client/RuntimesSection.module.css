@@ -1,75 +1,422 @@
-/* Runtimes settings section, in the settings-panel design language shared
- * with ModelsSection: 14/22 body, 12/18 caption, capsule controls (h36 r18),
- * and `border-l2` hairlines. Every color resolves through a `--dsw-alias-*`
- * token. The page reads as one summary strip (whole-deployment figures plus
- * daemon presence) above a four-column table: service identity, health,
- * loaded models, and the local command. */
-
+/* Runtime directory, catalog, and management surfaces share the application theme. */
 .section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 720px;
+  container-type: inline-size;
+  width: 100%;
+  min-width: 0;
   color: var(--dsw-alias-label-primary);
+}
+
+.header, .pageIdentity, .actions, .detailTitleRow, .dialogHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+
+.pageIdentity {
+  color: var(--dsw-alias-label-secondary);
+}
+
+.pageIdentity > span, .headerButton > span, .clearSearch > span {
+  display: inline-flex;
 }
 
 .title {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 24px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--dsw-alias-label-primary);
 }
 
-.intro {
-  margin: 0;
-  font-size: 14px;
-  line-height: 22px;
+.count, .directoryHeading > span {
+  margin-left: 4px;
   color: var(--dsw-alias-label-tertiary);
+  font: 12px/20px var(--ds-font-family-code);
+  font-variant-numeric: tabular-nums;
 }
 
-.empty {
-  margin: 12px 0 0;
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--dsw-alias-label-tertiary);
+.intro, .empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 21px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.section > .intro, .section > .error, .section > .empty {
+  margin-bottom: 12px;
 }
 
 .error {
   margin: 0;
-  font-size: 12px;
-  line-height: 18px;
+  font-size: 13px;
+  line-height: 20px;
   color: var(--dsw-alias-state-error-primary);
+  overflow-wrap: anywhere;
 }
 
-/* The summary strip: whole-deployment counts on the left, daemon presence on
-   the right; outlined like the table it summarizes. */
-.summary {
+.actions {
+  flex-wrap: wrap;
+}
+
+.secondaryButton, .headerButton, .daemonHintCopy, .primaryButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.headerButton:first-child {
+  width: 32px;
+  padding: 0;
+}
+
+.secondaryButton:hover:not(:disabled), .headerButton:hover:not(:disabled), .daemonHintCopy:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  min-height: 480px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--dsw-alias-bg-base);
+}
+
+.machines {
+  min-width: 0;
+  border-right: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.machineTools {
+  padding: 14px 12px 12px;
+}
+
+.directoryHeading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  margin-top: 4px;
+  margin-bottom: 12px;
 }
 
-.summaryCounts {
+.directoryHeading h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.searchField {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 9px;
+  top: 10px;
+  display: flex;
+  color: var(--dsw-alias-label-tertiary);
+  pointer-events: none;
+}
+
+.search, .form input:not([type='checkbox']), .form textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-bg-base);
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.search {
+  height: 36px;
+  padding: 7px 30px;
   font-size: 12px;
+}
+
+.search::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.clearSearch {
+  position: absolute;
+  inset: 2px 2px 2px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--dsw-alias-label-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.clearSearch:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.filters {
+  display: flex;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.filters button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex: 1;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.filters button[aria-pressed='true'] {
+  color: var(--dsw-alias-label-primary);
+  border-color: var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.filters button > span:last-child {
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.filterDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.machineGroup {
+  padding: 8px 0;
+}
+
+.machineGroup h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 8px;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.04em;
+  color: var(--dsw-alias-label-tertiary);
+  font-weight: 500;
+}
+
+.groupLine {
+  flex: 1;
+  height: 1px;
+  background: var(--dsw-alias-border-l2);
+}
+
+.machineRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-left: 2px solid transparent;
+  text-align: left;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+
+.machineRow:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+.machineRow[aria-pressed='true'] {
+  border-left-color: var(--dsw-alias-label-primary);
+  background: var(--dsw-specific-sidebar-nav-item-active);
+}
+
+.machineIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 7px;
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.machineDot {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--dsw-alias-bg-layer-1);
+  border-radius: 50%;
+}
+
+.machineContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.machineName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.machineOrigin {
+  margin: 0;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+.machineContent .machineOrigin {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.machineMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
   line-height: 18px;
   color: var(--dsw-alias-label-secondary);
 }
 
-/* Daemon presence chip: module fill with the state word carrying the tone. */
-.daemonChip {
-  flex: none;
-  padding: 1px 8px;
-  border-radius: 4px;
-  background: var(--dsw-alias-bg-module-platform);
-  font-size: 12px;
+.machineMeta .healthOnline, .machineMeta .healthFailed {
+  font-size: inherit;
+}
+
+.machines > .empty {
+  padding: 16px;
+}
+
+.machineDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: 20px;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.detailIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.detailTitleRow {
+  flex-wrap: wrap;
+}
+
+.machineTitle {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.statusBadge, .localBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 11px;
   line-height: 18px;
+}
+
+.statusBadge {
+  border: 1px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-secondary);
+}
+
+.localBadge {
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-bg-base);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.summaryCounts {
+  font-variant-numeric: tabular-nums;
+}
+
+.daemonChip {
+  font-size: 11px;
 }
 
 .daemonChipOn {
@@ -80,134 +427,118 @@
   color: var(--dsw-alias-state-warn-label);
 }
 
-/* The runtime table: hairline row separators, caption-level column heads. */
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .table {
   width: 100%;
+  min-width: 420px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .table th {
-  padding: 6px 10px;
+  padding: 0 8px 10px;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   text-align: left;
   font-weight: 400;
   font-size: 12px;
   line-height: 18px;
-  white-space: nowrap;
   color: var(--dsw-alias-label-secondary);
 }
 
 .table td {
-  padding: 10px;
+  padding: 14px 8px;
   border-bottom: 1px solid var(--dsw-alias-border-l2);
   vertical-align: top;
 }
 
-/* The last row owns no separator — the section's spacing closes the table. */
+.table th:first-child, .table td:first-child {
+  padding-left: 0;
+}
+
+.table th:last-child, .table td:last-child {
+  padding-right: 0;
+}
+
 .table tr:last-child td {
   border-bottom: none;
 }
 
 .colService {
-  width: 30%;
+  width: 28%;
 }
 
 .colHealth {
-  width: 18%;
+  width: 19%;
 }
 
 .colCommand {
   width: 18%;
 }
 
-/* Service identity: name over route id, with the origin tag beneath. */
-.serviceCell {
-  min-width: 120px;
-}
-
 .serviceIdentity {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .serviceName {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 14px;
-  line-height: 22px;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 20px;
   font-weight: 500;
-  color: var(--dsw-alias-label-primary);
 }
 
-/* The route id reads as an annotation on the name: caption size, secondary
-   label tone, and mono rhythm, so it never competes with the runtime name. */
 .serviceRoute {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 11px;
-  line-height: 16px;
-  font-family: var(--ds-font-family-code);
-  color: var(--dsw-alias-label-secondary);
-}
-
-/* Origin tag: a small module-fill pill under the identity. Absent when the
-   adapter draws no declared/shipped distinction for the route. */
-.tagCustom,
-.tagBuiltin {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--dsw-alias-bg-module-platform);
-  font-size: 11px;
-  line-height: 16px;
-  color: var(--dsw-alias-label-secondary);
-}
-
-/* Health cell: state word carries the tone; the failure detail rides below
-   the word at caption size. */
-.healthCell {
-  min-width: 84px;
-}
-
-.healthOnline {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-state-success-primary);
-}
-
-.healthFailed {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-state-error-primary);
-}
-
-.healthDetail {
-  font-size: 11px;
-  line-height: 16px;
+  font: 11px/17px var(--ds-font-family-code);
   color: var(--dsw-alias-label-tertiary);
   overflow-wrap: anywhere;
 }
 
-/* Liveness dot mirrors the Models page's credential dot geometry. */
+.tagCustom, .tagBuiltin {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.healthOnline, .healthFailed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.healthOnline {
+  color: var(--dsw-alias-state-success-primary);
+}
+
+.healthFailed {
+  flex-wrap: wrap;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.healthDetail {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--dsw-alias-label-secondary);
+  overflow-wrap: anywhere;
+}
+
 .stateDot {
-  box-sizing: border-box;
   display: inline-block;
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 
@@ -219,27 +550,47 @@
   background: var(--dsw-alias-state-error-primary);
 }
 
-/* Models cell: the empty-catalog caption, or chips with a count. */
-.modelsCell {
-  min-width: 120px;
-}
-
 .models {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
-.modelsEmpty {
+.modelsEmpty, .modelsCount, .absent {
   font-size: 12px;
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);
 }
 
-.modelsCount {
+.modelsFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.modelsToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
   font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.modelsToggle:hover {
+  background: var(--dsw-alias-bg-module-platform);
+  color: var(--dsw-alias-label-primary);
+}
+
+.modelsToggle[aria-expanded='true'] svg {
+  transform: rotate(180deg);
 }
 
 .modelList {
@@ -257,78 +608,77 @@
   max-width: 100%;
 }
 
-/* A model chip: mono id on a module fill, the same vocabulary the composer's
-   model picker uses for provider-owned model ids. */
 .modelChip {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 1px 8px;
+  padding: 1px 6px;
   border-radius: 4px;
   background: var(--dsw-alias-bg-module-platform);
-  font-size: 12px;
-  line-height: 18px;
-  font-family: var(--ds-font-family-code);
-  color: var(--dsw-alias-label-primary);
-}
-
-/* Command cell: the executable the runtime shells out to, mono and
-   truncating; absent for remote API providers. */
-.commandCell {
-  min-width: 72px;
+  font: 11px/18px var(--ds-font-family-code);
 }
 
 .commandName {
   display: inline-block;
-  max-width: 160px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12px;
-  line-height: 18px;
-  font-family: var(--ds-font-family-code);
-  color: var(--dsw-alias-label-primary);
+  font: 12px/18px var(--ds-font-family-code);
 }
 
-/* The no-fact dash: an em dash in tertiary tone for cells whose fact the
-   host does not answer (no local command; models while the listing failed). */
-.absent {
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-label-tertiary);
-}
-
-/* The daemon hint: an instruction card shown while no sensing daemon runs.
-   Outlined like the summary strip, with the command as a module-fill chip and a
-   small capsule copy control. */
 .daemonHint {
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .daemonHintTitle {
-  font-size: 14px;
-  line-height: 22px;
-  font-weight: 500;
-  color: var(--dsw-alias-label-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.daemonHintTitle::-webkit-details-marker {
+  display: none;
+}
+
+.daemonHintTitle > span:first-child, .disclosureIcon {
+  display: flex;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.disclosureIcon {
+  margin-left: auto;
+}
+
+.daemonHint[open] .disclosureIcon {
+  transform: rotate(180deg);
+}
+
+.daemonHintContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px 14px;
 }
 
 .daemonHintBody {
   font-size: 12px;
-  line-height: 18px;
-  color: var(--dsw-alias-label-tertiary);
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
 }
 
-/* One numbered hint step: caption line above the command row. */
 .daemonHintStep {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .daemonHintStepLabel {
@@ -338,7 +688,7 @@
 }
 
 .daemonHintCommand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
@@ -348,69 +698,253 @@
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
-  padding: 1px 8px;
-  border-radius: 4px;
-  background: var(--dsw-alias-bg-module-platform);
-  font-size: 12px;
-  line-height: 18px;
-  font-family: var(--ds-font-family-code);
-  color: var(--dsw-alias-label-primary);
+  font: 12px/20px var(--ds-font-family-code);
 }
 
 .daemonHintCopy {
-  box-sizing: border-box;
-  display: inline-flex;
+  margin-left: auto;
+}
+
+.emptyState {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 24px;
-  padding: 0 10px;
+  gap: 12px;
+  padding: 32px 12px;
+  text-align: center;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+}
+
+.profileList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profileList h3 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.profileRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+.profileRow:last-child {
+  border-bottom: none;
+}
+
+.profileRow > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.profileRow code, .profileRow span {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.dialog {
+  --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
+  --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 12px;
-  background: transparent;
+  background: var(--dsw-alias-bg-layer-2);
   color: var(--dsw-alias-label-primary);
-  font: inherit;
-  font-size: 12px;
-  line-height: 18px;
-  cursor: pointer;
+  box-shadow: var(--dsw-shadow-lv3);
 }
 
-.daemonHintCopy:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover-solid);
+.dialog::backdrop {
+  background: var(--dsw-alias-bg-mask-1);
+  backdrop-filter: var(--dsw-mask-blur);
 }
 
-.daemonHintCopy:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
+.dialogHeader {
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
 }
 
-.secondaryButton {
-  box-sizing: border-box;
-  display: inline-flex;
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.form .checkbox {
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  height: 36px;
-  padding: 0 14px;
+}
+
+.form textarea {
+  min-height: 80px;
+  resize: vertical;
+  font-family: var(--ds-font-family-code);
+}
+
+.form > .actions {
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+.instructions {
+  margin: 0;
+  padding: 14px 14px 14px 32px;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 18px;
-  background: transparent;
-  color: var(--dsw-alias-label-primary);
-  font: inherit;
-  font-size: 14px;
-  line-height: 22px;
-  cursor: pointer;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-1);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--dsw-alias-label-secondary);
 }
 
-.secondaryButton:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover-solid);
+.section :is(button, input, summary, a):focus-visible, .dialog :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--dsw-alias-label-primary);
+  outline-offset: 2px;
 }
 
-.secondaryButton:disabled {
-  opacity: 0.4;
+.section button:disabled, .dialog button:disabled {
+  opacity: 0.5;
   cursor: default;
 }
 
-.secondaryButton:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--dsw-alias-border-l3);
+@container (max-width: 620px) {
+  .workbench {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 420px;
+  }
+  .machines {
+    border-right: 0;
+    border-bottom: 1px solid var(--dsw-alias-border-l2);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+  .machineTools {
+    padding: 12px;
+  }
+  .machineDetail {
+    padding: 16px;
+  }
+  .directoryHeading {
+    margin-bottom: 8px;
+  }
+  .machineRow {
+    padding: 10px 14px;
+  }
+  .machineContent .machineOrigin {
+    display: none;
+  }
+  .machineMeta {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  .machineGroup {
+    padding-top: 0;
+  }
+}
+
+@container (max-width: 440px) {
+  .header {
+    gap: 8px;
+  }
+  .headerButton {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+  }
+  .headerButton .actionLabel {
+    display: none;
+  }
+  .header .actions {
+    gap: 6px;
+  }
+}
+
+@media (pointer: coarse) {
+  .secondaryButton, .headerButton, .daemonHintCopy, .primaryButton, .filters button {
+    min-height: 44px;
+  }
+  .headerButton, .headerButton:first-child {
+    min-width: 44px;
+  }
+  .search {
+    height: 44px;
+  }
+  .searchIcon {
+    top: 14px;
+  }
+  .clearSearch {
+    width: 40px;
+  }
+}
+
+.primaryButton {
+  border-color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-bg-base);
+}
+
+.primaryButton:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.closeButton span {
+  display: inline-flex;
+}
+
+.closeButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
 }

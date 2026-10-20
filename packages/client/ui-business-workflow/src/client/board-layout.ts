@@ -12,6 +12,8 @@ import type { ToolBusinessWorkflowBoardStep } from '@deepseek-ai/dsh-tool-busine
 export const BOARD_NODE_WIDTH = 168
 /** Node box height in SVG units. */
 export const BOARD_NODE_HEIGHT = 48
+/** Expanded workbench cards retain room for node kind, title, and execution state. */
+export const WORKBENCH_NODE_SIZE = { width: 236, height: 84 }
 /** Horizontal distance between two adjacent layers' boxes. */
 export const BOARD_GAP_X = 56
 /** Vertical distance between two boxes in one layer. */
@@ -47,9 +49,13 @@ export interface BoardLayout {
  * Lay out the accepted composition. Nodes keep the composition's declaration
  * order inside their layer, so the board is stable across reloads.
  * @param steps - the accepted composition's board projection.
+ * @param size - node dimensions, defaulting to compact transcript cards.
  * @returns placed nodes, dependency edges, and the canvas dimensions.
  */
-export function layoutBoard(steps: readonly ToolBusinessWorkflowBoardStep[]): BoardLayout {
+export function layoutBoard(
+  steps: readonly ToolBusinessWorkflowBoardStep[],
+  size = { width: BOARD_NODE_WIDTH, height: BOARD_NODE_HEIGHT },
+): BoardLayout {
   const byId = new Map(steps.map(step => [step.id, step]))
   const layers = new Map<string, number>()
   const visiting = new Set<string>()
@@ -79,8 +85,8 @@ export function layoutBoard(steps: readonly ToolBusinessWorkflowBoardStep[]): Bo
       id: step.id,
       title: step.title,
       layer,
-      x: BOARD_PADDING + layer * (BOARD_NODE_WIDTH + BOARD_GAP_X),
-      y: BOARD_PADDING + index * (BOARD_NODE_HEIGHT + BOARD_GAP_Y),
+      x: BOARD_PADDING + layer * (size.width + BOARD_GAP_X),
+      y: BOARD_PADDING + index * (size.height + BOARD_GAP_Y),
     }
   })
   const edges: BoardLayoutEdge[] = []
@@ -96,10 +102,10 @@ export function layoutBoard(steps: readonly ToolBusinessWorkflowBoardStep[]): Bo
     edges,
     width: nodes.length === 0
       ? 0
-      : BOARD_PADDING * 2 + (maxLayer + 1) * BOARD_NODE_WIDTH + maxLayer * BOARD_GAP_X,
+      : BOARD_PADDING * 2 + (maxLayer + 1) * size.width + maxLayer * BOARD_GAP_X,
     height: nodes.length === 0
       ? 0
-      : BOARD_PADDING * 2 + tallest * BOARD_NODE_HEIGHT + (tallest - 1) * BOARD_GAP_Y,
+      : BOARD_PADDING * 2 + tallest * size.height + (tallest - 1) * BOARD_GAP_Y,
   }
 }
 

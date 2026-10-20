@@ -61,6 +61,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
   // One module at a time: a single-page module fills the whole column (its
   // section carries its own heading), the Settings module keeps its rail.
   const showRail = settingsRows.some(row => row.id === active)
+  const isRuntimes = active === 'runtimes'
   const titleId = useId()
 
   useEffect(() => {
@@ -78,7 +79,12 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
   return (
     <div className={css.overlay} role="presentation">
       <div className={css.mask} aria-hidden="true" onClick={onClose} />
-      <div className={css.panel} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div
+        className={clsx(css.panel, isRuntimes && css.runtimesPanel)}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         {showRail ? (
           <nav className={css.nav}>
             <div className={css.navTitle} id={titleId}>{renderSlot('settings.header', {})}</div>
@@ -104,7 +110,7 @@ function SettingsPanel({ rows, renderSlot, activeId, onSelect, onClose }: PanelP
         )}
         <div className={css.content}>
           <div className={css.header}>
-            <div className={css.actions}>{renderSlot('settings.action', {})}</div>
+            {!isRuntimes && <div className={css.actions}>{renderSlot('settings.action', {})}</div>}
             <button ref={closeButton} type="button" className={css.close} onClick={onClose}>
               <IconCloseOutline16 size={14} />
               <span className={css.hiddenLabel}>{renderSlot('settings.close', {})}</span>

@@ -54,8 +54,8 @@ describe('ui-settings-runtimes apply', () => {
     const injected = (entry.inject as unknown as () => import('../src/client/RuntimesSection.tsx').RuntimesSectionInjected)()
     expect(injected.t('nav')).toBe('运行时')
     expect(injected.t('title')).toBe('运行时')
-    expect(typeof injected.controller.load).toBe('function')
-    expect(injected.hooks.snapshot).toBe(injected.controller.store)
+    expect(typeof injected.load).toBe('function')
+    expect(typeof injected.hooks.snapshot.getSnapshot).toBe('function')
 
     const after = await bench()
     await after.ctx.plugin({ inject: [...inject], apply }).await()
@@ -164,7 +164,7 @@ describe('pushed invalidations', () => {
       entry.inject as unknown as
       () => import('../src/client/RuntimesSection.tsx').RuntimesSectionInjected
     )()
-    await injected.controller.load()
+    await injected.load()
     expect(injected.hooks.snapshot.getSnapshot().status).toBe('ready')
 
     b.ctx.remote.$dispatch('settings/document-updated', ['llm-claude-cli', 1])

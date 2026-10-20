@@ -4,6 +4,12 @@ English | [中文](README.zh.md)
 
 Service Definition for the business-workflow capability seam (`ctx.businessWorkflows`): the contract that turns a stated business need into a verified step orchestration through three capabilities — requirement clarification, workflow composition, and effect verification. This package owns the contract only; load a Service Provider such as [`@deepseek-ai/dsh-business-workflow-local`](../business-workflow-local/README.md) as a plugin, and the model reaches the seam through [`@deepseek-ai/dsh-tool-business-workflow`](../tool-business-workflow/README.md).
 
+## Workspace workbench
+
+The `./workbench` entry declares `WorkflowWorkbench` (`ctx.workflowWorkbench`). Its `command`, `snapshot`, and `validate` methods serve the independent workspace directory, editable drafts, immutable publications, generation candidates, formal executions, and acceptance-case runs. Management commands require explicit workspace, revision, publication, or attempt identities; they need no active conversation. `./workbench-types` is the browser-safe data outlet and `./definition` validates supported editable fields. Acceptance inputs contain JSON values.
+
+A publication snapshots one draft. Each run snapshots that publication, input values, and model route; edits cannot change its graph or results. Agent and human confirmation nodes share explicit dependencies and input bindings. Run lifecycle and node attempts are separate from acceptance assertion results. Verification cases share a batch id but retain individual run ids and outputs. The run's audit Session owns `business-workflow/checkpoint`; the actual child Session logs the model context.
+
 ## The three capabilities
 
 One record moves through a closed stage union — `clarifying`, `ready`, `composed`, `verified`:
@@ -50,5 +56,5 @@ No direct invalidation; the named consumer owns any request-prefix changes.
 
 ## Known Limitations and Deferred Work
 
-- **Records are caller-held only** — the seam defines no persistence or cross-restart identity; a durable backend owns that design and may require contract additions.
+- The conversation pipeline uses caller-held records; the workspace workbench requires durable definitions and run identities from its provider.
 - **Verification dry-runs are caller-supplied** — the seam executes no work itself; a provider that wants worker-side execution must wrap its own runner, and per-step resource caps beyond `signal` cancellation are not part of the contract yet.

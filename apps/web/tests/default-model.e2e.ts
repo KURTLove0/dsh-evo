@@ -27,6 +27,7 @@ import { ZH_BROWSER_LOCALE, connectFreshWorkspaceZh, saveFailureShot } from './s
 /** Points the shipped shared Agent default at this scenario's own route. */
 const OVERLAY = fileURLToPath(new URL('./default-model.overlay.yml', import.meta.url))
 const SNAPSHOT_DIR = fileURLToPath(new URL('./snapshots/default-model', import.meta.url))
+const SEARCH_EXPECTED = join(SNAPSHOT_DIR, 'search.expected.md')
 const SWITCHED_EXPECTED = join(SNAPSHOT_DIR, 'switched.expected.md')
 const MODE = webSnapshotMode()
 
@@ -120,6 +121,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await trigger.waitFor({ timeout: 15_000 })
     await trigger.click()
     await page.getByRole('menuitem', { name: /模型/ }).click()
+    const search = page.getByRole('searchbox', { name: '搜索模型' })
+    await search.fill(ROUTE)
+    const searchSnapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
+    await compareOrRefreshGolden(SEARCH_EXPECTED, searchSnapshot, MODE)
     await page.getByRole('menuitemradio', { name: 'Acme Large' }).click()
 
     await expect.poll(() => currentOf(active.id)).toEqual({ provider: ROUTE, model: MODEL })

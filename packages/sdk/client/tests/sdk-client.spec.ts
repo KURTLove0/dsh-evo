@@ -54,6 +54,14 @@ async function tempDir(prefix: string): Promise<string> {
 }
 
 describe('DeepSeekHarness', () => {
+  it('retains workflow checkpoints as log events without replacing the assistant response', async () => {
+    const harness = harnessWith({ FAKE_WORKFLOW_CHECKPOINT: '1' })
+    const result = await harness.run('inspect', { sessionId: 'checkpoint-session' })
+    const checkpoint = result.events.find(event => event.type === 'business-workflow/checkpoint')
+    const expected: unknown = JSON.parse(await readFile(new URL('./fixtures/business-workflow-checkpoint.json', import.meta.url), 'utf8'))
+    expect(checkpoint?.data).toEqual(expected)
+    expect(result.finalResponse).toBe('hello from fake runtime')
+  })
   it('ignores notifications that precede the submitted message receipt', async () => {
     const notifications = [
       { method: 'session.status', params: { sessionId: 'owned', status: 'running' } },

@@ -16,7 +16,7 @@ The model-facing business-workflow tools over `ctx.businessWorkflows` (`@deepsee
 - `subagentProvider` (default `spawn`) — the subagent provider the dry-run delegates steps to; an empty or untrimmed string fails at load.
 - `maxResultChars` (default 50000) — rendered-result ceiling; longer text is truncated with a notice.
 
-Presentation is an args-only generic card per tool (title plus the requirement summary, step count, or workflow id).
+Presentation is an args-only generic card per tool (title plus the requirement summary, step count, or workflow id). The parent session also records stage changes, the accepted steps' instructions, input sources, objectives, dependencies, and verification traces in `tool-business-workflow/*` events; the web client can reconstruct the graph and executor context after reload.
 
 ## Usage policy
 
@@ -54,5 +54,5 @@ Replacing: each tool result appends to the turn, and a verification report repla
 
 ## Known Limitations and Deferred Work
 
-- **No durable session record** — the tools project results through the tool pipeline only; unlike `dsh-tool-workflow`, no `tool-workflow/*` session events are written, so a UI cannot replay a business-workflow history from the session log yet.
+- **Step context is recorded on composition acceptance** — rejected drafts do not replace the accepted graph; older logs retain their title and dependency graph but have no recorded executor context.
 - **Dry-run delegation is synchronous per step** — each step awaits its subagent to completion inside the tool call; background or parallelized verification execution is deferred.

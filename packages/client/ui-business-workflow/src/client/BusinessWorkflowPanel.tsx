@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { DisclosureRow, StateDot, type StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { deriveNodeStatuses } from './board-layout.ts'
 import { NS, type BusinessWorkflowKey } from './locales.ts'
-import { WorkflowBoard } from './WorkflowBoard.tsx'
+import { WorkflowDetails } from './WorkflowDetails.tsx'
 import type { BusinessWorkflowNodeStatus } from './workflow-definition.ts'
 import css from './BusinessWorkflowPanel.module.css'
 
@@ -34,9 +33,8 @@ export function BusinessWorkflowPanel({ node, t }: BusinessWorkflowPanelProps) {
     || workflow.issues.length > 0
     || workflow.steps.length > 0
     || workflow.verification !== undefined
-  const verification = workflow.verification
   return (
-    <div className={css.root}>
+    <div className={css.root} data-business-workflow-id={workflow.workflowId}>
       <DisclosureRow
         icon={<StateDot state={dotState(workflow.status)} />}
         title={t('node.title')}
@@ -55,79 +53,7 @@ export function BusinessWorkflowPanel({ node, t }: BusinessWorkflowPanelProps) {
           </>
         )}
       >
-        <dl className={css.body}>
-          <div className={css.meta}>
-            <dt className={css.metaLabel}>{t('node.revision', { revision: workflow.revision })}</dt>
-            <dd className={css.metaValue}>{workflow.workflowId}</dd>
-          </div>
-          {workflow.gaps.length > 0
-            ? (
-              <section className={css.section}>
-                <dt className={css.sectionLabel}>{t('section.gaps')}</dt>
-                {workflow.gaps.map((gap, index) => (
-                  <dd className={css.entry} key={`${gap.topic}:${index}`}>
-                    <span className={css.entryTag}>{gap.topic}</span>
-                    <span className={css.entryText}>{gap.question}</span>
-                  </dd>
-                ))}
-              </section>
-            )
-            : null}
-          {workflow.issues.length > 0
-            ? (
-              <section className={css.section}>
-                <dt className={css.sectionLabel}>{t('section.issues')}</dt>
-                {workflow.issues.map((issue, index) => (
-                  <dd className={css.entry} key={`${issue.code}:${issue.ref ?? ''}:${index}`}>
-                    <span className={css.entryTag}>{issue.code}</span>
-                    <span className={css.entryText} title={issue.remedy}>{issue.message}</span>
-                  </dd>
-                ))}
-              </section>
-            )
-            : null}
-          {workflow.steps.length > 0
-            ? (
-              <section className={css.section}>
-                <dt className={css.sectionLabel}>{t('section.board')}</dt>
-                <dd className={css.board}>
-                  <WorkflowBoard
-                    steps={workflow.steps}
-                    statuses={deriveNodeStatuses(workflow.steps, workflow.verification?.cases)}
-                  />
-                </dd>
-              </section>
-            )
-            : null}
-          {verification !== undefined
-            ? (
-              <section className={css.section}>
-                <dt className={css.sectionLabel}>{t('section.verification')}</dt>
-                <dd className={css.entry}>
-                  <span className={css.entryTag}>{verification.passed ? 'pass' : 'fail'}</span>
-                  <span className={css.entryText}>
-                    {verification.dryRun
-                      ? t(verification.passed
-                        ? 'verification.passed'
-                        : 'verification.failed', { count: verification.caseCount })
-                      : t('verification.skipped')}
-                  </span>
-                </dd>
-                {verification.cases.map((caseResult, index) => (
-                  <dd className={css.entry} key={`${caseResult.name}:${index}`}>
-                    <span className={css.entryTag}>{t(`case.${caseResult.status}`)}</span>
-                    <span
-                      className={css.entryText}
-                      title={caseResult.detail ?? undefined}
-                    >
-                      {caseResult.name}
-                    </span>
-                  </dd>
-                ))}
-              </section>
-            )
-            : null}
-        </dl>
+        <WorkflowDetails workflow={workflow} t={t} />
       </DisclosureRow>
     </div>
   )

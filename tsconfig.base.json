@@ -28,6 +28,18 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@deepseek-ai/dsh-workbench-agent": ["./packages/business/workbench-agent/src/index.ts"],
+      "@deepseek-ai/dsh-workbench-agent/types": ["./packages/business/workbench-agent/src/types.ts"],
+      "@deepseek-ai/dsh-workbench-agent/service": ["./packages/business/workbench-agent/src/service.ts"],
+      "@deepseek-ai/dsh-client-ui-workbench-agent": ["./packages/client/ui-workbench-agent/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-workbench-agent/client": ["./packages/client/ui-workbench-agent/src/client/index.ts"],
+      "@deepseek-ai/dsh-business-workflow-local/workbench": ["./packages/business/business-workflow-local/src/workbench.ts"],
+      "@deepseek-ai/dsh-client-ui-business-workflow": ["./packages/client/ui-business-workflow/src/index.ts"],
+      "@deepseek-ai/dsh-client-ui-business-workflow/client": ["./packages/client/ui-business-workflow/src/client/index.ts"],
+      "@deepseek-ai/dsh-business-workflow/definition": ["./packages/business/business-workflow/src/definition.ts"],
+      "@deepseek-ai/dsh-workspace/types": ["./packages/workspace/workspace/src/types.ts"],
+      "@deepseek-ai/dsh-business-workflow/workbench": ["./packages/business/business-workflow/src/workbench.ts"],
+      "@deepseek-ai/dsh-business-workflow/workbench-types": ["./packages/business/business-workflow/src/workbench-types.ts"],
       "@deepseek-ai/cordis": ["./vendor/cordis/src"],
       "@deepseek-ai/cosmokit": ["./vendor/cosmokit/src"],
       "@deepseek-ai/schemastery": ["./vendor/schemastery/src"],

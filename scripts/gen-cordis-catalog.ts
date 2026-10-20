@@ -54,6 +54,7 @@ export { REGION_BEGIN, REGION_END }
  * errors, so the partition can never silently drift from the service API.
  */
 export const SERVICE_PAGE: Record<string, string> = {
+  workbenchAgents: 'workbench-agent.md',
   agentLoop: 'core.md',
   agentDefaultModel: 'core.md',
   agentPresets: 'core.md',
@@ -113,6 +114,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   web: 'web.md',
   workflowEngine: 'workflow.md',
   businessWorkflows: 'business-workflow.md',
+  workflowWorkbench: 'business-workflow.md',
   workspaceRegistry: 'workspace.md',
 }
 
@@ -194,6 +196,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'webserver': 'web-server.md',
   'workflow': 'workflow.md',
   'business-workflow': 'business-workflow.md',
+  'workbench-agent': 'workbench-agent.md',
 }
 
 /**
@@ -225,6 +228,14 @@ export const EVENT_WALK_EXEMPTIONS: Record<string, string> = {
  * appear on more than one page.
  */
 export const LINK_MAP: Readonly<Record<string, string>> = {
+  WorkbenchAgentId: 'workbench-agent.md',
+  AgentRunId: 'workbench-agent.md',
+  AgentDefinition: 'workbench-agent.md',
+  WorkbenchAgent: 'workbench-agent.md',
+  AgentCommand: 'workbench-agent.md',
+  AgentDirectory: 'workbench-agent.md',
+  AgentReceipt: 'workbench-agent.md',
+  AgentRun: 'workbench-agent.md',
   Agent: 'core.md',
   AgentCancelCause: 'core.md',
   AgentFactory: 'core.md',
@@ -520,6 +531,12 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   AcceptanceCase: 'business-workflow.md',
   AcceptanceExpectation: 'business-workflow.md',
   BusinessWorkflowId: 'business-workflow.md',
+  WorkflowId: 'business-workflow.md',
+  WorkflowDefinition: 'business-workflow.md',
+  WorkflowCommand: 'business-workflow.md',
+  WorkflowReceipt: 'business-workflow.md',
+  WorkflowValidation: 'business-workflow.md',
+  WorkflowWorkbenchSnapshot: 'business-workflow.md',
   BusinessWorkflowInfo: 'business-workflow.md',
   BusinessWorkflowSnapshot: 'business-workflow.md',
   BusinessWorkflowStage: 'business-workflow.md',

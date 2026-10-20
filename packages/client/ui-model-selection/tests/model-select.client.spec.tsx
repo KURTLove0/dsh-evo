@@ -135,6 +135,48 @@ describe('ModelSelect reasoning effort', () => {
     expect(screen.getByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeTruthy()
   })
 
+  it('searches models by model and provider metadata while preserving keyboard selection', () => {
+    const directory = createSnapshotStore(state({
+      groups: [
+        {
+          id: 'deepseek-official',
+          name: 'DeepSeek',
+          models: [{ id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', description: 'Fast model' }],
+        },
+        {
+          id: 'acme-gateway',
+          name: 'Acme Gateway',
+          models: [{ id: 'reasoner-pro', name: 'Reasoner Pro' }],
+        },
+      ],
+    }))
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={vi.fn().mockResolvedValue(true)}
+      t={t}
+    />)
+
+    fireEvent.click(screen.getByRole('button', { name: /DeepSeek-V4-Flash/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    const search = screen.getByRole('searchbox', { name: '搜索模型' })
+    expect(document.activeElement).toBe(search)
+    expect(search.previousElementSibling?.getAttribute('aria-hidden')).toBe('true')
+
+    fireEvent.change(search, { target: { value: 'acme reasoner-pro' } })
+    expect(screen.queryByRole('menuitemradio', { name: 'DeepSeek-V4-Flash' })).toBeNull()
+    expect(screen.getByRole('menuitemradio', { name: 'Reasoner Pro' })).toBeTruthy()
+
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(screen.getByRole('menuitemradio', { name: 'Reasoner Pro' }))
+
+    fireEvent.change(search, { target: { value: 'missing' } })
+    expect(screen.queryAllByRole('menuitemradio')).toHaveLength(0)
+    expect(screen.getByText('没有匹配的模型。')).toBeTruthy()
+  })
+
   it('announces a rejected selection as a transient toast and keeps the in-menu strip for loads', async () => {
     const groups = [{
       id: 'deepseek-official',

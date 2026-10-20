@@ -3,7 +3,9 @@
  * Two-level selection per figma 496:26454's MenuDropdown: the root menu is
  * the Model / Effort row pair (label + current value + a right chevron),
  * each drilling into its own list — the provider-grouped model list over
- * the shared directory, and the effort levels. The trigger (313:14108's
+ * the shared directory, and the effort levels. The model list filters by
+ * provider and model metadata while preserving its grouped rows and keyboard
+ * navigation. The trigger (313:14108's
  * ToggleButton) shows both: model name + effort in the caption tone.
  * Data and submission ride the SAME per-session ModelDirectory as the
  * /model popup; exact-model reasoning metadata and the selected effort come
@@ -19,7 +21,7 @@ import clsx from 'clsx'
 import type { ModelReasoningEffort, ModelSelection } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
-  IconWarningOutline16, Toast,
+  IconSearchOutline16, IconWarningOutline16, Toast,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
@@ -52,6 +54,7 @@ export function ModelSelect(
   )
   const [open, setOpen] = useState(false)
   const [pane, setPane] = useState<Pane>('root')
+  const [modelQuery, setModelQuery] = useState('')
   // The in-menu error strip serves catalog loads (its Retry re-runs the
   // load); a rejected SELECTION announces through the transient toast
   // instead, so the strip renders only while the latest failure-capable
@@ -61,6 +64,7 @@ export function ModelSelect(
   const toastSeq = useRef(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const modelSearchRef = useRef<HTMLInputElement | null>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
   const id = useId()
 
@@ -76,6 +80,19 @@ export function ModelSelect(
           : { reasoningEffort: model.reasoning.defaultEffort },
       } satisfies ModelSelection,
     }))), [state.groups])
+  const filteredGroups = useMemo(() => {
+    const terms = modelQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (terms.length === 0) return state.groups
+    return state.groups.flatMap((group) => {
+      const groupText = `${group.name} ${group.id}`.toLowerCase()
+      const models = group.models.filter((model) => {
+        const text = `${groupText} ${model.name} ${model.id} ${model.description ?? ''}`.toLowerCase()
+        return terms.every(term => text.includes(term))
+      })
+      return models.length === 0 ? [] : [{ ...group, models }]
+    })
+  }, [modelQuery, state.groups])
+  const filteredChoiceCount = filteredGroups.reduce((count, group) => count + group.models.length, 0)
   const selectedIndex = state.current === null
     ? -1
     : choices.findIndex(c => c.selection.provider === state.current?.provider && c.selection.model === state.current.model)
@@ -124,10 +141,15 @@ export function ModelSelect(
     return () => { document.removeEventListener('mousedown', closeOutside) }
   }, [open])
 
+  useEffect(() => {
+    if (open && pane === 'model') modelSearchRef.current?.focus()
+  }, [open, pane])
+
   if (!available) return null
 
   const show = (): void => {
     setPane('root')
+    setModelQuery('')
     setOpen(true)
     reload()
   }
@@ -135,6 +157,7 @@ export function ModelSelect(
   const close = (restoreFocus = false): void => {
     setOpen(false)
     setPane('root')
+    setModelQuery('')
     if (restoreFocus) queueMicrotask(() => { triggerRef.current?.focus() })
   }
 
@@ -142,7 +165,9 @@ export function ModelSelect(
     const items = itemRefs.current.filter(item => item !== null)
     if (items.length === 0) return
     const active = items.findIndex(item => item === document.activeElement)
-    const next = (Math.max(active, 0) + offset + items.length) % items.length
+    const next = active === -1
+      ? offset > 0 ? 0 : items.length - 1
+      : (active + offset + items.length) % items.length
     items[next]?.focus()
   }
 
@@ -267,6 +292,20 @@ export function ModelSelect(
 
           {pane === 'model' && (
             <>
+              <label className={css.search}>
+                <span className={css.searchIcon} aria-hidden="true">
+                  <IconSearchOutline16 />
+                </span>
+                <input
+                  ref={modelSearchRef}
+                  type="search"
+                  className={css.searchInput}
+                  value={modelQuery}
+                  placeholder={t('search.placeholder')}
+                  aria-label={t('search.aria')}
+                  onChange={(event) => { setModelQuery(event.currentTarget.value) }}
+                />
+              </label>
               {state.status === 'loading' && (
                 <div className={css.status}>{t('status.loading')}</div>
               )}
@@ -283,7 +322,7 @@ export function ModelSelect(
                 </div>
               ))}
               <div className={clsx(css.groups, 'scrollable')}>
-                {state.groups.map((group) => {
+                {filteredGroups.map((group) => {
                   const headingId = `${id}-${group.id}`
                   return (
                     <section role="group" aria-labelledby={headingId} className={css.group} key={group.id}>
@@ -320,6 +359,9 @@ export function ModelSelect(
               </div>
               {state.status === 'ready' && choices.length === 0 && (
                 <div className={css.empty}>{t('empty.models')}</div>
+              )}
+              {state.status === 'ready' && choices.length > 0 && filteredChoiceCount === 0 && (
+                <div className={css.empty}>{t('empty.search')}</div>
               )}
             </>
           )}

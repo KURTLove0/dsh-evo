@@ -24,10 +24,9 @@
 
 /* Panel (figma Settings 501:29947): r24, white, lv3 shadow (figma effects
    match --dsw-shadow-lv3 exactly); figma's 1080x700 is shrunk to 800 wide.
-   One height for every module, taken from the viewport rather than the
-   content: a single-page module fills the whole column, the Settings module
-   keeps the nav rail, and a content-sized panel would resize under the
-   pointer on every nav click. Whatever does not fit scrolls in `.options`. */
+   Dimensions are constrained by the viewport; the runtime directory uses
+   the wider `.runtimesPanel` variant. Whatever does not fit scrolls in
+   `.options`. */
 .panel {
   position: relative;
   z-index: 1;
@@ -46,6 +45,29 @@
      styles/scrollbar.css for the rebinding contract). */
   --dsh-scrollbar-thumb: var(--dsw-alias-scrollbar-bg-l2);
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
+}
+
+.runtimesPanel {
+  width: 1120px;
+  height: min(760px, calc(100dvh - 48px));
+}
+
+.runtimesPanel .header {
+  height: 44px;
+  padding-top: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .runtimesPanel {
+    max-width: calc(100vw - 24px);
+    height: calc(100dvh - 24px);
+    border-radius: 16px;
+  }
+
+  .runtimesPanel .options {
+    padding: 0 16px 16px;
+  }
 }
 
 /* Nav rail (figma .Setting-nav 501:29958): 188 wide, pad (12,22,12,0),

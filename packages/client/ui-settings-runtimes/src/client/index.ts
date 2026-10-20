@@ -1,10 +1,4 @@
-/**
- * Runtimes settings plugin, browser half: registers the Runtimes page — the
- * model runtimes this deployment can call, each with the models it currently
- * loads. The page is read-only: configuration stays with the Models page, and
- * model selection stays with the composer's picker.
- * Export discipline: packages/client/AGENTS.md.
- */
+/** Runtime directory and management page, composed through the settings slot. */
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'
 // Type-only: pulls the shell's SlotMap merge (the 'settings.section' entry).
@@ -65,7 +59,10 @@ export function apply(ctx: ClientContext): void {
   // one bound translate; copy freshness rides the locale revision.
   const t = ctx.locale.bind(NS) as RuntimesSectionInjected['t']
   const injected = (): RuntimesSectionInjected => ({
-    controller,
+    load: () => controller.load(),
+    connect: (name, url) => controller.connect(name, url),
+    saveProfile: (id, profile) => controller.saveProfile(id, profile),
+    remove: (kind, id) => controller.remove(kind, id),
     hooks: { snapshot: controller.store },
     t,
   })

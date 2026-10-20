@@ -2,21 +2,28 @@
 
 English | [中文](README.zh.md)
 
-Runtimes settings plugin: a read-only settings page that lists the model runtimes this deployment can call, over the two wire domains the Models page already owns — `llm.providers` (the configurable-provider directory with each route's live/dormant state) and `llm.models` (the host-scoped model catalog). One shared snapshot joins them by route id over the live routes only. A summary strip carries the whole-deployment figures the rows already prove — runtime and online counts, daemon presence — and the table renders one row per live route: service identity with the declared origin tag, health (online, or the catalog failure text verbatim), the loaded models as mono chips with a count caption, and the local command the route shells out to. A dormant route renders nowhere — it is a configuration candidate whose home is the Models page, not a runtime this deployment can call. A local-CLI runtime — one the adapter declares with a `localCommand` — earns a row only when the host finds that executable on this machine: a CLI that is not installed is no runtime here and simply never appears, and an adapter that detects its CLI activates the route on its own (the `llm-claude-cli` driver pattern), so a usable local runtime needs no Harness settings entry.
+The Runtimes settings page groups local and saved remote dsh deployments into a machine directory. Search matches machine names, origins, provider names, commands, and model IDs; status filters distinguish successful directory reads from connection or catalog failures. Selecting a machine shows its runtime catalog, loaded models, and diagnostics. The local catalog joins `llm.providers` with `llm.models`; live routes with missing local executables remain excluded from that catalog.
 
-The page never writes. API-provider configuration stays with the Models page (`settings.mutate` / `credentials.set`), local CLI behavior stays with that CLI's native configuration plus optional profile composition overrides, and model selection stays with the composer's picker — this section reports and points, it never routes. Once loaded, it subscribes to the forwarded `settings/document-updated` and `llm/adapters-updated` owner events plus local `connection/reset`, so a settings-born route coming or going converges without polling; an unopened page never fetches. Rows keep directory declaration order, every row is live by construction, and an empty directory renders the empty-deployment notice rather than an error.
+The directory adapts to its available width: narrow panels stack the machine list above the catalog, and compact header actions retain accessible names. Each runtime initially shows up to three models and the total model count; **Expand** reveals the full list, and **Collapse** restores the preview. Search can be cleared in place, and an empty filtered view offers a reset action. Local daemon setup instructions expand below the runtime catalog.
 
-The page lives under the sidebar's config nav as the Runtimes module row; the section always carries its own heading.
+**Connect remote** checks a dsh HTTP origin through `llm.runtimePeers` before saving its name and origin. Run `dsh web` on the remote host and make its web port reachable from the current host, usually through an SSH tunnel. Origins cannot contain credentials, paths, queries, or fragments. An unreachable saved machine remains visible with its connection error. **Open remote** opens that deployment's application, which owns its sessions. **Disconnect** requires confirmation and removes only the saved connection.
+
+**Manage runtimes** creates, edits, enables, disables, and deletes Cursor CLI-compatible executable profiles. Each profile records a display name, a unique `runtime-` provider ID, an executable name or absolute path, and a JSON argument array. The host validates commands and rejects adapter-owned protocol and permission flags. Enabled profiles load through the existing Cursor adapter; profiles with missing executables remain editable and show an unavailable status. Built-in providers remain deployment-owned. Native CLI login and configuration remain with the executable.
+
+Management writes use `settings.mutate` on the host's `runtime-management` namespace with the last observed revision. Conflicts and validation failures stay in the dialog without discarding the draft; read-only or unavailable settings disable management. Removal requires confirmation. Native modal dialogs contain focus and restore it on close; Escape closes the active management dialog. Clipboard confirmation appears only after a successful write.
+
+Once opened, the page refreshes after local `settings/document-updated`, `llm/adapters-updated`, and `connection/reset` notifications. Remote deployments refresh on the same reads and the **Refresh** action. The settings slot remains at order 15 under the sidebar configuration group.
 
 ## Model Experience
 
-None, as the section renders a read-only browser view; nothing here reaches a model request.
+The view sends no model request. Saving or removing a custom profile changes the available provider routes; the composer still owns model selection. A request through such a route uses the [Cursor adapter](../../llm/llm-cursor-cli/README.md), including its native runtime configuration and history handling.
 
 #### KV Cache effect
 
-None; this package neither assembles nor sends a provider request.
+Viewing and refreshing the directory have no effect. Selecting a different runtime changes the provider serving subsequent model requests.
 
 ## Known Limitations and Deferred Work
 
-- **The page is a view, not a manager** — it never writes: API-provider configuration stays with the Models page, local CLI behavior with that CLI's native configuration and profile composition, and model selection with the composer's picker, so there is no edit/delete/create affordance here to build or misuse.
-- **Only live routes are listed** — a dormant route is a configuration candidate for the Models page, not a runtime here, so there is no inactive-row state to read either way; a live route whose model listing failed carries that failure text rather than a degraded-status chip, because the host reports only one catalog fact per route.
+- Custom executable profiles support the Cursor CLI stream-json protocol. Other native CLI protocols need a corresponding managed adapter integration.
+- Remote connections provide directory snapshots and open the remote application; they do not proxy remote sessions or edit the remote host's configuration. No remote heartbeat or usage telemetry is inferred.
+- Connection records carry no credentials. Use an SSH tunnel or an already reachable trusted deployment; configuration operations on the current host remain loopback-only.

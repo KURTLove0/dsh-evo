@@ -526,7 +526,14 @@ export function apply(ctx: Context, config: Config): void {
           // The board projects the accepted draft only; a rejected draft leaves
           // the previous composition (or none) on the panel.
           steps: outcome.stepCount > 0
-            ? composition.steps.map(step => ({ id: step.id, title: step.title, dependsOn: step.dependsOn }))
+            ? composition.steps.map(step => ({
+              id: step.id,
+              title: step.title,
+              dependsOn: step.dependsOn,
+              instruction: step.instruction,
+              inputs: step.inputs,
+              objectives: step.objectives,
+            }))
             : [],
         })
       }

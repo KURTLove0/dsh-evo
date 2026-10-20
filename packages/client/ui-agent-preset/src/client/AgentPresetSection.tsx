@@ -13,12 +13,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
-  Button, IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16, IconPlusOutline16, IconTrashOutline16, Modal, Tooltip,
+  IconBrowseOutline16, IconCopyOutline16, IconFolderOpenOutline16, IconPlusOutline16, IconTrashOutline16, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { draftBlocker, type AgentPresetSectionState } from './section-store.ts'
-import { presetDisplayText, type AgentPresetSettingsKey } from './locales.ts'
+import type { AgentPresetSectionState } from './section-store.ts'
+import { AgentPresetDialogs } from './AgentPresetDialogs.tsx'
+import { presetDisplayText } from './locales.ts'
 import css from './AgentPresetSection.module.css'
 
 /** Registration-side business face for the management section. */
@@ -65,78 +66,6 @@ export type AgentPresetSectionProps =
   & PropsLocale<'settings.agentPreset'>
   & InjectFace<AgentPresetSectionInjected>
 
-/** Copy-dialog sub-view props: the draft plus the actions that mutate it. */
-interface CopyDialogProps {
-  state: AgentPresetSectionState
-  t: (key: AgentPresetSettingsKey) => string
-  actions: Pick<AgentPresetSectionInjected,
-    'cancelCopy' | 'confirmCopy' | 'setCopyId' | 'setCopyName'>
-}
-
-function CopyDialog({ state, t, actions }: CopyDialogProps): ReactNode {
-  const draft = state.copy
-  const blocker = draft === null ? undefined : draftBlocker(draft, state.rows)
-  const message = draft === null ? null : draft.error ?? (blocker === undefined ? null : t(blocker))
-  const source = draft === null ? undefined : state.rows.find(row => row.id === draft.from)
-  const sourceTitle = source === undefined ? draft?.fromTitle : presetDisplayText(source, t).name
-  return (
-    <Modal
-      open={draft !== null}
-      onClose={() => { actions.cancelCopy() }}
-      title={draft === null ? t('copyTitle') : `${t('copyTitle')} · ${t('copyOf')} ${sourceTitle}`}
-      closeLabel={t('close')}
-      description={t('copyIntro')}
-      className={css.dialog as string}
-      footer={(
-        <>
-          <Button
-            variant="outline"
-            disabled={draft?.saving === true}
-            onClick={() => { actions.cancelCopy() }}
-          >
-            {t('cancel')}
-          </Button>
-          <Button
-            disabled={draft === null || draft.saving || blocker !== undefined}
-            onClick={() => { void actions.confirmCopy() }}
-          >
-            {draft?.saving === true ? t('creating') : t('create')}
-          </Button>
-        </>
-      )}
-    >
-      {draft === null
-        ? null
-        : (
-          <div className={css.dialogFields}>
-            <label className={css.field}>
-              <span className={css.fieldLabel}>{t('presetId')}</span>
-              <input
-                className={css.input}
-                value={draft.id}
-                autoFocus
-                spellCheck={false}
-                placeholder={t('presetIdPlaceholder')}
-                onChange={(event) => { actions.setCopyId(event.target.value) }}
-              />
-            </label>
-            <label className={css.field}>
-              <span className={css.fieldLabel}>{t('displayName')}</span>
-              <input
-                className={css.input}
-                value={draft.name}
-                spellCheck={false}
-                placeholder={t('displayNamePlaceholder')}
-                onChange={(event) => { actions.setCopyName(event.target.value) }}
-              />
-            </label>
-            {message === null ? null : <p className={css.error} role="alert">{message}</p>}
-          </div>
-        )}
-    </Modal>
-  )
-}
-
 /**
  * Render one card's description, clamped by CSS and offered in full on hover.
  * The tooltip is attached only while the text is actually cut off, so a short
@@ -178,11 +107,6 @@ function CardDescription({ text }: { text: string }): ReactNode {
 export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
   const { useAgentPresetSection, t, load } = props
   const state = useAgentPresetSection(snapshot => snapshot)
-  const viewedId = state.view?.id
-  const viewedRow = viewedId === undefined ? undefined : state.rows.find(row => row.id === viewedId)
-  const viewedTitle = state.view === null
-    ? ''
-    : viewedRow === undefined ? state.view.title : presetDisplayText(viewedRow, t).name
 
   useEffect(() => {
     void load()
@@ -361,61 +285,7 @@ export function AgentPresetSection(props: AgentPresetSectionProps): ReactNode {
           </section>
         )
       })}
-      <CopyDialog
-        state={state}
-        t={t}
-        actions={{
-          cancelCopy: props.cancelCopy,
-          confirmCopy: props.confirmCopy,
-          setCopyId: props.setCopyId,
-          setCopyName: props.setCopyName,
-        }}
-      />
-      <Modal
-        open={state.view !== null}
-        onClose={() => { props.closeView() }}
-        title={state.view === null ? '' : `${t('view')} · ${viewedTitle}`}
-        closeLabel={t('close')}
-        description={t('composition')}
-        className={css.dialog as string}
-        footer={(
-          <Button variant="outline" autoFocus onClick={() => { props.closeView() }}>
-            {t('close')}
-          </Button>
-        )}
-      >
-        {state.view === null
-          ? null
-          : <pre className={css.viewerCode}>{state.view.content}</pre>}
-      </Modal>
-      <Modal
-        open={state.pendingDelete !== null}
-        onClose={() => { props.confirmDelete(null) }}
-        title={t('deleteTitle')}
-        closeLabel={t('close')}
-        description={t('deleteDescription')}
-        className={css.deleteDialog as string}
-        footer={(
-          <>
-            <Button
-              variant="outline"
-              autoFocus
-              disabled={state.deleting}
-              onClick={() => { props.confirmDelete(null) }}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              variant="outline"
-              className={css.deleteConfirm}
-              disabled={state.deleting}
-              onClick={() => { void props.remove() }}
-            >
-              {state.deleting ? t('deleting') : t('deleteConfirm')}
-            </Button>
-          </>
-        )}
-      />
+      <AgentPresetDialogs state={state} t={t} actions={props} />
     </div>
   )
 }

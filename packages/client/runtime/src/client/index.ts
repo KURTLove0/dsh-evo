@@ -231,3 +231,9 @@ export function apply(ctx: Context): void {
   })
   ctx.effect(() => () => { loop.stop() }, 'runtime: connection stream loop')
 }
+
+export { WorkflowManager } from './workflows/manager.ts'
+export type { WorkflowClientSnapshot, WorkflowPort } from './workflows/manager.ts'
+
+export { AgentDirectoryManager } from './workbench-agents/manager.ts'
+export type { AgentDirectoryPort, AgentDirectorySnapshot } from './workbench-agents/manager.ts'

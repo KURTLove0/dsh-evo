@@ -62,7 +62,10 @@
     "@deepseek-ai/dsh-session-reference": "workspace:^",
     "@deepseek-ai/dsh-settings": "workspace:^",
     "@deepseek-ai/dsh-typert-protocol": "workspace:^",
-    "@deepseek-ai/dsh-typert-registry": "workspace:^"
+    "@deepseek-ai/dsh-typert-registry": "workspace:^",
+    "@deepseek-ai/dsh-business-workflow": "workspace:^",
+    "@deepseek-ai/dsh-business-workflow-local": "workspace:^",
+    "@deepseek-ai/dsh-workbench-agent": "workspace:^"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^"

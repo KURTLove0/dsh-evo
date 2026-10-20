@@ -1,21 +1,23 @@
-/* Theme-native node-edge canvas: layer-1 node boxes over a transparent board,
-   DSW status colors for the dry-run standing dots. */
+/* Shared transcript and workbench graph; expanded cards use the workbench hierarchy. */
 .canvas {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: 320px;
-  overflow: visible;
+  max-width: none;
 }
+
+.node { cursor: pointer; touch-action: none; }
+
+.node:focus-visible { outline: none; }
 
 .edge {
   fill: none;
-  stroke: var(--dsw-alias-border-l2);
+  stroke: color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, var(--dsw-alias-border-l2));
   stroke-width: 1.5;
 }
 
 .arrowHead {
-  fill: var(--dsw-alias-border-l2);
+  fill: color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, var(--dsw-alias-border-l2));
 }
 
 .nodeBox {
@@ -24,16 +26,24 @@
   stroke-width: 1;
 }
 
-.nodeDot[data-status='pending'] {
+.nodeDot:is([data-status='pending'], [data-status='queued'], [data-status='skipped'], [data-status='cancelled'], [data-status='interrupted']) {
   fill: var(--dsw-alias-label-tertiary);
 }
 
-.nodeDot[data-status='completed'] {
+.nodeDot:is([data-status='completed'], [data-status='succeeded']) {
   fill: var(--dsw-alias-state-success-primary);
 }
 
 .nodeDot[data-status='failed'] {
   fill: var(--dsw-alias-state-error-primary);
+}
+
+.nodeDot:is([data-status='running'], [data-status='stopping']) {
+  fill: var(--dsw-alias-state-business-primary);
+}
+
+.nodeDot[data-status='waiting'] {
+  fill: var(--dsw-alias-state-warning-primary, var(--dsw-alias-label-primary));
 }
 
 .nodeTitle {
@@ -45,4 +55,20 @@
 .nodeId {
   fill: var(--dsw-alias-label-tertiary);
   font-size: 10px;
+}
+
+.node[data-expanded='true'] .nodeBox { rx: 12px; }
+.node[data-selected='true'] .nodeBox { stroke: var(--dsw-alias-state-business-primary); stroke-width: 2; fill: color-mix(in srgb, var(--dsw-alias-state-business-primary) 6%, var(--dsw-alias-bg-layer-1)); }
+.node[data-expanded='true'] .nodeTitle { font-size: 14px; font-weight: 600; }
+.node[data-expanded='true'] .nodeId { font-size: 12px; fill: var(--dsw-alias-label-secondary); }
+.nodeKind { fill: var(--dsw-alias-label-secondary); font-size: 12px; font-weight: 500; }
+.node:hover .nodeBox { stroke: var(--dsw-alias-state-business-primary); }
+.node:focus-visible .nodeBox { stroke: var(--dsw-alias-state-business-primary); stroke-width: 3; }
+
+@media (forced-colors: active) {
+  .nodeBox { fill: Canvas; stroke: CanvasText; }
+  .node[data-selected='true'] .nodeBox, .node:focus-visible .nodeBox { fill: Canvas; stroke: Highlight; }
+  .nodeTitle, .nodeId, .nodeKind { fill: CanvasText; }
+  .edge { stroke: CanvasText; }
+  .arrowHead, .nodeDot { fill: CanvasText; }
 }

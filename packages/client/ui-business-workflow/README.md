@@ -2,20 +2,24 @@
 
 English | [中文](README.zh.md)
 
-Business-workflow surface for dsh web, in two parts. The first-level sidebar entry sits beside New Session: its right-flying panel starts a workflow from one requirement sentence — with no session open, the prompt is staged and flushed into the session the start surfaces — and lists the current session's records with their next click step (continue clarifying, compose, verify, re-verify); the same panel is also reachable from the session header. Every click sends one guided prompt into the session, so the model keeps driving the `business_workflow_*` tools while the durable keyed Chat card — folded from the four `tool-business-workflow/*` session events that [`dsh-tool-business-workflow`](../../business/tool-business-workflow/README.md) records — keeps projecting the outcome: the collapsed row shows the requirement summary, stage, and step count, and expanding it lists the open clarification questions, structural issues, the step board, and the verification report with every case's outcome. The step board renders the accepted composition as a left-to-right node-edge canvas (dependency layers, arrowed edges), with each node's dot showing its standing in the latest verification's dry-run trace. Replay rebuilds both from the log alone.
+The sidebar opens an independent workspace workflow page; conversation headers contain no workflow module. New workflow expands an inline create form requiring a workspace, name, and business description; collapsing it retains unfinished fields. With an empty directory the form opens automatically. The directory supports case-insensitive name search, workspace filtering, a reset action for empty results, and latest-run status badges. It reads the durable business API independently of conversation selection. Legacy records remain accessible through their conversation links and compact Chat cards.
 
-The sidebar panel labels and focuses its requirement field when opened, shows an empty-state message before the first workflow, and places itself within the viewport as its contents change. Workflow rows keep the summary and stage together while the next action stays visible. At narrow widths it docks above the bottom edge. Its Close button and Escape both return focus to the module button.
+The directory and detail share a split view that stacks by available page width. Segmented design, run, and verification tabs support arrow keys, Home, and End. Collapsing creation returns focus to its entry. Action groups emphasize saving edited drafts or publishing saved ones; draft status is distinct from execution success. Theme tokens, visible focus, reduced-motion and high-contrast styles apply throughout.
+
+The design tab places a collapsible business requirement above the canvas and a selected-node inspector beside it on wide screens. Acceptance cases use labeled name, sample-input JSON, and assertion controls. The editor also edits node instructions, presets, dependencies, input sources, and final output bindings. Node cards show their order, kind, and status; selection works by pointer or keyboard. Nodes support dragging, arrow-key and button moves, zoom, fit-to-canvas, scrolling, and automatic layout; movement buttons expand under Node position. Viewport zoom does not change saved positions. Dependencies remain the authoritative edges; editing display names or positions preserves node identities. Local drafts survive page remounts, retain their base revision, and cannot silently overwrite a concurrent save. Publish requires a saved, valid draft. AI generation presents a separate candidate for explicit adoption.
+
+Run and verification tabs separate execution selection from the selected run details, showing their fixed publication graph, resolved input values, executed prompt, model/provider, tools, working directory, timestamps, outputs, errors, and execution-session links. Human confirmation and cancellation call deterministic Remote commands. Verification assertions remain separate from execution success. Reruns create new identities and execute all nodes again. Invalid run-input JSON blocks submission across tab changes; unmounting an editor releases its validation state. Host notifications and reconnect trigger authoritative snapshot refreshes through the React-free runtime owner.
 
 ## Model Experience
 
-None, as this package renders durable session records for a human and touches no prompt, message, schema, stream, or tool result. The model's own view of the same workflows stays with `dsh-tool-business-workflow`.
+Only AI generation and Agent nodes invoke a model. Generation receives the business request, current saved draft, supported definition schema, and authorized presets with tools disabled. Each Agent node receives its business background and explicitly bound inputs in a fresh child session. Saving, publishing, selecting records, and human decisions do not create conversation turns.
 
 #### KV Cache effect
 
-None; the package never assembles or sends provider requests.
+Independent execution sessions do not append to the user's conversation. Each fresh child has its own request prefix and history.
 
 ## Known Limitations and Deferred Work
 
-- **Clicks drive through guided prompts** — the panel never calls the runtime directly; it sends one user message per click, and the model issues the tool call, so a click queued behind a running turn takes effect when that turn settles.
-- **The board is read-only** — no drag, zoom, or inline editing; layout is a deterministic dependency layering, so the same log always draws the same canvas.
-- **`ready` reads as `composed` on the card** — the two-stage distinction between "requirement complete" and "composition accepted" collapses to one node status there; the header panel's list keeps the exact four-stage word.
+- The canvas uses the existing SVG renderer and deterministic layout; React Flow and Dagre integration requires installing those dependencies.
+- Business objectives, data fields, constraints, and source bindings use form controls. Sample inputs and advanced definitions use labeled JSON editors. The server validates all fields and references before publication.
+- The complete directory and selected history are fetched as snapshots; large-output pagination and incremental cursor delivery are deferred.

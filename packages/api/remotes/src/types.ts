@@ -17,3 +17,5 @@ export type ApiRemoteForwardedEvent = typeof API_REMOTE_FORWARDED_EVENTS[number]
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteEventSelection extends Record<ApiRemoteForwardedEvent, true> {}
 }
+
+export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'

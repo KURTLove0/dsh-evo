@@ -31,6 +31,7 @@
     "apps/web/tests/settings-chrome.e2e.ts",
     "apps/web/tests/settings-stats.e2e.ts",
     "apps/web/tests/models-settings.e2e.ts",
+    "apps/web/tests/runtime-management.e2e.ts",
     "apps/web/tests/onboarding-deepseek-config.e2e.ts",
     "apps/web/tests/onboarding-usable-provider.e2e.ts",
     "apps/web/tests/remote-welcome.e2e.ts",
@@ -42,6 +43,8 @@
     "apps/web/tests/stats-paged-history.e2e.ts",
     "apps/web/tests/sidebar-scrollbar.e2e.ts",
     "apps/web/tests/sidebar-modules.e2e.ts",
+    "apps/web/tests/business-workflow-board.e2e.ts",
+    "apps/web/tests/workflow-workbench.e2e.ts",
     "apps/web/tests/rail-search-expand.e2e.ts",
     "apps/web/tests/conversation-column-overflow.e2e.ts",
     "apps/web/tests/code-mode-round.e2e.ts",
@@ -64,6 +67,7 @@
     "apps/web/tests/access-confirmation.e2e.ts",
     "apps/web/tests/agent-preset-selection.e2e.ts",
     "apps/web/tests/agent-preset-authoring.e2e.ts",
+    "apps/web/tests/agents-workbench.e2e.ts",
     "apps/web/tests/shipped-composition.e2e.ts",
     "apps/web/tests/goal-bar.e2e.ts",
     "apps/web/tests/schedule-after.e2e.ts",
@@ -117,6 +121,7 @@
     "scripts/client-bundle-purity.spec.ts"
   ],
   "references": [
+    { "path": "./packages/business/workbench-agent" },
     { "path": "./vendor/cosmokit" },
     { "path": "./vendor/schemastery" },
     { "path": "./vendor/cordis" },

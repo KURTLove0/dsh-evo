@@ -241,6 +241,19 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 来源：[`packages/core/session/src/types.ts:277`](../packages/core/session/src/types.ts)
 
+### `business-workflow/*`
+
+<a id="business-workflowcheckpoint--log-only"></a>
+
+#### `business-workflow/checkpoint` — log-only
+
+```ts persistence-catalog
+/** Committed workflow execution snapshot; does not enter model context. */
+'business-workflow/checkpoint': WorkflowRun
+```
+
+来源：[`packages/business/business-workflow/src/workbench-types.ts:225`](../packages/business/business-workflow/src/workbench-types.ts)
+
 ### `command/*`
 
 <a id="commanddone--log-only"></a>
@@ -882,6 +895,64 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 ```
 
 来源：[`packages/core/session/src/types.ts:295`](../packages/core/session/src/types.ts)
+
+### `tool-business-workflow/*`
+
+<a id="tool-business-workflowclarified--log-only"></a>
+
+#### `tool-business-workflow/clarified` — log-only
+
+```ts persistence-catalog
+/**
+ * Records one clarification analysis.
+ * @param data - the judged revision and its remaining gaps.
+ */
+'tool-business-workflow/clarified': ToolBusinessWorkflowClarifiedData
+```
+
+来源：[`packages/business/tool-business-workflow/src/types.ts:93`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowcomposed--log-only"></a>
+
+#### `tool-business-workflow/composed` — log-only
+
+```ts persistence-catalog
+/**
+ * Records one composition verdict.
+ * @param data - acceptance or the draft's structural issues.
+ */
+'tool-business-workflow/composed': ToolBusinessWorkflowComposedData
+```
+
+来源：[`packages/business/tool-business-workflow/src/types.ts:98`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowstart--log-only"></a>
+
+#### `tool-business-workflow/start` — log-only
+
+```ts persistence-catalog
+/**
+ * Opens one business-workflow record.
+ * @param data - the record identity, summary, stage, and revision.
+ */
+'tool-business-workflow/start': ToolBusinessWorkflowStartData
+```
+
+来源：[`packages/business/tool-business-workflow/src/types.ts:88`](../packages/business/tool-business-workflow/src/types.ts)
+
+<a id="tool-business-workflowverified--log-only"></a>
+
+#### `tool-business-workflow/verified` — log-only
+
+```ts persistence-catalog
+/**
+ * Settles one verification.
+ * @param data - the report headline and every case's outcome.
+ */
+'tool-business-workflow/verified': ToolBusinessWorkflowVerifiedData
+```
+
+来源：[`packages/business/tool-business-workflow/src/types.ts:103`](../packages/business/tool-business-workflow/src/types.ts)
 
 ### `tool-workflow/*`
 

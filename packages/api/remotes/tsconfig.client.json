@@ -11,6 +11,7 @@
     "src/types.ts"
   ],
   "references": [
+    { "path": "../../business/workbench-agent" },
     {
       "path": "../../../vendor/cordis"
     },
@@ -22,7 +23,6 @@
     },
     {
       "path": "../../credentials/credentials"
-
     },
     {
       "path": "../../context/file-reference"
@@ -56,6 +56,12 @@
     },
     {
       "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../business/business-workflow"
+    },
+    {
+      "path": "../../business/business-workflow-local"
     }
   ]
 }

@@ -15,9 +15,9 @@ export const name = 'client-ui-settings-runtimes-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: a read-only section plugin joining two wire domains
- * into a page snapshot — it emits no cordis events and owns no cross-plugin
- * mutable relation.
+ * No runtime invariant: the page projects host snapshots and invokes host
+ * settings operations; it emits no Cordis events and owns no cross-plugin
+ * mutable relationship.
  */
 const install: InvariantInstaller = () => {}
 

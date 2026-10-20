@@ -12,6 +12,7 @@
  * service; sessions that have already logged a selection remain unchanged.
  */
 
+import { installRuntimeManagement } from './runtime-management.ts'
 import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
@@ -39,6 +40,9 @@ declare module '@deepseek-ai/cordis' {
 
 /** Gateway plugin configuration. */
 export interface Config {
+  /** Deadline for reading a connected runtime machine; defaults to 5000ms. */
+  runtimePeerTimeoutMs?: number
+
   /**
    * Whether this deployment can hand paths to a native desktop opener —
    * the `hasDocument` capability the agent-preset roster reports. Absent,
@@ -73,11 +77,14 @@ export class ApiProxyService extends Service implements ApiProxy {
   ]
 
   static Config: z<Config> = z.object({
+    runtimePeerTimeoutMs: z.number().min(1).max(2147483647).default(5000),
     nativeOpen: z.boolean(),
     sessionExportCompressionLevel: z.number().step(1).min(0).max(9)
       .default(DEFAULT_SESSION_LOG_COMPRESSION_LEVEL) as z<SessionLogCompressionLevel>,
     coldBlankProbeMaxBytes: z.natural().default(DEFAULT_COLD_BLANK_PROBE_MAX_BYTES),
   })
+
+  private readonly runtimeReady: () => Promise<void>
 
   readonly sessions: ApiProxy['sessions']
   readonly subagents: ApiProxy['subagents']
@@ -95,10 +102,13 @@ export class ApiProxyService extends Service implements ApiProxy {
 
   constructor(ctx: Context, config: Config) {
     super(ctx, 'apiProxy')
+    this.runtimeReady = installRuntimeManagement(ctx)
     const api = createApiProxy(ctx, {
       defaultModelSelection: () => ctx.agentDefaultModel.currentSelection(),
       saveDefaultModelSelection: selection => ctx.agentDefaultModel.saveSelection(selection),
       cwd: process.cwd(),
+      runtimeReady: this.runtimeReady,
+      ...config.runtimePeerTimeoutMs === undefined ? {} : { runtimePeerTimeoutMs: config.runtimePeerTimeoutMs },
       ...config.nativeOpen === undefined ? {} : { canOpenPath: () => config.nativeOpen as boolean },
       ...(config.sessionExportCompressionLevel === undefined
         ? {}
@@ -123,6 +133,12 @@ export class ApiProxyService extends Service implements ApiProxy {
     // behavior-neutral.
     this.respond = api.respond.bind(api)
   }
+
+  /** Register persisted runtime providers before publishing the gateway service. */
+  async [Service.init](): Promise<void> {
+    await this.runtimeReady()
+  }
+
 }
 
 export default ApiProxyService

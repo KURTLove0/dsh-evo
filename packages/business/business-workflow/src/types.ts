@@ -12,6 +12,7 @@
  * @module @deepseek-ai/dsh-business-workflow/types
  */
 
+import type { JsonValue } from '@deepseek-ai/dsh-session/types'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 
 /** Identifies one business-workflow record across its whole lifecycle. */
@@ -66,7 +67,7 @@ export interface AcceptanceCase {
   /** The case's display name, unique within one requirement. */
   name: string
   /** Sample input values keyed by requirement input field names. */
-  given: Record<string, unknown>
+  given: Record<string, JsonValue>
   /** The assertion the case's bound final outputs must satisfy. */
   expect: AcceptanceExpectation
 }

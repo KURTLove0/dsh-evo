@@ -357,3 +357,5 @@ export class LocalBusinessWorkflowRuntime extends BusinessWorkflowRuntime {
 }
 
 export default LocalBusinessWorkflowRuntime
+
+export { WorkflowGateway } from './workbench-gateway.ts'

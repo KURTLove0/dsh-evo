@@ -124,6 +124,7 @@ flowchart TD
     pkg_business_workflow["business-workflow"]
     pkg_business_workflow_local["business-workflow-local"]
     pkg_tool_business_workflow["tool-business-workflow"]
+    pkg_workbench_agent["workbench-agent"]
   end
   subgraph group_client["packages/client"]
     pkg_client_connection["client-connection"]
@@ -166,6 +167,7 @@ flowchart TD
     pkg_client_ui_tool["client-ui-tool"]
     pkg_client_ui_trajectory["client-ui-trajectory"]
     pkg_client_ui_user_questions["client-ui-user-questions"]
+    pkg_client_ui_workbench_agent["client-ui-workbench-agent"]
     pkg_client_ui_workflow_run["client-ui-workflow-run"]
     pkg_client_ui_workspace["client-ui-workspace"]
     pkg_client_web["client-web"]
@@ -368,9 +370,9 @@ flowchart TD
   pkg_business_workflow --> pkg_invariants
   pkg_business_workflow_local --> pkg_invariants
   pkg_tool_business_workflow --> pkg_invariants
+  pkg_workbench_agent --> pkg_invariants
   pkg_client_locale --> pkg_api_remotes
   pkg_client_locale --> pkg_client_connection
-  pkg_client_runtime --> pkg_typert_registry
   pkg_client_ui_attachment --> pkg_attachment
   pkg_client_ui_model_selection --> pkg_client_connection
   pkg_client_ui_model_selection --> pkg_client_ui_input_trigger
@@ -383,6 +385,7 @@ flowchart TD
   pkg_client_ui_theme --> pkg_api_remotes
   pkg_client_ui_theme --> pkg_client_connection
   pkg_client_ui_tool --> pkg_api_remotes
+  pkg_client_ui_workspace --> pkg_client_ui_layout
   pkg_compaction_basic --> pkg_compaction_tool_result_pruner
   pkg_tmux_context --> pkg_session
   pkg_experimental_tool_agent_team --> pkg_session
@@ -409,6 +412,9 @@ flowchart TD
   pkg_tool_workflow --> pkg_agent
   pkg_workflow_worker_thread --> pkg_brand
   pkg_workspace --> pkg_storage
+  pkg_client_runtime --> pkg_business_workflow
+  pkg_client_runtime --> pkg_typert_registry
+  pkg_client_runtime --> pkg_workbench_agent
   pkg_client_ui_conversation --> pkg_api_remotes
   pkg_client_ui_conversation --> pkg_goal
   pkg_client_ui_conversation --> pkg_permission_presets
@@ -416,6 +422,31 @@ flowchart TD
   pkg_client_ui_conversation --> pkg_session_stats
   pkg_client_ui_conversation --> pkg_token_meter
   pkg_client_ui_conversation --> pkg_tool_todo
+  pkg_client_ui_skill --> pkg_client_connection
+  pkg_client_ui_skill --> pkg_client_ui_tool
+  pkg_client_ui_subagent --> pkg_client_ui_input_trigger
+  pkg_client_ui_subagent --> pkg_subagent
+  pkg_client_ui_subagent --> pkg_token_meter
+  pkg_acp_demo --> pkg_session_query
+  pkg_client_ui_agent_preset --> pkg_api_remotes
+  pkg_client_ui_agent_preset --> pkg_client_connection
+  pkg_client_ui_agent_preset --> pkg_client_locale
+  pkg_client_ui_agent_preset --> pkg_client_runtime
+  pkg_client_ui_agent_preset --> pkg_client_ui_conversation
+  pkg_client_ui_agent_preset --> pkg_client_ui_layout
+  pkg_client_ui_agent_preset --> pkg_client_ui_settings
+  pkg_client_ui_agent_preset --> pkg_client_ui_sidebar
+  pkg_client_ui_agent_preset --> pkg_invariants
+  pkg_client_ui_business_workflow --> pkg_business_workflow
+  pkg_client_ui_business_workflow --> pkg_client_locale
+  pkg_client_ui_business_workflow --> pkg_client_runtime
+  pkg_client_ui_business_workflow --> pkg_client_ui_conversation
+  pkg_client_ui_business_workflow --> pkg_client_ui_layout
+  pkg_client_ui_business_workflow --> pkg_client_ui_sidebar
+  pkg_client_ui_business_workflow --> pkg_invariants
+  pkg_client_ui_business_workflow --> pkg_session
+  pkg_client_ui_business_workflow --> pkg_tool_business_workflow
+  pkg_client_ui_jobs --> pkg_client_ui_conversation
   pkg_client_ui_renderer --> pkg_client_runtime
   pkg_client_ui_settings_runtimes --> pkg_api_remotes
   pkg_client_ui_settings_runtimes --> pkg_client_connection
@@ -430,15 +461,13 @@ flowchart TD
   pkg_client_ui_settings_stats --> pkg_client_ui_settings
   pkg_client_ui_settings_stats --> pkg_invariants
   pkg_client_ui_settings_stats --> pkg_token_meter
-  pkg_client_ui_skill --> pkg_client_connection
-  pkg_client_ui_skill --> pkg_client_ui_tool
-  pkg_client_ui_subagent --> pkg_client_ui_input_trigger
-  pkg_client_ui_subagent --> pkg_subagent
-  pkg_client_ui_subagent --> pkg_token_meter
-  pkg_acp_demo --> pkg_session_query
-  pkg_client_ui_agent_preset --> pkg_client_connection
-  pkg_client_ui_agent_preset --> pkg_client_ui_conversation
-  pkg_client_ui_jobs --> pkg_client_ui_conversation
+  pkg_client_ui_workbench_agent --> pkg_api_remotes
+  pkg_client_ui_workbench_agent --> pkg_client_connection
+  pkg_client_ui_workbench_agent --> pkg_client_locale
+  pkg_client_ui_workbench_agent --> pkg_client_runtime
+  pkg_client_ui_workbench_agent --> pkg_client_ui_layout
+  pkg_client_ui_workbench_agent --> pkg_client_ui_sidebar
+  pkg_client_ui_workbench_agent --> pkg_invariants
 ```
 
 | Package | Group | Depends on |
@@ -512,7 +541,6 @@ flowchart TD
 | [`client-hmr`](../packages/client/hmr) | `client` | — |
 | [`client-modules`](../packages/client/modules) | `client` | — |
 | [`client-ui-brand-official`](../packages/client/ui-brand-official) | `client` | — |
-| [`client-ui-business-workflow`](../packages/client/ui-business-workflow) | `client` | — |
 | [`client-ui-commands`](../packages/client/ui-commands) | `client` | — |
 | [`client-ui-deliverables`](../packages/client/ui-deliverables) | `client` | — |
 | [`client-ui-directory-picker-browse`](../packages/client/ui-directory-picker-browse) | `client` | — |
@@ -529,7 +557,6 @@ flowchart TD
 | [`client-ui-trajectory`](../packages/client/ui-trajectory) | `client` | — |
 | [`client-ui-user-questions`](../packages/client/ui-user-questions) | `client` | — |
 | [`client-ui-workflow-run`](../packages/client/ui-workflow-run) | `client` | — |
-| [`client-ui-workspace`](../packages/client/ui-workspace) | `client` | — |
 | [`client-web`](../packages/client/web) | `client` | — |
 | [`code-runtime`](../packages/code-runtime/code-runtime) | `code-runtime` | — |
 | [`code-runtime-python`](../packages/code-runtime/code-runtime-python) | `code-runtime` | — |
@@ -641,8 +668,8 @@ flowchart TD
 | [`business-workflow`](../packages/business/business-workflow) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`business-workflow-local`](../packages/business/business-workflow-local) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`tool-business-workflow`](../packages/business/tool-business-workflow) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`workbench-agent`](../packages/business/workbench-agent) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-locale`](../packages/client/locale) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection) |
-| [`client-runtime`](../packages/client/runtime) | `client` | [`typert-registry`](../packages/typert/registry) |
 | [`client-ui-attachment`](../packages/client/ui-attachment) | `client` | [`attachment`](../packages/attachment/attachment) |
 | [`client-ui-model-selection`](../packages/client/ui-model-selection) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-input-trigger`](../packages/client/ui-input-trigger) |
 | [`client-ui-permission-presets`](../packages/client/ui-permission-presets) | `client` | [`client-connection`](../packages/client/connection) |
@@ -653,6 +680,7 @@ flowchart TD
 | [`client-ui-settings-plugin-inventory`](../packages/client/ui-settings-plugin-inventory) | `client` | [`api-remotes`](../packages/api/remotes) |
 | [`client-ui-theme`](../packages/client/ui-theme) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection) |
 | [`client-ui-tool`](../packages/client/ui-tool) | `client` | [`api-remotes`](../packages/api/remotes) |
+| [`client-ui-workspace`](../packages/client/ui-workspace) | `client` | [`client-ui-layout`](../packages/client/ui-layout) |
 | [`compaction-basic`](../packages/compaction/compaction-basic) | `compaction` | [`compaction-tool-result-pruner`](../packages/compaction/compaction-tool-result-pruner) |
 | [`tmux-context`](../packages/context/tmux-context) | `context` | [`session`](../packages/core/session) |
 | [`experimental-tool-agent-team`](../packages/experimental/tool-agent-team) | `experimental` | [`session`](../packages/core/session), [`system-prompt`](../packages/core/system-prompt) |
@@ -671,12 +699,15 @@ flowchart TD
 | [`tool-workflow`](../packages/workflow/tool-workflow) | `workflow` | [`agent`](../packages/core/agent) |
 | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | `workflow` | [`brand`](../packages/util/brand) |
 | [`workspace`](../packages/workspace/workspace) | `workspace` | [`storage`](../packages/storage/storage) |
+| [`client-runtime`](../packages/client/runtime) | `client` | [`business-workflow`](../packages/business/business-workflow), [`typert-registry`](../packages/typert/registry), [`workbench-agent`](../packages/business/workbench-agent) |
 | [`client-ui-conversation`](../packages/client/ui-conversation) | `client` | [`api-remotes`](../packages/api/remotes), [`goal`](../packages/goal/goal), [`permission-presets`](../packages/interaction/permission-presets), [`plan-mode`](../packages/plan/plan-mode), [`session-stats`](../packages/session/session-stats), [`token-meter`](../packages/llm/token-meter), [`tool-todo`](../packages/todo/tool-todo) |
-| [`client-ui-renderer`](../packages/client/ui-renderer) | `client` | [`client-runtime`](../packages/client/runtime) |
-| [`client-ui-settings-runtimes`](../packages/client/ui-settings-runtimes) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
-| [`client-ui-settings-stats`](../packages/client/ui-settings-stats) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants), [`token-meter`](../packages/llm/token-meter) |
 | [`client-ui-skill`](../packages/client/ui-skill) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-tool`](../packages/client/ui-tool) |
 | [`client-ui-subagent`](../packages/client/ui-subagent) | `client` | [`client-ui-input-trigger`](../packages/client/ui-input-trigger), [`subagent`](../packages/subagent/subagent), [`token-meter`](../packages/llm/token-meter) |
 | [`acp-demo`](../packages/examples/acp-demo) | `examples` | [`session-query`](../packages/session-query/session-query) |
-| [`client-ui-agent-preset`](../packages/client/ui-agent-preset) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-conversation`](../packages/client/ui-conversation) |
+| [`client-ui-agent-preset`](../packages/client/ui-agent-preset) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-conversation`](../packages/client/ui-conversation), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-settings`](../packages/client/ui-settings), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-business-workflow`](../packages/client/ui-business-workflow) | `client` | [`business-workflow`](../packages/business/business-workflow), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-conversation`](../packages/client/ui-conversation), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`tool-business-workflow`](../packages/business/tool-business-workflow) |
 | [`client-ui-jobs`](../packages/client/ui-jobs) | `client` | [`client-ui-conversation`](../packages/client/ui-conversation) |
+| [`client-ui-renderer`](../packages/client/ui-renderer) | `client` | [`client-runtime`](../packages/client/runtime) |
+| [`client-ui-settings-runtimes`](../packages/client/ui-settings-runtimes) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-settings-stats`](../packages/client/ui-settings-stats) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants), [`token-meter`](../packages/llm/token-meter) |
+| [`client-ui-workbench-agent`](../packages/client/ui-workbench-agent) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |

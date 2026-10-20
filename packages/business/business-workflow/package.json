@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-business-workflow",
-  "description": "Business workflow Service Definition (ctx.businessWorkflows) for the DeepSeek Harness — the requirement-clarification, composition, and verification contract that turns a stated business need into a verified step orchestration",
+  "description": "Business workflow Service Definition (ctx.businessWorkflows) for the DeepSeek Harness \u2014 the requirement-clarification, composition, and verification contract that turns a stated business need into a verified step orchestration",
   "version": "0.1.1-rc.1",
   "publishConfig": {
     "access": "public"
@@ -34,7 +34,19 @@
       "default": "./lib/types/types.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./workbench": {
+      "types": "./lib/types/workbench.d.ts",
+      "default": "./lib/types/workbench.js"
+    },
+    "./workbench-types": {
+      "types": "./lib/types/workbench-types.d.ts",
+      "default": "./lib/types/workbench-types.js"
+    },
+    "./definition": {
+      "types": "./lib/types/definition.d.ts",
+      "default": "./lib/types/definition.js"
+    }
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^",
@@ -42,7 +54,10 @@
   },
   "dependencies": {
     "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^"
+    "@deepseek-ai/dsh-llm": "workspace:^",
+    "@deepseek-ai/dsh-session": "workspace:^",
+    "@deepseek-ai/dsh-workspace": "workspace:^",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^",

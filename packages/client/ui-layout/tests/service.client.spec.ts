@@ -10,6 +10,8 @@ import type { PanelActions } from '@deepseek-ai/dsh-client-ui-layout/src/client/
 
 function fakePanels(): PanelActions {
   return {
+    openPage: vi.fn(),
+    closePage: vi.fn(),
     setSidebar: vi.fn(),
     setDetails: vi.fn(),
     toggleSidebar: vi.fn(),
@@ -25,6 +27,10 @@ describe('LayoutController', () => {
     const panels = fakePanels()
     service.attachPanels(panels)
 
+    service.openPage('business-workflow')
+    service.closePage()
+    expect(panels.openPage).toHaveBeenCalledWith('business-workflow')
+    expect(panels.closePage).toHaveBeenCalledOnce()
     service.toggleSidebar()
     service.openDetails()
     service.closeDetails()

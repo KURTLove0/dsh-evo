@@ -3038,6 +3038,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       },
     },
     llm: {
+      runtimePeers: request => ok(request, { peers: [] }),
       providers: request => ok(request, {
         providers: [
           { provider: 'deepseek-official', displayName: 'DeepSeek', settingsNs: 'llm-deepseek', settingsPath: [], active: true },
@@ -3228,6 +3229,7 @@ export class FixtureApiClient extends AbstractApiClient {
       case 'credentials.describe': return this.api.credentials.describe(request)
       case 'credentials.set': return this.api.credentials.set(request)
       case 'credentials.unset': return this.api.credentials.unset(request)
+      case 'llm.runtimePeers': return this.api.llm.runtimePeers(request, signal)
       case 'llm.providers': return this.api.llm.providers(request)
       case 'llm.models': return this.api.llm.models(request)
       case 'llm.discoverModels': return this.api.llm.discoverModels(request, signal)

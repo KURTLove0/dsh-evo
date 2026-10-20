@@ -1,3 +1,5 @@
+export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'
+
 /**
  * The one home of this application's forwarded-Host-event allowlist. Both
  * compiler faces list this file, so the Host forwarding loop and the consumer
@@ -15,6 +17,8 @@
  * else.
  */
 export const API_REMOTE_FORWARDED_EVENTS = [
+  'business-workflow/changed',
+  'workbench-agent/changed',
   'agent-preset/selected',
   'commands/change',
   'credentials/reference-updated',

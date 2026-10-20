@@ -5,13 +5,15 @@
  * nodes, edges, and status markers.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render } from '@testing-library/react'
 import type { CaseResult } from '@deepseek-ai/dsh-business-workflow/types'
 import type { ToolBusinessWorkflowBoardStep } from '@deepseek-ai/dsh-tool-business-workflow/types'
 import {
   BOARD_GAP_X, BOARD_GAP_Y, BOARD_NODE_HEIGHT, BOARD_NODE_WIDTH, BOARD_PADDING,
   deriveNodeStatuses, layoutBoard,
 } from '../src/client/board-layout.ts'
+import { BusinessWorkflowPanel, type BusinessWorkflowPanelProps } from '../src/client/BusinessWorkflowPanel.tsx'
+import { en } from '../src/client/locales.ts'
 import { WorkflowBoard } from '../src/client/WorkflowBoard.tsx'
 
 afterEach(() => { cleanup() })
@@ -90,12 +92,14 @@ describe('deriveNodeStatuses', () => {
 })
 
 describe('WorkflowBoard', () => {
+  const labels = { pending: '待验证', completed: '执行完成', failed: '执行失败' }
   it('renders one node per step, one edge per dependency, and per-node status dots', () => {
     const steps = [step('collect', [], 'Collect leads'), step('score', ['collect'], 'Score leads')]
     const statuses = deriveNodeStatuses(steps, [
       { name: 'c1', status: 'passed', steps: [{ stepId: 'collect', status: 'completed', detail: 'ok' }] },
     ])
-    const view = render(<WorkflowBoard steps={steps} statuses={statuses} />)
+    const selected: string[] = []
+    const view = render(<WorkflowBoard steps={steps} statuses={statuses} selectedId="collect" onSelect={(id) => { selected.push(id) }} label="编排看板" statusLabels={labels} />)
     const svg = view.container.querySelector('svg')!
     expect(svg.querySelectorAll('g[data-status]')).toHaveLength(2)
     expect(svg.querySelectorAll('path[marker-end]')).toHaveLength(1)
@@ -103,15 +107,70 @@ describe('WorkflowBoard', () => {
     expect(svg.querySelector('g[data-status="pending"] text')?.textContent).toBe('Score leads')
     expect(svg.textContent).toContain('collect')
     expect(svg.textContent).toContain('score')
+    const score = view.getByRole('button', { name: 'Score leads (score), 待验证' })
+    fireEvent.keyDown(score, { key: 'Enter' })
+    fireEvent.keyDown(score, { key: ' ' })
+    expect(selected).toEqual(['score', 'score'])
+    expect(view.getByRole('button', { name: 'Collect leads (collect), 执行完成' }).getAttribute('aria-pressed')).toBe('true')
   })
 
   it('ellipsizes overlong titles while the SVG title keeps the full text', () => {
     const longTitle = 'Aggregate weekly sales data from every region'
     const steps = [step('aggregate', [], longTitle)]
-    const view = render(<WorkflowBoard steps={steps} statuses={deriveNodeStatuses(steps, undefined)} />)
+    const view = render(<WorkflowBoard steps={steps} statuses={deriveNodeStatuses(steps, undefined)} selectedId="aggregate" onSelect={() => {}} label="编排看板" statusLabels={labels} />)
     const titleText = view.container.querySelector('.nodeTitle, [class*="nodeTitle"]')
     expect(titleText?.textContent).toHaveLength(18)
     expect(titleText?.textContent?.endsWith('…')).toBe(true)
     expect(view.container.querySelector('title')?.textContent).toBe(`${longTitle} (aggregate)`)
+  })
+})
+
+describe('BusinessWorkflowPanel node context', () => {
+  function panel(steps: readonly ToolBusinessWorkflowBoardStep[]) {
+    return render(<BusinessWorkflowPanel {...({
+      node: { data: {
+        workflowId: 'bw-1', summary: 'Rank leads', stage: 'verified', status: 'verified',
+        revision: 1, gaps: [], issues: [], stepCount: steps.length, steps,
+        verification: { passed: true, caseCount: 1, dryRun: true, cases: [{
+          name: 'sample', status: 'passed', steps: [
+            { stepId: 'collect', status: 'completed', detail: 'loaded two records' },
+            { stepId: 'score', status: 'completed', detail: 'ranked two leads' },
+          ],
+        }] },
+      } },
+      t: (key: keyof typeof en, params?: Record<string, string | number>) => {
+        let value: string = en[key]
+        for (const [name, replacement] of Object.entries(params ?? {})) {
+          value = value.replace(`{${name}}`, String(replacement))
+        }
+        return value
+      },
+    } as unknown as BusinessWorkflowPanelProps)} />)
+  }
+
+  it('shows the selected step instruction, input provenance, objectives, and its own trace', () => {
+    const view = panel([
+      { id: 'collect', title: 'Collect', dependsOn: [], instruction: 'Load weekly leads.',
+        inputs: [{ name: 'leads', source: { kind: 'requirement', field: 'weekly_leads' } }], objectives: ['collect'] },
+      { id: 'score', title: 'Score', dependsOn: ['collect'], instruction: 'Rank the leads.',
+        inputs: [{ name: 'records', source: { kind: 'step', step: 'collect' } }], objectives: ['rank'] },
+    ])
+    fireEvent.click(view.container.querySelector('[data-disclosure-row] button')!)
+    expect(view.getByText('Load weekly leads.')).toBeTruthy()
+    expect(view.getByText(/Requirement input: weekly_leads/)).toBeTruthy()
+    expect(view.getByText('Objectives: collect')).toBeTruthy()
+    expect(view.getByText('loaded two records')).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Score (score), Completed' }))
+    expect(view.getByText('Rank the leads.')).toBeTruthy()
+    expect(view.getByText(/Step output: collect/)).toBeTruthy()
+    expect(view.getByText('Objectives: rank')).toBeTruthy()
+    expect(view.getByText('ranked two leads')).toBeTruthy()
+    expect(view.queryByText('loaded two records')).toBeNull()
+  })
+
+  it('explains absent executor context in older records', () => {
+    const view = panel([step('collect')])
+    fireEvent.click(view.container.querySelector('[data-disclosure-row] button')!)
+    expect(view.getByText('Execution context is unavailable for this record.')).toBeTruthy()
   })
 })

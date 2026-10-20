@@ -239,6 +239,19 @@ Types: [TokenUsage](subsystems/llm-streaming.md)
 
 Source: [`packages/core/session/src/types.ts:277`](../packages/core/session/src/types.ts)
 
+### `business-workflow/*`
+
+<a id="business-workflowcheckpoint--log-only"></a>
+
+#### `business-workflow/checkpoint` — log-only
+
+```ts persistence-catalog
+/** Committed workflow execution snapshot; does not enter model context. */
+'business-workflow/checkpoint': WorkflowRun
+```
+
+Source: [`packages/business/business-workflow/src/workbench-types.ts:225`](../packages/business/business-workflow/src/workbench-types.ts)
+
 ### `command/*`
 
 <a id="commanddone--log-only"></a>
@@ -895,7 +908,7 @@ Source: [`packages/core/session/src/types.ts:295`](../packages/core/session/src/
 'tool-business-workflow/clarified': ToolBusinessWorkflowClarifiedData
 ```
 
-Source: [`packages/business/tool-business-workflow/src/types.ts:74`](../packages/business/tool-business-workflow/src/types.ts)
+Source: [`packages/business/tool-business-workflow/src/types.ts:93`](../packages/business/tool-business-workflow/src/types.ts)
 
 <a id="tool-business-workflowcomposed--log-only"></a>
 
@@ -909,7 +922,7 @@ Source: [`packages/business/tool-business-workflow/src/types.ts:74`](../packages
 'tool-business-workflow/composed': ToolBusinessWorkflowComposedData
 ```
 
-Source: [`packages/business/tool-business-workflow/src/types.ts:79`](../packages/business/tool-business-workflow/src/types.ts)
+Source: [`packages/business/tool-business-workflow/src/types.ts:98`](../packages/business/tool-business-workflow/src/types.ts)
 
 <a id="tool-business-workflowstart--log-only"></a>
 
@@ -923,7 +936,7 @@ Source: [`packages/business/tool-business-workflow/src/types.ts:79`](../packages
 'tool-business-workflow/start': ToolBusinessWorkflowStartData
 ```
 
-Source: [`packages/business/tool-business-workflow/src/types.ts:69`](../packages/business/tool-business-workflow/src/types.ts)
+Source: [`packages/business/tool-business-workflow/src/types.ts:88`](../packages/business/tool-business-workflow/src/types.ts)
 
 <a id="tool-business-workflowverified--log-only"></a>
 
@@ -937,7 +950,7 @@ Source: [`packages/business/tool-business-workflow/src/types.ts:69`](../packages
 'tool-business-workflow/verified': ToolBusinessWorkflowVerifiedData
 ```
 
-Source: [`packages/business/tool-business-workflow/src/types.ts:84`](../packages/business/tool-business-workflow/src/types.ts)
+Source: [`packages/business/tool-business-workflow/src/types.ts:103`](../packages/business/tool-business-workflow/src/types.ts)
 
 ### `tool-workflow/*`
 

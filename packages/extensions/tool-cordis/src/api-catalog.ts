@@ -2336,6 +2336,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workbenchAgents',
+    summary: 'Providers commit mutations before notifying directory consumers.',
+    description: 'Providers commit mutations before notifying directory consumers.',
+    methods: [
+      {
+        signature: 'abstract snapshot(id?: WorkbenchAgentId): Promise<AgentDirectory>',
+        description: 'Read identities, workload, and one identity\'s history.',
+        parameters: [{ name: 'id', description: 'omit to read only directory and workload.' }],
+        returns: 'detached committed data.',
+      },
+      {
+        signature: 'abstract command(command: AgentCommand): Promise<AgentReceipt>',
+        description: 'Manage identities or submit, retry, or cancel a task.',
+        parameters: [{ name: 'command', description: 'operation with an expected revision for edits.' }],
+        returns: 'committed identities; execution remains host-owned.',
+      },
+    ],
+  },
+  {
     key: 'workflowEngine',
     summary: 'Workflow Service Definition contract.',
     description: 'Workflow Service Definition contract. Invalid requests throw before publication; a live run is holder-owned, its result never rejects, cancellation and disposal are bounded, and disposal waits for child cleanup within that bound. Lifecycle listener failures are contained, and `workflow/end` fires exactly once as the result settles.',
@@ -2345,6 +2364,31 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Parse and execute a workflow script.',
         parameters: [{ name: 'request', description: 'the script, its `args`, the parent agent, and an optional cancel signal.' }],
         returns: 'the live run; its `result` resolves when the script settles.',
+      },
+    ],
+  },
+  {
+    key: 'workflowWorkbench',
+    summary: 'Providers persist before returning receipts and own work beyond any client connection.',
+    description: 'Providers persist before returning receipts and own work beyond any client connection.',
+    methods: [
+      {
+        signature: 'abstract snapshot(id?: WorkflowId): Promise<WorkflowWorkbenchSnapshot>',
+        description: 'Read the directory and selected workflow\'s runs and operations.',
+        parameters: [{ name: 'id', description: 'selected workflow; omit to read only the directory.' }],
+        returns: 'committed state and server-authorized presets.',
+      },
+      {
+        signature: 'abstract command(request: WorkflowCommand): Promise<WorkflowReceipt>',
+        description: 'Apply a management action independently from the caller\'s conversation.',
+        parameters: [{ name: 'request', description: 'full command; edits require the currently committed revision.' }],
+        returns: 'affected identities after persistence; background work remains service-owned.',
+      },
+      {
+        signature: 'abstract validate(definition: WorkflowDefinition): WorkflowValidation',
+        description: 'Check a definition without saving or starting work.',
+        parameters: [{ name: 'definition', description: 'draft or generated candidate.' }],
+        returns: 'requirement and topology diagnostics.',
       },
     ],
   },
@@ -2528,6 +2572,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'One authorization attempt has finished and released its key.',
     description: 'One authorization attempt has finished and released its key. Fires for every terminal outcome, failures included, so a surface watching a key it did not start (a second browser tab) learns the attempt is over.',
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
+  },
+  {
+    name: 'business-workflow/changed',
+    mode: 'emit',
+    signature: '\'business-workflow/changed\'(workflowId: WorkflowId): void',
+    summary: 'A durable workflow mutation is available for snapshot refresh.',
+    description: 'A durable workflow mutation is available for snapshot refresh.',
+    parameters: [{ name: 'workflowId', description: 'workflow whose definition, run, or candidate changed.' }],
   },
   {
     name: 'business-workflow/stage',
@@ -2842,6 +2894,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'table', description: 'Mutable row table; listeners append in activation order.' }],
   },
   {
+    name: 'workbench-agent/changed',
+    mode: 'emit',
+    signature: '\'workbench-agent/changed\'(id: WorkbenchAgentId): void',
+    summary: 'A directory record or execution status committed.',
+    description: 'A directory record or execution status committed.',
+    parameters: [{ name: 'id', description: 'affected stable agent identity.' }],
+  },
+  {
     name: 'workflow/agent-end',
     mode: 'emit',
     signature: '\'workflow/agent-end\'(info: WorkflowRunInfo, agent: WorkflowAgentEndInfo): void',
@@ -2895,7 +2955,7 @@ export const EVENT_API: readonly EventApiEntry[] = [
 export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AcceptanceCase',
-    declaration: 'export interface AcceptanceCase {\n    name: string;\n    given: Record<string, unknown>;\n    expect: AcceptanceExpectation;\n}',
+    declaration: 'export interface AcceptanceCase {\n    name: string;\n    given: Record<string, JsonValue>;\n    expect: AcceptanceExpectation;\n}',
   },
   {
     name: 'AcceptanceExpectation',
@@ -2912,6 +2972,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentCancelCause',
     declaration: 'export type AgentCancelCause = {\n    readonly kind: \'user\';\n} | {\n    readonly kind: \'parent\';\n} | {\n    readonly kind: \'hook\';\n    readonly reason: string;\n} | {\n    readonly kind: \'disposed\';\n};',
+  },
+  {
+    name: 'AgentCommand',
+    declaration: 'export type AgentCommand = {\n    kind: \'create\';\n    definition: AgentDefinition;\n} | {\n    kind: \'save\';\n    id: WorkbenchAgentId;\n    revision: number;\n    definition: AgentDefinition;\n} | {\n    kind: \'copy\';\n    id: WorkbenchAgentId;\n    name: string;\n} | {\n    kind: \'archive\';\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n} | {\n    kind: \'run\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'design\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'retry\';\n    runId: AgentRunId;\n} | {\n    kind: \'stop\';\n    runId: AgentRunId;\n};',
+  },
+  {
+    name: 'AgentDefinition',
+    declaration: 'export interface AgentDefinition {\n    name: string;\n    avatar: string;\n    description: string;\n    instructions: string;\n    runtime: \'harness\';\n    model?: {\n        provider: string;\n        model: string;\n        reasoningEffort?: string | undefined;\n    } | undefined;\n    skills: string[];\n    starters: {\n        label: string;\n        prompt: string;\n    }[];\n    concurrency: number;\n}',
+  },
+  {
+    name: 'AgentDirectory',
+    declaration: 'export interface AgentDirectory {\n    agents: WorkbenchAgent[];\n    runs: AgentRun[];\n    workloads: {\n        agentId: WorkbenchAgentId;\n        running: number;\n        queued: number;\n    }[];\n    defaultConcurrency: number;\n    maxConcurrency: number;\n    runtime: {\n        id: \'harness\';\n        available: boolean;\n    };\n}',
   },
   {
     name: 'AgentFactory',
@@ -2932,6 +3004,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'AgentPreset',
     declaration: 'export interface AgentPreset {\n    readonly id: string;\n    readonly trust: PresetTrust;\n    readonly path: string;\n    readonly name?: string;\n    readonly description?: string;\n    readonly order?: number;\n    readonly broken?: string;\n}',
+  },
+  {
+    name: 'AgentReceipt',
+    declaration: 'export interface AgentReceipt {\n    agentId: WorkbenchAgentId;\n    runId?: AgentRunId;\n}',
+  },
+  {
+    name: 'AgentRun',
+    declaration: 'export interface AgentRun {\n    id: AgentRunId;\n    agentId: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    sessionId: SessionId;\n    prompt: string;\n    status: \'queued\' | \'running\' | \'completed\' | \'failed\' | \'cancelled\' | \'interrupted\';\n    definition?: WorkbenchAgent;\n    createdAt: number;\n    startedAt?: number;\n    endedAt?: number;\n    error?: string;\n    purpose?: \'design\';\n    candidate?: AgentDefinition;\n    retryOf?: AgentRunId;\n}',
+  },
+  {
+    name: 'AgentRunId',
+    declaration: 'export type AgentRunId = Branded<\'AgentRunId\'>;',
   },
   {
     name: 'AgentSetup',
@@ -5154,6 +5238,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WebUpgradeRoute {\n    path: string;\n    handler: (req: IncomingMessage, socket: Duplex, head: Buffer) => void | Promise<void>;\n}',
   },
   {
+    name: 'WorkbenchAgent',
+    declaration: 'export interface WorkbenchAgent extends AgentDefinition {\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n    createdAt: number;\n    updatedAt: number;\n}',
+  },
+  {
+    name: 'WorkbenchAgentId',
+    declaration: 'export type WorkbenchAgentId = Branded<\'WorkbenchAgentId\'>;',
+  },
+  {
     name: 'WorkflowAgentEndInfo',
     declaration: 'export interface WorkflowAgentEndInfo extends WorkflowAgentInfo {\n    outcome: WorkflowAgentOutcome;\n}',
   },
@@ -5166,32 +5258,56 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type WorkflowAgentOutcome = \'completed\' | \'failed\' | \'cancelled\';',
   },
   {
+    name: 'WorkflowAttemptId',
+    declaration: 'export type WorkflowAttemptId = Branded<\'WorkflowAttemptId\'>;',
+  },
+  {
+    name: 'WorkflowCommand',
+    declaration: 'export type WorkflowCommand = {\n    kind: \'create\';\n    workspaceId: WorkspaceId;\n    name: string;\n    description: string;\n} | {\n    kind: \'save\';\n    id: WorkflowId;\n    expectedRevision: number;\n    name: string;\n    definition: WorkflowDefinition;\n} | {\n    kind: \'publish\';\n    id: WorkflowId;\n    expectedRevision: number;\n} | {\n    kind: \'archive\';\n    id: WorkflowId;\n    expectedRevision: number;\n    archived: boolean;\n} | {\n    kind: \'generate\';\n    id: WorkflowId;\n    expectedRevision: number;\n    description: string;\n} | {\n    kind: \'start\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n    inputs: Record<string, JsonValue>;\n    rerunOf?: WorkflowRunId;\n} | {\n    kind: \'verify\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n} | {\n    kind: \'cancel\';\n    runId: WorkflowRunId;\n} | {\n    kind: \'decide\';\n    runId: WorkflowRunId;\n    attemptId: WorkflowAttemptId;\n    approve: boolean;\n};',
+  },
+  {
     name: 'WorkflowComposition',
     declaration: 'export interface WorkflowComposition {\n    steps: WorkflowStep[];\n    finalOutputs: FinalOutputBinding[];\n}',
+  },
+  {
+    name: 'WorkflowDefinition',
+    declaration: 'export interface WorkflowDefinition {\n    requirement: RequirementSpec;\n    nodes: WorkflowNode[];\n    finalOutputs: FinalOutputBinding[];\n    positions: Record<string, {\n        x: number;\n        y: number;\n    }>;\n}',
+  },
+  {
+    name: 'WorkflowDocument',
+    declaration: 'export interface WorkflowDocument {\n    id: WorkflowId;\n    workspaceId: WorkspaceId;\n    name: string;\n    revision: number;\n    createdAt: number;\n    updatedAt: number;\n    archived: boolean;\n    draft: WorkflowDefinition;\n    versions: WorkflowVersion[];\n}',
+  },
+  {
+    name: 'WorkflowId',
+    declaration: 'export type WorkflowId = Branded<\'WorkflowId\'>;',
   },
   {
     name: 'WorkflowMeta',
     declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
   },
   {
+    name: 'WorkflowNode',
+    declaration: 'export type WorkflowNode = WorkflowStep & ({\n    kind: \'agent\';\n    preset: string;\n} | {\n    kind: \'approval\';\n    preset: string;\n});',
+  },
+  {
+    name: 'WorkflowOperation',
+    declaration: 'export interface WorkflowOperation {\n    id: WorkflowOperationId;\n    workflowId: WorkflowId;\n    revision: number;\n    status: \'running\' | \'succeeded\' | \'failed\' | \'interrupted\';\n    description: string;\n    candidate?: WorkflowDefinition;\n    error?: string;\n}',
+  },
+  {
+    name: 'WorkflowOperationId',
+    declaration: 'export type WorkflowOperationId = Branded<\'WorkflowOperationId\'>;',
+  },
+  {
     name: 'WorkflowPhase',
     declaration: 'export interface WorkflowPhase {\n    title: string;\n    detail?: string;\n    provider?: string;\n    model?: string;\n}',
   },
   {
-    name: 'WorkflowResult',
-    declaration: 'export interface WorkflowResult {\n    value: unknown;\n    stopReason: WorkflowStopReason;\n    error?: string;\n    agentsStarted: number;\n}',
+    name: 'WorkflowReceipt',
+    declaration: 'export interface WorkflowReceipt {\n    workflowId: WorkflowId;\n    revision?: number;\n    runIds?: WorkflowRunId[];\n    operationId?: WorkflowOperationId;\n}',
   },
   {
     name: 'WorkflowResultInfo',
     declaration: 'export interface WorkflowResultInfo {\n    stopReason: WorkflowStopReason;\n    error?: string;\n    agentsStarted: number;\n}',
-  },
-  {
-    name: 'WorkflowRun',
-    declaration: 'export interface WorkflowRun {\n    readonly id: WorkflowRunId;\n    readonly meta: WorkflowMeta;\n    readonly result: Promise<WorkflowResult>;\n    cancel(reason?: string): void;\n    dispose(): Promise<void>;\n}',
-  },
-  {
-    name: 'WorkflowRunId',
-    declaration: 'export type WorkflowRunId = Branded<\'WorkflowRunId\'>;',
   },
   {
     name: 'WorkflowRunInfo',
@@ -5208,6 +5324,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowStopReason',
     declaration: 'export type WorkflowStopReason = \'completed\' | \'cancelled\' | \'error\';',
+  },
+  {
+    name: 'WorkflowValidation',
+    declaration: 'export interface WorkflowValidation {\n    valid: boolean;\n    issues: string[];\n}',
+  },
+  {
+    name: 'WorkflowVersion',
+    declaration: 'export interface WorkflowVersion {\n    id: WorkflowVersionId;\n    number: number;\n    revision: number;\n    createdAt: number;\n    definition: WorkflowDefinition;\n}',
+  },
+  {
+    name: 'WorkflowVersionId',
+    declaration: 'export type WorkflowVersionId = Branded<\'WorkflowVersionId\'>;',
+  },
+  {
+    name: 'WorkflowWorkbenchSnapshot',
+    declaration: 'export interface WorkflowWorkbenchSnapshot {\n    failure?: string;\n    workflows: WorkflowDocument[];\n    runs: WorkflowRun[];\n    operations: WorkflowOperation[];\n    presets: string[];\n    latestRuns: Pick<WorkflowRun, \'id\' | \'workflowId\' | \'status\' | \'mode\' | \'createdAt\' | \'updatedAt\'>[];\n}',
   },
 ]
 

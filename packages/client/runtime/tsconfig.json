@@ -8,6 +8,7 @@
     "src"
   ],
   "references": [
+    { "path": "../../business/workbench-agent" },
     {
       "path": "../../attachment/attachment"
     },
@@ -55,6 +56,9 @@
     },
     {
       "path": "../../api/remotes/tsconfig.client.json"
+    },
+    {
+      "path": "../../business/business-workflow"
     }
   ],
   "exclude": [

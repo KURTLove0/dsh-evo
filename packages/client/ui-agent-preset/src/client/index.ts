@@ -1,14 +1,6 @@
 /**
- * Agent-preset surface plugin, browser half — four surfaces over one roster:
- * a General-settings row for the default preset, a chip on the new-session
- * screen for the session about to start, a read-only label in the session
- * header, and a settings section that manages the roster (copy, delete,
- * default, and the way into a preset's own files).
- *
- * A running session keeps the composition it began with (the host refuses to
- * adopt an existing session under a different preset). That is what splits
- * the choice from the display: the General row and the hero chip are both
- * before-the-fact, while the header only reports what a session already runs.
+ * Preset selection and management in settings, conversation chrome, and the
+ * settings editor. Presets configure plugin composition, independently of workbench agents.
  */
 
 import type { ConnectionHandle } from '@deepseek-ai/dsh-api-remotes/client'

@@ -137,6 +137,15 @@ afterEach(() => {
 })
 
 describe('AppFrame', () => {
+  it('opens registered pages in the main column and restores the conversation', () => {
+    const view = mountFrame()
+    act(() => { view.instance.actions.openPage('business-workflow') })
+    expect(view.getByTestId('center-content').closest('[hidden]')).not.toBeNull()
+    expect(view.slotCalls.some(call => call.key === 'shell.page')).toBe(true)
+    act(() => { view.instance.actions.closePage() })
+    expect(view.getByTestId('center-content').closest('[hidden]')).toBeNull()
+  })
+
   it('renders three tracks from store state', () => {
     const { frame } = mountFrame()
     expect(tracks(frame)).toEqual([280, 0])

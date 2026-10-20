@@ -1,0 +1,27 @@
+/** Check run identity and configuration ownership on committed storage events. */
+import type { Context } from '@deepseek-ai/cordis'
+import type { InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type {} from '@deepseek-ai/dsh-storage-domain'
+import type { AgentRun } from './types.ts'
+
+/** Companion identity. */
+export const name = 'workbench-agent-invariant'
+/** Invariant registration service. */
+export const inject = ['invariants']
+const install: InvariantInstaller = (ctx, fail) => {
+  ctx.on('domain/changed', (change) => {
+    if (change.domain !== 'workbench_agents' || change.table !== 'runs' || change.operation !== 'put') return
+    const run = change.value as AgentRun
+    if (run.id !== change.key) fail('Agent run key differs from its committed identity.')
+    if (run.definition !== undefined && run.definition.id !== run.agentId)
+      fail('Agent run captured another identity’s configuration.')
+    if (run.candidate !== undefined && (run.purpose !== 'design' || run.status !== 'completed'))
+      fail('Agent configuration candidate belongs to an incomplete or non-design execution.')
+  })
+}
+/**
+ * Register run identity and configuration-ownership checks.
+ * @param ctx - host context with invariant reporting.
+ * @returns installed registration disposer.
+ */
+export const apply = (ctx: Context): Promise<() => void> => Promise.resolve(ctx.invariants.register('@deepseek-ai/dsh-workbench-agent', install))

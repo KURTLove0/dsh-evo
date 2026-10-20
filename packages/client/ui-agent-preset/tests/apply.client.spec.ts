@@ -582,4 +582,11 @@ describe('ui-agent-preset apply', () => {
     const section = (slots.entries('settings.section')[0]!.inject as unknown as () => AgentPresetSectionInjected)()
     expect(section.startCreatorDraft).toBeUndefined()
   })
+  it('keeps preset management out of the independent agents page', async () => {
+    const { ctx, slots } = await bench()
+    declareRoot(slots)
+    await ctx.plugin({ inject: [...inject], apply }).await()
+    expect(slots.entries('shell.page')).toHaveLength(0)
+    expect(slots.entries('sidebar.session.action')).toHaveLength(0)
+  })
 })

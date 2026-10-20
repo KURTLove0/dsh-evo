@@ -1,0 +1,118 @@
+{
+  "id": "run-1",
+  "workflowId": "workflow-1",
+  "workspaceId": "workspace-1",
+  "version": {
+    "id": "version-1",
+    "number": 1,
+    "revision": 2,
+    "createdAt": 1,
+    "definition": {
+      "requirement": {
+        "summary": "Review incoming leads",
+        "objectives": [
+          {
+            "id": "review",
+            "statement": "Review the leads"
+          }
+        ],
+        "inputs": [
+          {
+            "name": "leads",
+            "description": "Incoming leads"
+          }
+        ],
+        "outputs": [
+          {
+            "name": "reviewed",
+            "description": "Reviewed leads"
+          }
+        ],
+        "constraints": [],
+        "acceptanceCases": [
+          {
+            "name": "sample",
+            "given": {
+              "leads": [
+                "Alice"
+              ]
+            },
+            "expect": {
+              "kind": "nonEmpty"
+            }
+          }
+        ]
+      },
+      "nodes": [
+        {
+          "id": "review",
+          "kind": "approval",
+          "title": "Review leads",
+          "instruction": "Approve these leads",
+          "preset": "standard",
+          "dependsOn": [],
+          "inputs": [
+            {
+              "name": "leads",
+              "source": {
+                "kind": "requirement",
+                "field": "leads"
+              }
+            }
+          ],
+          "objectives": [
+            "review"
+          ]
+        }
+      ],
+      "finalOutputs": [
+        {
+          "name": "reviewed",
+          "source": {
+            "kind": "step",
+            "step": "review"
+          }
+        }
+      ],
+      "positions": {}
+    }
+  },
+  "sessionId": "checkpoint-session",
+  "mode": "execution",
+  "execution": {
+    "provider": "mock",
+    "model": "mock",
+    "subagentProvider": "spawn"
+  },
+  "inputs": {
+    "leads": [
+      "Alice"
+    ]
+  },
+  "status": "waiting",
+  "seq": 2,
+  "createdAt": 1,
+  "updatedAt": 2,
+  "attempts": [
+    {
+      "id": "attempt-1",
+      "nodeId": "review",
+      "status": "waiting",
+      "inputs": {
+        "leads": [
+          "Alice"
+        ]
+      },
+      "sources": {
+        "leads": {
+          "kind": "requirement",
+          "field": "leads"
+        }
+      },
+      "preset": "standard",
+      "cwd": "/workspace",
+      "startedAt": 2
+    }
+  ],
+  "outputs": {}
+}

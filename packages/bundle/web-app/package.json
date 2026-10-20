@@ -117,7 +117,10 @@
     "@deepseek-ai/dsh-workspace": "workspace:^",
     "@deepseek-ai/schemastery": "workspace:^",
     "commander": "^15.0.0",
-    "open": "^11.0.0"
+    "open": "^11.0.0",
+    "@deepseek-ai/dsh-business-workflow-local": "workspace:^",
+    "@deepseek-ai/dsh-workbench-agent": "workspace:^",
+    "@deepseek-ai/dsh-client-ui-workbench-agent": "workspace:^"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "workspace:^"

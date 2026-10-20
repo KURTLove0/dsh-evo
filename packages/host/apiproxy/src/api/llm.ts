@@ -43,8 +43,37 @@ export interface ConfigurableProviderView {
   present?: boolean
 }
 
+/** A connected dsh deployment and its last validated directory. */
+export interface RuntimePeerView {
+  /** Canonical HTTP origin used to reach the deployment. */
+  url: string
+  /** User-assigned machine label. */
+  name: string
+  /** Remote version, absent when the connection failed. */
+  version?: string
+  /** Remote host working directory, absent when the connection failed. */
+  cwd?: string
+  /** Active and configured remote provider routes. */
+  providers: ConfigurableProviderView[]
+  /** Models returned by the remote deployment. */
+  groups: ModelProviderGroup[]
+  /** Provider-specific discovery failures. */
+  failures: ModelCatalogFailure[]
+  /** Connection failure, distinct from a provider catalog failure. */
+  error?: string
+}
+
 /** Llm-domain unary methods (the map keys llm.* of RpcMethodMap). */
 export interface LlmApi {
+  /**
+   * Probe saved remote dsh deployments, or one draft HTTP origin. Only the
+   * trusted local configuration client may request a draft connection.
+   * @param request - optional draft origin; omission reads saved peers.
+   * @param signal - caller cancellation.
+   * @returns validated remote directories, retaining unreachable peers with errors.
+   */
+  runtimePeers(request: RpcRequest<{ url?: string }>, signal?: AbortSignal): Promise<RpcResponse<{ peers: RuntimePeerView[] }>>
+
   /**
    * List every configurable provider with its live/dormant state, in
    * directory declaration order. Routes registered outside the directory

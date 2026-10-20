@@ -1,5 +1,9 @@
 - navigation "Workbench":
   - heading "Workbench" [level=2]
+  - button "Agents":
+    - img
+    - text: Agents
+    - img
   - button "Business workflow":
     - img
     - text: Business workflow

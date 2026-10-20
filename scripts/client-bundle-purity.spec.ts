@@ -81,6 +81,13 @@ describe('client bundle purity gate', () => {
     expect(resolveId('@deepseek-ai/dsh-brand')).toBeNull()
   })
 
+  it('inlines the workflow definition parser without admitting host services or adjacent subpaths', () => {
+    expect(resolveId('@deepseek-ai/dsh-business-workflow/definition')).toBeNull()
+    expect(() => resolveId('@deepseek-ai/dsh-business-workflow')).toThrow(/purity/)
+    expect(() => resolveId('@deepseek-ai/dsh-business-workflow/workbench')).toThrow(/purity/)
+    expect(() => resolveId('@deepseek-ai/dsh-business-workflow/definition/nested')).toThrow(/purity/)
+  })
+
   it('lets exact generated Remote contributions inline without admitting their package implementation', () => {
     expect(resolveId('@deepseek-ai/dsh-goal/remote')).toBeNull()
     expect(() => resolveId('@deepseek-ai/dsh-goal')).toThrow(/purity/)

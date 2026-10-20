@@ -34,50 +34,46 @@ describe('web e2e: sidebar workbench modules', () => {
     await scaffold?.close()
   })
 
-  it('shows the workbench module and opens its panel from the sidebar', async () => {
+  it('opens workbench pages from the sidebar and returns to the conversation', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules'))
     const nav = page.getByRole('navigation', { name: 'Workbench' })
     const workflow = nav.getByRole('button', { name: 'Business workflow' })
     await workflow.waitFor()
-    // The Workbench carries the business-workflow module alone: the runtimes
-    // module row lives under the sidebar's config nav, not here.
-    expect(await nav.getByRole('button').count()).toBe(1)
+    // Runtime configuration remains separate from the workbench modules.
+    expect(await nav.getByRole('button').count()).toBe(2)
+    await nav.getByRole('button', { name: 'Agents', exact: true }).waitFor()
     const snapshot = await captureStableAria(page, 'nav[aria-label="Workbench"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(NAV_EXPECTED, snapshot, MODE)
 
     await workflow.click()
-    const workflowPanel = page.getByRole('dialog', { name: 'Business workflow' })
-    await workflowPanel.waitFor()
-    await workflowPanel.getByRole('heading', { name: 'Business workflow' }).waitFor()
-    const requirement = workflowPanel.getByRole('textbox', { name: 'New workflow' })
-    await expect.poll(() => requirement.evaluate(element => element === document.activeElement)).toBe(true)
-    await workflowPanel.getByText('No business workflow in this session yet — start one above.').waitFor()
-    await requirement.press('Escape')
-    await workflowPanel.waitFor({ state: 'detached' })
-    await expect.poll(() => workflow.evaluate(element => element === document.activeElement)).toBe(true)
+    const workflowPage = page.getByRole('main', { name: 'Business workflow', exact: true })
+    await workflowPage.waitFor()
+    await workflowPage.getByRole('heading', { name: 'Business workflow', exact: true }).waitFor()
+    await nav.getByRole('button', { name: 'Agents', exact: true }).click()
+    const agentsPage = page.getByRole('main', { name: 'Agents', exact: true })
+    await agentsPage.getByRole('heading', { name: /^Agents/ }).waitFor()
+    await workflowPage.waitFor({ state: 'detached' })
+    await agentsPage.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+    await agentsPage.waitFor({ state: 'detached' })
 
-    await workflow.click()
-    await workflowPanel.getByRole('button', { name: 'Close business workflow' }).click()
-    await workflowPanel.waitFor({ state: 'detached' })
-    await expect.poll(() => workflow.evaluate(element => element === document.activeElement)).toBe(true)
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
 
-  it('keeps the module panel inside narrow viewports without horizontal overflow', async () => {
+  it('keeps the agent page inside narrow viewports without horizontal overflow', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules-narrow'))
     for (const width of [320, 375, 414, 768]) {
       await page.setViewportSize({ width, height: 760 })
       const nav = page.getByRole('navigation', { name: 'Workbench' })
-      const workflow = nav.getByRole('button', { name: 'Business workflow' })
-      await workflow.click()
-      const panel = page.getByRole('dialog', { name: 'Business workflow' })
+      const agents = nav.getByRole('button', { name: 'Agents', exact: true })
+      await agents.click()
+      const panel = page.getByRole('main', { name: 'Agents', exact: true })
       await panel.waitFor()
       const bounds = await panel.boundingBox()
       expect(bounds).not.toBeNull()
       expect(bounds!.x).toBeGreaterThanOrEqual(0)
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
       expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-      await page.keyboard.press('Escape')
+      await panel.getByRole('button', { name: 'Back to conversation', exact: true }).click()
       await panel.waitFor({ state: 'detached' })
     }
   }, 60_000)

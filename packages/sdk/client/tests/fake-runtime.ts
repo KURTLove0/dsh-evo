@@ -44,7 +44,7 @@
  * - `FAKE_RECORD_INIT`: append each `initialize` params JSON to this file (handshake probe).
  */
 
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
 
@@ -95,6 +95,11 @@ function runTurn(sessionId: string): void {
     return
   }
   event(sessionId, 'turn/start', { turn: 0 })
+  if (env.FAKE_WORKFLOW_CHECKPOINT !== undefined) {
+    const checkpoint: unknown = JSON.parse(readFileSync(new URL('./fixtures/business-workflow-checkpoint.json', import.meta.url), 'utf8'))
+    if (checkpoint === null || typeof checkpoint !== 'object') throw new Error('Workflow checkpoint fixture must be an object.')
+    event(sessionId, 'business-workflow/checkpoint', checkpoint)
+  }
   event(sessionId, 'assistant/chunk', { turn: 0, step: 0, chunk: { type: 'text-delta', index: 0, text } })
   if (env.FAKE_MALFORMED_MESSAGE !== undefined) {
     event(sessionId, 'assistant/message', {
