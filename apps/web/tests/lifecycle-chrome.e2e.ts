@@ -119,6 +119,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
       // mean the submitted text is gone yet: under load the capture can catch
       // a textbox still holding `/plan`.
       await expect.poll(() => input.inputValue(), { timeout: 10_000 }).toBe('')
+      await activePage.getByRole('button', { name: 'Select model, current DeepSeek-V4-Flash', exact: true }).waitFor({ timeout: 10000 })
       const planSnapshot = await captureStableAria(activePage, '[class*="frame"]', activeScaffold.workspaceCwd)
       await compareOrRefreshGolden(PLAN_ACTIVE_EXPECTED, planSnapshot, MODE)
       const planStyle = await planButton.evaluate((element) => {
@@ -169,6 +170,7 @@ describe('web e2e: lifecycle & chrome (workspace flow / reload / dark mode)', ()
     if (MODE !== 'record') {
       // Golden of the hero's stable waiting state (captured before any send;
       // the conversation-region goldens belong to the other scenarios).
+      await page.getByRole('button', { name: 'Select model, current DeepSeek-V4-Flash', exact: true }).waitFor({ timeout: 10000 })
       const snapshot = await captureStableAria(page, '[class*="frame"]', scaffold.workspaceCwd)
       await compareOrRefreshGolden(HERO_EXPECTED, snapshot, MODE)
     }

@@ -1,10 +1,31 @@
 - navigation "Workbench":
   - heading "Workbench" [level=2]
+  - button "Work Center":
+    - img
+    - text: Work Center
+  - button "Templates":
+    - img
+    - text: Templates
   - button "Agents":
     - img
     - text: Agents
     - img
+  - button "Project artifacts":
+    - img
+    - text: Project artifacts
   - button "Business workflow":
     - img
     - text: Business workflow
     - img
+  - button "Work triggers":
+    - img
+    - text: Work triggers
+  - button "Remote execution":
+    - img
+    - text: Remote execution
+  - button "Knowledge directory":
+    - img
+    - text: Knowledge directory
+  - button "Archived sessions":
+    - img
+    - text: Archived sessions

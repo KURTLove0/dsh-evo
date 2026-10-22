@@ -2855,6 +2855,22 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
         }
         return ok(request, { archivedSessionIds: [...ctx.workspaceRegistry.archivedSessionIds] })
       },
+      async restoreSession(request) {
+        const { sessionId } = request.payload
+        try {
+          await ctx.workspaceRegistry.restoreSession(sessionId)
+        } catch (error: unknown) {
+          // Only the registry's unknown-session rejection is the business
+          // code; storage/durability failures propagate as internal errors.
+          if (!(error instanceof WorkspaceUnknownSessionError)) throw error
+          return err(request, {
+            code: 'session-not-found',
+            message: error.message,
+            details: { sessionId },
+          })
+        }
+        return ok(request, { archivedSessionIds: [...ctx.workspaceRegistry.archivedSessionIds] })
+      },
     },
 
     host: {

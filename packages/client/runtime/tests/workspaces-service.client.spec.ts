@@ -612,3 +612,37 @@ describe('startInitialSelection', () => {
     stop()
   })
 })
+
+
+describe('archive restoration observations', () => {
+  it('serializes local membership writes and lets a newer Host frame outrank an older response', async () => {
+    const api = new FakeApiClient(), manager = new WorkspaceManager(api)
+    const gate = deferred<Awaited<ReturnType<FakeApiClient['onWorkspaceRestoreSession']>>>()
+    api.onWorkspaceRestoreSession = () => gate.promise
+    const restore = manager.restoreSession(sid('old'))
+    const archive = manager.archiveSession(sid('new'))
+    await Promise.resolve()
+    expect(api.callsOf('workspace.archiveSession')).toHaveLength(0)
+    manager.handleHostEnvelope({ rpcId: 'newer' as never, payload: { type: 'host/archived-sessions-changed', archivedSessionIds: [sid('remote')] } })
+    gate.resolve(ok({ archivedSessionIds: [] }))
+    expect(await restore).toMatchObject({ ok: true })
+    expect(manager.getSnapshot().archivedSessionIds).toEqual(['remote'])
+    await archive
+    expect(manager.getSnapshot().archivedSessionIds).toEqual(['new'])
+  })
+  it('retains last-known membership on restore failure and permits a later retry', async () => {
+    const ctx = new Context(), api = new FakeApiClient()
+    const sessions = new SessionRuntime(ctx, api, fakeRemote()), workspaces = new WorkspaceRuntime(ctx, api, sessions)
+    workspaces.handleHostEnvelope({ rpcId: 'baseline' as never, payload: { type: 'host/archived-sessions-changed', archivedSessionIds: [sid('old')] } })
+    api.onWorkspaceRestoreSession = async () => err({ code: 'session-not-found', message: 'Missing original session', details: { sessionId: sid('old') } })
+    await expect(workspaces.restoreSession(sid('old'))).rejects.toThrow('session-not-found')
+    expect(workspaces.list.getSnapshot().archivedSessionIds).toEqual(['old'])
+    api.onWorkspaceRestoreSession = async () => { throw new Error('Disconnected') }
+    await expect(workspaces.restoreSession(sid('old'))).rejects.toThrow('Disconnected')
+    api.onWorkspaceRestoreSession = async () => ok({ archivedSessionIds: [] })
+    await workspaces.restoreSession(sid('old'))
+    expect(workspaces.list.getSnapshot().archivedSessionIds).toEqual([])
+    expect(sessions.list.getSnapshot().current).toBeUndefined()
+    expect(api.callsOf('session.prompt')).toHaveLength(0)
+  })
+})

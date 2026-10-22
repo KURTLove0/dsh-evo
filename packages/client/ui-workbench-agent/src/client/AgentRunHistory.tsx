@@ -19,6 +19,7 @@ interface HistoryProps {
   t: (key: AgentKey) => string
   search: (query: string) => void
   filter: (status: HistoryProps['status']) => void
+  retry: (run: AgentRun) => void
   command: (command: AgentCommand) => void
   openSession: (id: SessionId) => void
   review: (definition: AgentDefinition) => void
@@ -31,7 +32,7 @@ interface HistoryProps {
  */
 export function AgentRunHistory({
   runs, limit, kind, filterKind, workspaces, sessions, query, status, busy, archived, runtimeAvailable, t,
-  search, filter, command, openSession, review,
+  search, filter, command, openSession, review, retry,
 }: HistoryProps) {
   const needle = query.trim().toLocaleLowerCase()
   const visible = runs.filter(run => (kind === 'all' || (run.purpose === 'design' ? 'design' : 'task') === kind) && (status === 'all' || run.status === status)
@@ -88,7 +89,7 @@ export function AgentRunHistory({
           {candidate === undefined ? null : <Button variant="outline" disabled={busy || archived} onClick={() => { review(candidate) }}>{t('reviewCandidate')}</Button>}
           {sessions.has(run.sessionId) ? <Button variant="outline" onClick={() => { openSession(run.sessionId) }}>{t('transcript')}</Button> : null}
           {run.status === 'queued' || run.status === 'running' ? <Button variant="outline" disabled={busy} onClick={() => { command({ kind: 'stop', runId: run.id }) }}>{t('stop')}</Button> : null}
-          {['failed', 'cancelled', 'interrupted'].includes(run.status) ? <Button variant="outline" disabled={busy || archived || !runtimeAvailable} onClick={() => { command({ kind: 'retry', runId: run.id }) }}>{t('retry')}</Button> : null}
+          {['failed', 'cancelled', 'interrupted'].includes(run.status) ? <Button variant="outline" disabled={busy || archived || !runtimeAvailable} onClick={() => { retry(run) }}>{t('retry')}</Button> : null}
         </div>
       </article>})}
   </section>

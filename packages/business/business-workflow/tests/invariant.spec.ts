@@ -189,6 +189,26 @@ describe('workflow run checkpoint invariants', () => {
       seq: 1,
       time: 0,
     })
+    ctx.emit('session/event', session, { type: 'business-workflow/checkpoint',
+      data: { ...first, seq: 3, status: 'succeeded', outputs: { result: 'Delivered' }, attempts: [{ ...first.attempts[0]!, status: 'succeeded' }] },
+      seq: 2, time: 0 })
+    ctx.emit('session/event', session, { type: 'session/info', data: { title: 'Other event' }, seq: 3, time: 0 } as never)
+  })
+  it('preserves complete retry identity across checkpoints and rejects conflicting ownership', async () => {
+    const ctx = await setup(), session = Session.create(SessionId('audit'))
+    const first = { ...run(), retryRequest: 'retry' as never, rerunOf: 'source' as never }
+    const emit = (data: WorkflowRun) => { ctx.emit('session/event', session, { type: 'business-workflow/checkpoint', data, seq: data.seq, time: 0 }) }
+    emit(first)
+    expect(() => { emit({ ...first, seq: 2, rerunOf: undefined } as never) }).toThrow('lacks a distinct source')
+    expect(() => { emit({ ...first, seq: 2, rerunOf: first.id }) }).toThrow('lacks a distinct source')
+    expect(() => { emit({ ...first, seq: 2, requestId: 'ordinary' as never }) }).toThrow('conflicts with ordinary')
+    expect(() => { emit({ ...first, seq: 2, retryRequest: 'other' as never }) }).toThrow('changes its retry')
+    expect(() => { emit({ ...first, seq: 2, rerunOf: 'other' as never }) }).toThrow('changes its retry')
+    emit({ ...first, seq: 2 })
+    const ordinary = await setup()
+    ordinary.emit('session/event', session, { type: 'business-workflow/checkpoint', data: run(), seq: 0, time: 0 })
+    expect(() => { ordinary.emit('session/event', session, { type: 'business-workflow/checkpoint',
+      data: { ...run(), seq: 2, requestId: 'changed' as never }, seq: 1, time: 0 }) }).toThrow('changes its retry')
   })
   it.each(['session', 'version', 'sequence', 'nodes', 'outputs'])(
     'rejects a checkpoint with inconsistent %s',

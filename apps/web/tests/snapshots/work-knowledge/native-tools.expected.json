@@ -1,0 +1,59 @@
+{
+  "first": [
+    {
+      "isError": false,
+      "value": {
+        "more": false,
+        "hits": [
+          {
+            "citation": {
+              "sourceId": "project-material",
+              "version": 1,
+              "textSha256": "039b8d576230f4bde83dc409daff0c9f25aaef9a2b1e7992ef6d51dcf56a54f5",
+              "startLine": 2,
+              "endLine": 2
+            },
+            "path": "source.md",
+            "text": "中文资料：原始版本"
+          }
+        ],
+        "current": [
+          {
+            "sourceId": "project-material",
+            "state": "different",
+            "textSha256": "fc85911420bb4dcd42bdf6d286cec9e77dfd5d692716f158df9d53c1fd2f7f6a",
+            "observedAt": 0
+          }
+        ],
+        "excluded": [],
+        "observedAt": 0
+      }
+    },
+    {
+      "isError": false,
+      "value": {
+        "citation": {
+          "sourceId": "project-material",
+          "version": 1,
+          "textSha256": "039b8d576230f4bde83dc409daff0c9f25aaef9a2b1e7992ef6d51dcf56a54f5",
+          "startLine": 2,
+          "endLine": 3
+        },
+        "path": "source.md",
+        "text": "中文资料：原始版本\nconst answer = 42;",
+        "current": {
+          "sourceId": "project-material",
+          "state": "different",
+          "textSha256": "fc85911420bb4dcd42bdf6d286cec9e77dfd5d692716f158df9d53c1fd2f7f6a",
+          "observedAt": 0
+        }
+      }
+    }
+  ],
+  "denied": [
+    {
+      "isError": true,
+      "content": "Error: Knowledge source is disabled."
+    }
+  ]
+}

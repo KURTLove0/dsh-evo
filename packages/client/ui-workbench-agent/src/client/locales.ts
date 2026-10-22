@@ -1,5 +1,11 @@
 /** Workbench-agent UI copy, separate from plugin-composition preset copy. */
 export const zh = {
+  fullRetry: '完整重试任务', retryWarning: '这会使用当前执行者配置创建新的完整执行，可能重复此前已发生的外部操作。不会从失败步骤继续。',
+  pendingRetry: '查看待确认重试', retryOriginal: '原执行配置', retryCurrent: '当前执行者配置', retryNotCaptured: '没有已捕获的配置记录。',
+  retryConnections: '连接参数值不在此展开；请在智能体配置中核对 MCP 连接。', retryPending: '本次请求已经提交过。再次操作保留同一标识，不会重复创建已确认的执行。',
+  retryChanged: '执行者配置或选择已变化。原请求的版本保持不变；可恢复同一请求，或明确放弃后重新检查。',
+  recoverRetry: '恢复原重试请求', confirmRetry: '确认完整重试', closeRetry: '关闭并保留请求', discardRetry: '放弃此请求',
+
   execution: '运行方式', executionHint: '选择智能体使用的本地运行时，也可以覆盖运行时的默认模型。',
   chooseRuntime: '选择本地运行时', chooseModel: '选择模型', runtimeDefault: '默认（运行时）', localRuntime: '本地服务',
   localRuntimeHint: '与“运行时”中已接入的本地服务一致。', runtimeModelHint: '模型仅来自所选运行时，不会修改系统默认模型。',
@@ -45,6 +51,13 @@ export const zh = {
 export type AgentKey = keyof typeof zh
 /** English copy for the same supported operations. */
 export const en: Record<AgentKey, string> = {
+  fullRetry: 'Retry the complete task', retryWarning: 'This creates a complete new run using current executor configuration and may repeat external effects. It does not resume a failed step.',
+  pendingRetry: 'Review pending retry', retryOriginal: 'Original execution configuration', retryCurrent: 'Current executor configuration', retryNotCaptured: 'No captured configuration is available.',
+  retryConnections: 'Connection values are not expanded here. Inspect MCP connection settings in agent configuration.',
+  retryPending: 'This request has already been submitted. Further attempts retain its identity and recover an acknowledged run without duplication.',
+  retryChanged: 'Executor configuration or selection changed. The original request revision is retained; recover that request or explicitly discard it before checking again.',
+  recoverRetry: 'Recover original retry request', confirmRetry: 'Confirm full retry', closeRetry: 'Close and retain request', discardRetry: 'Discard this request',
+
   execution: 'Execution', executionHint: 'Choose a local runtime and optionally override its default model.',
   chooseRuntime: 'Choose a local runtime', chooseModel: 'Choose a model', runtimeDefault: 'Default (runtime)', localRuntime: 'Local service',
   localRuntimeHint: 'Uses the local services configured in Runtimes.', runtimeModelHint: 'Models belong to the selected runtime. The system default stays unchanged.',

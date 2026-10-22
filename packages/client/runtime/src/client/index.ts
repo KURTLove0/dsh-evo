@@ -237,3 +237,25 @@ export type { WorkflowClientSnapshot, WorkflowPort } from './workflows/manager.t
 
 export { AgentDirectoryManager } from './workbench-agents/manager.ts'
 export type { AgentDirectoryPort, AgentDirectorySnapshot } from './workbench-agents/manager.ts'
+export { WorkCenterManager } from './work-center/manager.ts'
+export type { WorkCenterPort, WorkCenterSnapshot } from './work-center/manager.ts'
+
+export { TemplateManager } from './templates/manager.ts'
+export type { TemplatePort, TemplateSnapshot } from './templates/manager.ts'
+
+export { HealthManager } from './health/manager.ts'
+export type { HealthPort, HealthSnapshot } from './health/manager.ts'
+
+export { WorkStatisticsManager } from './statistics/manager.ts'
+export type { WorkStatisticsPort, WorkStatisticsSnapshot } from './statistics/manager.ts'
+
+export { ArtifactManager } from './artifacts/manager.ts'
+export type { ArtifactPort, ArtifactSnapshot, ArtifactSelection } from './artifacts/manager.ts'
+
+export { TriggerManager } from './triggers/manager.ts'
+export type { TriggerPort, TriggerSnapshot } from './triggers/manager.ts'
+export { RemoteWorkManager } from './remote-work/manager.ts'
+export type { RemoteWorkPort, RemoteWorkSnapshot, RemoteObservation } from './remote-work/manager.ts'
+
+export { KnowledgeManager } from './knowledge/manager.ts'
+export type { KnowledgePort, KnowledgeSnapshot, KnowledgeWrite, KnowledgeAcknowledgment } from './knowledge/manager.ts'

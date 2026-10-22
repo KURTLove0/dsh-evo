@@ -14,6 +14,10 @@ This package contains no transport or Host service discovery logic. Its Client f
 
 The workspace workflow contribution mounts `workflowGateway/snapshot`, `workflowGateway/command`, and `workflowGateway/validate` without an Agent lookup. Its change notification refreshes the independent directory and selected run history; `workbench-types` remains the browser-safe data outlet.
 
+The [work trigger](../../business/work-triggers/README.md) contribution mounts `workTriggerGateway` for bounded metadata, original-target preparation, and explicit controls. Its forwarded `work-trigger/changed` event invalidates retained browser reads; a connection reset does not authorize another command.
+
+The [remote work](../../business/work-remote/README.md) contribution mounts `remoteWorkGateway` for configured peer descriptions and explicit authenticated operations. Calling input pins expected Host/principal; a configured peer id alone cannot redirect retained operations.
+
 ## Forwarded Host events
 
 `src/remote-events.ts` holds `API_REMOTE_FORWARDED_EVENTS`, the allowlist of Host cordis events this application forwards to consumers verbatim — no projection, no redaction, no renaming — and therefore the legal key set of `ctx.remote.$on`; the type-only `src/types.ts` derives its selection face. Forwarding one more event is an entry in that array and nothing else: the type projection, the consumer key face, and the Host forwarding loop all derive from it.
@@ -29,6 +33,8 @@ This package's root `tsconfig.json` is only a solution that references `tsconfig
 That exception is not just a `files` entry. The root `tsconfig.base.json` maps `@deepseek-ai/dsh-api-remotes/types` to `src/types.ts` — the source plane, like every other workspace subpath and unlike the generated `/remote` artifacts, which have no `paths` entry and resolve through `exports` to built output. Both faces therefore admit the same allowlist and type projection into their own programs and emit byte-identical `remote-events` and `types` outputs into `lib/types`; the `.tsbuildinfo` files stay independent. No gate enforces the faces' source-file disjointness — `scripts/project-reference-faces.ts` only checks that a reference into a split project names the matching face — so this paragraph records why the double listing is intentional.
 
 The package-local `clientBundle(..., { hostPhase: true })` makes Host tsdown bundle the Host entry and the later Client tsdown bundle only the browser entry. Ordinary Client plugins remain single Client projects and produce both their Node loader entry and browser bundle during Client tsdown; do not copy this package's split merely because a package has both `src/index.ts` and `src/client/index.ts`.
+
+The [project knowledge](../../business/work-knowledge/README.md) contribution mounts `workKnowledgeGateway` for metadata, explicit file grants/indexing, literal search, and exact line reads. Its provider checks current source access in each content executor; browser transport does not grant cross-workspace model authority.
 
 ## Model Experience
 

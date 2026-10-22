@@ -14,6 +14,10 @@
 
 工作空间工作流贡献挂载 `workflowGateway/snapshot`、`workflowGateway/command` 和 `workflowGateway/validate`，无需查询当前 Agent。变更通知刷新独立目录和选中运行历史，`workbench-types` 提供浏览器安全的数据类型。
 
+[工作触发](../../business/work-triggers/README.zh.md) 贡献挂载 `workTriggerGateway`，提供有界元数据、原目标准备及显式控制。转发的 `work-trigger/changed` 事件使浏览器保留的读取过期；连接重置不授权再次执行命令。
+
+[远程执行](../../business/work-remote/README.zh.md) 贡献挂载 `remoteWorkGateway`，提供配置机器描述及显式认证操作。调用输入固定预期 Host／主体，仅凭配置机器 id 不能重定向保留的操作。
+
 ## 转发的 Host 事件
 
 `src/remote-events.ts` 持有 `API_REMOTE_FORWARDED_EVENTS`——本应用原样转发给消费端的 Host cordis 事件名单（无投影、无脱敏、无改名），它同时就是 `ctx.remote.$on` 的合法键集；只含类型的 `src/types.ts` 派生其选择面。多转发一个事件只需在该数组里加一行：类型投影、消费端键面与 Host 转发循环全部由它派生。
@@ -30,6 +34,8 @@
 
 
 包内 `clientBundle(..., { hostPhase: true })` 让 Host tsdown 打包 Host 入口，让后续 Client tsdown 只打包 browser 入口。普通 Client 插件仍使用单一 Client project，并在 Client tsdown 阶段一起生成 Node loader 入口和 browser bundle；不得因一个包同时存在 `src/index.ts` 与 `src/client/index.ts` 就复制本包的拆分。
+
+[项目知识](../../business/work-knowledge/README.zh.md) 贡献挂载 `workKnowledgeGateway`，提供元数据、显式文件授权/索引、字面检索和精确行读取。Provider 在各内容执行器检查当前来源访问；浏览器传输不会授予模型跨工作空间权限。
 
 ## 模型体验
 

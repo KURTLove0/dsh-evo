@@ -1,16 +1,7 @@
-/**
- * Statistics settings section: whole-host usage figures aggregated from one
- * `session.list` call — three read-only metric cards (sessions, token usage,
- * cost). Session and started counts come from the listing rows; token usage
- * sums each row's `tokenUsage` projection baseline, the same durable
- * four-bucket accounting the conversation stats strip shows per session. The
- * cost card is an explicit no-fact placeholder: the host records no pricing,
- * so no number is invented. The page never writes; session listing carries
- * no push event, so it loads on mount and refreshes on the user's gesture.
- */
+/** Statistics shell composing execution cohorts and an independent whole-host session summary. */
 
 import type { ReactNode } from 'react'
-import type { InjectFace } from '@deepseek-ai/dsh-client-ui-slots'
+import type { InjectFace, PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { TokenUsageProjection } from '@deepseek-ai/dsh-token-meter/client'
 import type { StatsSettingsStore } from './store.ts'
 import type { en } from './locales.ts'
@@ -35,7 +26,7 @@ export interface StatsSectionInjected {
  * Props delivered by the slot outlet: the inject face spread flat (the
  * renderer erases the share boundary at the render call).
  */
-export type StatsSectionProps = Partial<InjectFace<StatsSectionInjected>>
+export type StatsSectionProps = Partial<InjectFace<StatsSectionInjected> & PropsRenderSlots<'settings.stats.runs'>>
 
 type StatsSectionFace = InjectFace<StatsSectionInjected>
 
@@ -78,12 +69,12 @@ export function tokensDetailCopy(template: string, input: string, output: string
  * @returns the section, or null while the shell has not injected yet.
  */
 export function StatsSection(props: StatsSectionProps): ReactNode {
-  const { controller, useSnapshot, t } = props
-  if (controller === undefined || useSnapshot === undefined || t === undefined) return null
-  return <Loaded injected={{ controller, useSnapshot, t }} />
+  const { controller, useSnapshot, t, renderSlot } = props
+  if (controller === undefined || useSnapshot === undefined || t === undefined || renderSlot === undefined) return null
+  return <Loaded injected={{ controller, useSnapshot, t }} renderSlot={renderSlot} />
 }
 
-function Loaded({ injected }: { injected: StatsSectionFace }): ReactNode {
+function Loaded({ injected, renderSlot }: { injected: StatsSectionFace } & PropsRenderSlots<'settings.stats.runs'>): ReactNode {
   const { controller, t } = injected
   const state = injected.useSnapshot(snapshot => snapshot)
 
@@ -94,6 +85,7 @@ function Loaded({ injected }: { injected: StatsSectionFace }): ReactNode {
     return (
       <div className={styles['section']}>
         <h2 className={styles['title']}>{t('title')}</h2>
+        {renderSlot('settings.stats.runs', {})}
         <p className={styles['error']}>{`${t('loadFailed')}: ${errorText}`}</p>
         <button type="button" className={styles['secondaryButton']} onClick={() => { void controller.load() }}>
           {t('retry')}
@@ -106,6 +98,7 @@ function Loaded({ injected }: { injected: StatsSectionFace }): ReactNode {
     <div className={styles['section']}>
       <h2 className={styles['title']}>{t('title')}</h2>
       <p className={styles['intro']}>{t('intro')}</p>
+      {renderSlot('settings.stats.runs', {})}
       {state.status === 'idle' || state.status === 'loading'
         ? <p className={styles['empty']} role="status">{t('loading')}</p>
         : null}

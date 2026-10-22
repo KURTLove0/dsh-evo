@@ -46,6 +46,10 @@
     "./types": {
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
+    },
+    "./brief": {
+      "types": "./lib/types/brief.d.ts",
+      "default": "./lib/types/brief.js"
     }
   },
   "peerDependencies": {

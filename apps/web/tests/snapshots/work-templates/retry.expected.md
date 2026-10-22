@@ -1,0 +1,2 @@
+- paragraph: Retrying unchanged content keeps the original request. Discarding a retry does not undo a submitted operation.
+- button "Discard retry and refresh"

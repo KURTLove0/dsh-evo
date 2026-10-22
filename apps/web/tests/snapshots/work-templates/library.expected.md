@@ -1,0 +1,59 @@
+- main "Templates":
+  - paragraph: WORK / TEMPLATES
+  - heading "Templates" [level=1]
+  - paragraph: Reuse saved task content and published workflows with pinned source versions.
+  - button "Refresh"
+  - button "Open Work Center"
+  - status
+  - heading "Templates" [level=2]
+  - list:
+    - listitem:
+      - button "Reusable review Task · v2":
+        - strong: Reusable review
+        - text: Task · v2
+    - listitem:
+      - button "Approval template Workflow · v1" [pressed]:
+        - strong: Approval template
+        - text: Workflow · v1
+  - region "Template content":
+    - heading "Template content" [level=2]
+    - text: Content version
+    - combobox "Content version":
+      - option "1 · Approval template" [selected]
+    - button "Archive template"
+    - heading "Approval template" [level=3]
+    - paragraph: Approve report
+    - heading "Delivery objectives" [level=4]
+    - list:
+      - listitem: Confirm input
+    - heading "Input fields" [level=4]
+    - list:
+      - listitem: report · Input report
+    - heading "Execution steps" [level=4]
+    - list:
+      - listitem: Human review · Human confirmation
+    - group: Full definition (advanced)
+    - paragraph: This creates an editable draft. Inspect its configuration, then publish and explicitly start it.
+    - text: Copy workspace
+    - combobox "Copy workspace":
+      - option "—"
+      - option "{{workspace}}" [selected]
+    - text: Workflow copy name
+    - textbox "Workflow copy name": Independent review copy
+    - button "Create independent workflow draft"
+    - button "Open workflows"
+  - region "Save workflow template":
+    - heading "Save workflow template" [level=2]
+    - text: Published workflow
+    - combobox "Published workflow":
+      - option "—"
+      - option "Published source" [selected]
+      - option "Independent review copy"
+    - text: Published version
+    - combobox "Published version":
+      - option "—"
+      - option "1" [selected]
+    - text: Template name
+    - textbox "Template name"
+    - button "Save workflow template" [disabled]
+    - button "Save new version" [disabled]

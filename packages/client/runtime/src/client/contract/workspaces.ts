@@ -2,7 +2,7 @@
  * The outward workspaces-service face — what `ctx.workspaces` exposes to
  * feature packages and the renderer host, and therefore exactly what the
  * test runtime's workspaces double must implement. Wire-pump entry points
- * (handleHostEnvelope/handleConnected/refresh/startInitialSelection) stay on
+ * (handleHostEnvelope/handleConnected/startInitialSelection) stay on
  * the concrete class. Widening this interface is the explicit act of
  * widening what features may do to the workspaces domain.
  */
@@ -91,4 +91,14 @@ export interface IWorkspaces {
    * @param sessionId - session to archive.
    */
   archiveSession(sessionId: SessionId): Promise<void>
+  /**
+   * Restore archive membership without selecting or executing the session.
+   * @param sessionId - existing session to restore to its original account.
+   */
+  restoreSession(sessionId: SessionId): Promise<void>
+  /**
+   * Refresh workspace and archive observations, reusing a pending baseline read.
+   * @returns completion with failures exposed on the workspace list state.
+   */
+  refresh(): Promise<void>
 }

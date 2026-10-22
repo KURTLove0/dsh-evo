@@ -8,6 +8,8 @@ Status: implemented
 
 > 分工：本 RFC 定框架与约束（少变）；[docs/web-styling.md](../../../../docs/web-styling.zh.md) 是活规范（token 权威值、编码规范打勾清单、偏离记录，随实现演进）。改 token/加规则去那边；动框架本身才回这里（推翻须新 RFC）。
 
+[赛博工作台主题](../feature/2026-10-20-cyber-workbench-theme.zh.md)拥有应用的视觉基线；本文继续拥有样式框架与组件约束。
+
 ## Problem
 
 GUI 无设计师供给，样式由 agent 编写并 review；没有一套机器可检查的 token 体系与编码规范，颜色/圆角/动效会在组件间字面量漂移，暗色主题会长成组件内散落的条件分支。

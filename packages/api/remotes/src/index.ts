@@ -46,3 +46,17 @@ export function apply(): void {}
 export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'
 
 export type {} from '@deepseek-ai/dsh-workbench-agent'
+
+export type {} from '@deepseek-ai/dsh-work-center'
+export type {} from '@deepseek-ai/dsh-work-templates'
+
+export type {} from '@deepseek-ai/dsh-capability-health'
+
+export type {} from '@deepseek-ai/dsh-work-artifacts'
+export type {} from '@deepseek-ai/dsh-work-artifacts/types'
+
+export type {} from '@deepseek-ai/dsh-work-triggers'
+export type {} from '@deepseek-ai/dsh-work-triggers/types'
+
+export type {} from '@deepseek-ai/dsh-work-knowledge'
+export type {} from '@deepseek-ai/dsh-work-knowledge/types'

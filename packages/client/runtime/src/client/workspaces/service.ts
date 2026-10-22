@@ -301,6 +301,15 @@ export class WorkspaceRuntime implements IWorkspaces {
   }
 
   /**
+   * Restore a known session without changing its selection or accounting.
+   * @param sessionId - existing archived session.
+   */
+  async restoreSession(sessionId: SessionId): Promise<void> {
+    const result = await this.manager.restoreSession(sessionId)
+    if (!result.ok) throw new Error(`session restore failed: ${result.error.code}: ${result.error.message}`)
+  }
+
+  /**
    * Move a session within its Workspace's manual order (DOM-insertBefore-like).
    * @param workspaceId - owning workspace.
    * @param sessionId - accounted session to move.

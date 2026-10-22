@@ -950,7 +950,7 @@ export async function captureStableAria(page: Page, selector: string, workspaceC
  * ONLY writer: a missing golden in replay mode fails with the healing command
  * instead of silently self-bootstrapping.
  * @param goldenPath - the committed ui.expected.md path.
- * @param actual - the stable normalized snapshot.
+ * @param actual - the stable normalized snapshot without a trailing newline; this helper owns the single trailing newline.
  * @param mode - the active snapshot mode.
  */
 export async function compareOrRefreshGolden(goldenPath: string, actual: string, mode: WebSnapshotMode): Promise<void> {

@@ -4,7 +4,8 @@
  * @module @deepseek-ai/dsh-token-meter/types
  */
 
-import type { TokenUsage } from '@deepseek-ai/dsh-llm'
+import type { TokenUsage } from '@deepseek-ai/dsh-llm/types'
+import type { TokenUsageProjection } from './projection.ts'
 
 export type { ContextBreakdownProjection, ContextPressureProjection, TokenUsageProjection } from './projection.ts'
 
@@ -39,4 +40,11 @@ export interface TokenSurfaceNode {
   readonly seq: number
   /** Heuristic tokens for the exact message projected by this node. */
   readonly tokens: number
+}
+
+/** Provider observations for a caller-selected interval of one durable log, without billing completeness claims. */
+export interface ReportedTokenUsage {
+  usage: TokenUsageProjection
+  requests: number
+  reportedSteps: number
 }

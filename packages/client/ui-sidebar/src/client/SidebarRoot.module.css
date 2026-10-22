@@ -123,7 +123,7 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: inherit;
+  color: var(--dsw-alias-brand-text);
   cursor: pointer;
 }
 
@@ -144,6 +144,9 @@
 }
 
 .brandMark {
+  background: var(--dsw-alias-brand-mark-surface);
+  border-radius: 4px;
+  padding: 3px;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -159,7 +162,7 @@
   font-size: 18px;
   font-weight: 600;
   line-height: 24px;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.02em;
 }
 
 .fallbackBrandName {
@@ -173,10 +176,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--dsw-radius-control);
   padding: 0;
   background: transparent;
   cursor: pointer;
@@ -204,10 +207,14 @@
 }
 
 .collapsed .toggle:hover .railMark {
+  background: var(--dsw-alias-brand-mark-surface);
+  border-radius: 4px;
   display: none;
 }
 
 .railMark {
+  background: var(--dsw-alias-brand-mark-surface);
+  border-radius: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -233,8 +240,7 @@
   line-height: 16px;
 }
 
-/* New Session: 38px bar, 12px radius (figma 133:7634 geometry, squared-off
-   corners); collapsed it renders as the rail's plain icon control. */
+/* New Session becomes an icon control in the collapsed rail. */
 .newSession {
   flex: none;
   display: flex;
@@ -245,21 +251,25 @@
   padding: 8px 13px;
   margin: 0 0 14px;
   box-sizing: border-box;
-  border: 1px solid var(--dsw-alias-state-business-primary);
-  border-radius: 12px;
-  background: var(--dsw-alias-state-business-primary);
-  color: var(--dsw-alias-label-primary-inverted);
+  border: 1px solid var(--dsw-alias-button-info-fill);
+  border-radius: var(--dsw-radius-control);
+  background: var(--dsw-alias-button-info-fill);
+  color: var(--dsw-alias-label-primary-foreground);
   font-size: 14px;
   font-weight: 600;
   line-height: 22px;
   cursor: pointer;
   overflow: hidden;
-  box-shadow: 0 3px 12px color-mix(in srgb, var(--dsw-alias-state-business-primary) 16%, transparent);
-  transition: background var(--ds-transition-duration) var(--ds-ease-in-out), box-shadow var(--ds-transition-duration) var(--ds-ease-in-out);
+  transition: background var(--ds-transition-duration-fast) var(--ds-ease-in-out);
 }
 
-.newSession:hover {
-  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 88%, black);
+.newSession:hover,
+.newSession:active {
+  background: var(--dsw-alias-button-info-hover);
+}
+
+.iconButton:active {
+  background: var(--dsw-alias-interactive-bg-active);
 }
 
 .newSession:focus-visible {
@@ -291,7 +301,11 @@
 }
 
 .modules {
-  flex: none;
+  flex: 0 1 auto;
+  max-height: 32%;
+  min-height: 44px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -307,9 +321,11 @@
   margin: 0;
   padding: 0 7px 3px;
   color: var(--dsw-alias-label-tertiary);
-  font-size: 14px;
-  font-weight: 400;
+  font-family: var(--ds-font-family-code);
+  font-size: 12px;
+  font-weight: 500;
   line-height: 20px;
+  letter-spacing: 0.04em;
 }
 
 .moduleItems {
@@ -404,6 +420,18 @@
   display: flex;
   justify-content: center;
   width: auto;
+}
+
+@media (pointer: coarse) {
+  .root.collapsed { padding-inline: 6px; }
+  .collapsed .logoRow { height: 44px; }
+  .collapsed .modules { padding-inline: 0; }
+
+  .iconButton,
+  .newSession {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -188,6 +188,9 @@ function fakeApi(overrides: Partial<{ muxFrames: MuxFrame[]; hostFrames: HostFra
           result: { ok: true, value: { workspace: { workspaceId: 'w1' as never, path: '/w', title: 'w', sessionIds: [], createdAt: 't', updatedAt: 't' } } },
         }
       },
+      async restoreSession(request) {
+        return { rpcId: request.rpcId, result: { ok: true, value: { archivedSessionIds: [] } } }
+      },
       async archiveSession(request) {
         return { rpcId: request.rpcId, result: { ok: true, value: { archivedSessionIds: [request.payload.sessionId] } } }
       },

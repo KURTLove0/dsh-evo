@@ -35,18 +35,25 @@ const documentSchema = definitionSchema.extend({
   id: z.string().min(1), revision: z.number().int().positive(), archived: z.boolean(), createdAt: z.number(), updatedAt: z.number(),
 }).strict() as unknown as z.ZodType<WorkbenchAgent>
 
+import { taskBriefSchema } from './brief.ts'
+export { taskBriefSchema } from './brief.ts'
+
 const runSchema = z.object({
   id: z.string().min(1), agentId: z.string().min(1),
   workspaceId: z.string().min(1), sessionId: z.string().min(1), prompt: z.string().min(1),
   status: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled', 'interrupted']),
   definition: documentSchema.optional(), createdAt: z.number(), startedAt: z.number().optional(), endedAt: z.number().optional(),
+  settledSeq: z.number().int().nonnegative().optional(),
   purpose: z.literal('design').optional(), candidate: definitionSchema.optional(),
   error: z.string().optional(), retryOf: z.string().min(1).optional(),
+  retryRequest: z.object({ id: z.string().min(1), agentRevision: z.number().int().positive() }).strict().optional(),
+  submission: z.object({ id: z.string().min(1), agentRevision: z.number().int().positive(), brief: taskBriefSchema }).strict().optional(),
+  revisionOf: z.string().min(1).optional(),
 }).strict() as unknown as z.ZodType<AgentRun>
 
 /** Independent versioned domain; no preset files or preset settings are written. */
 export const agentDomain = defineDomain({
-  name: 'workbench_agents', version: 3,
+  name: 'workbench_agents', version: 5,
   tables: {
     agents: domainTable<WorkbenchAgentId, WorkbenchAgent>(documentSchema),
     runs: domainTable<AgentRunId, AgentRun>(runSchema),

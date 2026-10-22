@@ -40,7 +40,7 @@ describe('web e2e: sidebar workbench modules', () => {
     const workflow = nav.getByRole('button', { name: 'Business workflow' })
     await workflow.waitFor()
     // Runtime configuration remains separate from the workbench modules.
-    expect(await nav.getByRole('button').count()).toBe(2)
+    expect(await nav.getByRole('button').allTextContents()).toEqual(['Work Center', 'Templates', 'Agents', 'Project artifacts', 'Business workflow', 'Work triggers', 'Remote execution', 'Knowledge directory', 'Archived sessions'])
     await nav.getByRole('button', { name: 'Agents', exact: true }).waitFor()
     const snapshot = await captureStableAria(page, 'nav[aria-label="Workbench"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(NAV_EXPECTED, snapshot, MODE)
@@ -53,11 +53,28 @@ describe('web e2e: sidebar workbench modules', () => {
     const agentsPage = page.getByRole('main', { name: 'Agents', exact: true })
     await agentsPage.getByRole('heading', { name: /^Agents/ }).waitFor()
     await workflowPage.waitFor({ state: 'detached' })
-    await agentsPage.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+    await agentsPage.getByRole('button', { name: 'Back to chat', exact: true }).click()
     await agentsPage.waitFor({ state: 'detached' })
 
     expect(tripwire.pageErrors).toEqual([])
   }, 60_000)
+
+  it('scrolls module navigation while preserving a usable session list in short windows', async () => {
+    await page.setViewportSize({ width: 1680, height: 800 })
+    const nav = page.getByRole('navigation', { name: 'Workbench' })
+    expect(await nav.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+    const sessions = page.getByRole('tree', { name: 'Sessions', exact: true })
+    const bounds = await sessions.boundingBox()
+    expect(bounds?.height).toBeGreaterThanOrEqual(100)
+    const last = nav.getByRole('button', { name: 'Archived sessions', exact: true })
+    await last.focus()
+    expect(await last.evaluate(element => document.activeElement === element)).toBe(true)
+    expect(await last.evaluate((element) => {
+      const item = element.getBoundingClientRect(), area = element.closest('nav')!.getBoundingClientRect()
+      return item.top >= area.top && item.bottom <= area.bottom
+    })).toBe(true)
+    await page.setViewportSize({ width: 1680, height: 1000 })
+  })
 
   it('keeps the agent page inside narrow viewports without horizontal overflow', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-sidebar-modules-narrow'))
@@ -72,8 +89,8 @@ describe('web e2e: sidebar workbench modules', () => {
       expect(bounds).not.toBeNull()
       expect(bounds!.x).toBeGreaterThanOrEqual(0)
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
-      expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-      await panel.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+      await expect.poll(() => panel.evaluate(element => element.scrollWidth <= element.clientWidth), { timeout: 10000 }).toBe(true)
+      await panel.getByRole('button', { name: 'Back to chat', exact: true }).click()
       await panel.waitFor({ state: 'detached' })
     }
   }, 60_000)

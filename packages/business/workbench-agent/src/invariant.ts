@@ -15,6 +15,13 @@ const install: InvariantInstaller = (ctx, fail) => {
     if (run.id !== change.key) fail('Agent run key differs from its committed identity.')
     if (run.definition !== undefined && run.definition.id !== run.agentId)
       fail('Agent run captured another identity’s configuration.')
+    if (run.retryRequest !== undefined) {
+      if (run.retryOf === undefined || run.retryOf === run.id) fail('Retry request does not reference another execution.')
+      if (run.definition?.revision !== run.retryRequest.agentRevision) fail('Retry request revision differs from its captured configuration.')
+      if (run.submission !== undefined && (run.submission.id !== run.retryRequest.id ||
+        run.submission.agentRevision !== run.retryRequest.agentRevision))
+        fail('Structured retry and submission identities differ.')
+    }
     if (run.candidate !== undefined && (run.purpose !== 'design' || run.status !== 'completed'))
       fail('Agent configuration candidate belongs to an incomplete or non-design execution.')
   })

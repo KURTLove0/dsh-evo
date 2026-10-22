@@ -12,6 +12,10 @@
 
 两条路径在构造上互斥。`scrollbar-width`／`scrollbar-color` 写在 `@supports not selector(::-webkit-scrollbar)` 之内，因为这两个属性中的任一个只要取非 `auto` 值，Chromium 与 Safari 就会丢弃该元素上的全部 `::-webkit-scrollbar*` 规则，`::-webkit-scrollbar-thumb:hover` 也在其中——若无条件地同时声明，`--dsh-scrollbar-thumb-hover` 在任何引擎上都不会被渲染。因此 Firefox 走标准属性，WebKit 系引擎走伪元素，hover token 只经由伪元素这条路径渲染。相关原理与实测计算值见[滚动条 Agent Note](../../../.agents/notes/implemented/bug-fix/2026-07-28-themed-scrollbars-and-reserved-gutter.zh.md)。
 
+内置说明文字与第三层文字颜色，在不透明的基础、浮层、侧栏和输入区表面上达到 4.5:1 对比度。填充式信息操作使用 `--dsw-alias-label-primary-foreground` 搭配 `--dsw-alias-button-info-fill` / `--dsw-alias-button-info-hover`；前景色随主题切换。无需密钥的对比度测试从 token 样式表读取这些配对。第三方覆盖需自行验证对比度。
+
+内置视觉系统采用冰蓝浅色、深海蓝深色和青色操作强调。控件、面板与对话输入区的共享圆角位于 `base.css`；空会话网格与焦点光晕使用语义别名，输入区阴影位于 `gradient-shadow-text.css`。功能 CSS 使用这些 token，不包含主题选择器。
+
 ## 模型体验
 
 无。主题服务管理浏览器偏好；这里没有任何内容进入模型请求。

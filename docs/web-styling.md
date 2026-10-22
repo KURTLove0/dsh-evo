@@ -22,4 +22,8 @@ Global style sheets belong in `ui-theme/src/styles/`. Component styles live besi
 
 ## Changing the system
 
+The interface draws on [Apple HIG accessibility guidance](https://developer.apple.com/design/human-interface-guidelines/accessibility) for readable hierarchy and visible interaction feedback. Conversation content uses a plain background; session selection has a distinct fill and font weight; agent cards separate names from descriptions through type size and spacing. Shared buttons expose keyboard focus and pressed feedback. For coarse pointers, shared buttons, composer attach/send/select controls, sidebar icon/new-session buttons, and agent navigation/filter buttons have a 44px minimum target; shared inputs and agent search fields have a 44px minimum height. Desktop controls retain compact geometry.
+
 Add or change a shared token in the owning `ui-theme` sheet, then consume its semantic alias from feature packages. Update the owning package reference when a public styling contract changes. Visual behavior follows the [testing policy](testing.md); the [styling-system Agent Note](../.agents/notes/implemented/process/2026-07-19-web-styling-system.md) records framework rationale.
+
+The cyber technology presentation uses cyan actions, compact panel corners, and monospace metadata. A stationary grid appears only on the empty-session canvas; active transcripts retain a plain background. Shared palette, focus-halo, brand-artwork tile, elevation, and radius tokens belong to `ui-theme`. The [cyber theme decision](../.agents/notes/implemented/feature/2026-10-20-cyber-workbench-theme.md) records the visual scope and verification.

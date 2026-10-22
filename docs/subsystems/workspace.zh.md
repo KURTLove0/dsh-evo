@@ -213,6 +213,14 @@ insertBefore(id: WorkspaceId, beforeId?: WorkspaceId): Promise<readonly Workspac
 archiveSession(sessionId: SessionId): Promise<void>
 
 /**
+ * Remove archive membership while preserving workspace accounting and logs.
+ * A known session already outside the archive resolves without writing.
+ * @param sessionId - session to restore.
+ * @returns resolution after the membership change is durable.
+ */
+restoreSession(sessionId: SessionId): Promise<void>
+
+/**
  * Resolve by canonical directory path without creating or mutating a
  * workspace. A missing path rejects during `realpath`; an existing unowned
  * directory returns `undefined`.

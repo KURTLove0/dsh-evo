@@ -21,6 +21,11 @@ import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
 import type { WorkflowDefinition, WorkflowId, WorkflowRunId } from '@deepseek-ai/dsh-business-workflow/workbench-types'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import * as Workbench from '../src/workbench.ts'
+import { WorkflowGateway } from '../src/workbench-gateway.ts'
+import * as Agents from '../../workbench-agent/src/index.ts'
+import * as Center from '../../work-center/src/index.ts'
+import Skills from '@deepseek-ai/dsh-skill'
+import FsLocal from '@deepseek-ai/dsh-fs-local'
 
 const roots: string[] = []
 const contexts: Context[] = []
@@ -157,6 +162,195 @@ async function stopHost(ctx: Context) {
 }
 
 describe('workspace workflow workbench', () => {
+  it('copies a pinned publication into an independent draft and replays creation after editing and restart', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root)
+    const { document, version } = await publish(ctx, root, true)
+    const request = { kind: 'copy' as const, id: document.id, versionId: version.id, workspaceId: document.workspaceId,
+      name: 'Independent review', requestId: 'copy-request' as never, template: { id: 'saved-template' as never, version: 1 } }
+    const receipt = await ctx.workflowWorkbench.command(request)
+    expect(await ctx.workflowWorkbench.command({ ...request, template: { version: 1, id: request.template.id } })).toEqual(receipt)
+    const copy = (await ctx.workflowWorkbench.snapshot(receipt.workflowId)).workflows.find(item => item.id === receipt.workflowId)!
+    expect(copy.id).not.toBe(document.id)
+    expect(copy.draft).toEqual(version.definition)
+    expect(copy.versions).toEqual([])
+    expect(copy.copiedFrom).toEqual({ id: document.id, versionId: version.id, template: request.template })
+    expect(adapter.requests).toEqual([])
+    await ctx.workflowWorkbench.command({ kind: 'save', id: copy.id, expectedRevision: 1, name: 'Edited copy', definition: copy.draft })
+    expect(await ctx.workflowWorkbench.command(request)).toEqual({ workflowId: copy.id, revision: 2 })
+    await expect(ctx.workflowWorkbench.command({ ...request, name: 'Different' })).rejects.toThrow('another workflow copy')
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: '' as never })).rejects.toThrow('nonempty')
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: 'blank' as never, name: '' })).rejects.toThrow('name')
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: 'missing' as never, versionId: 'missing' as never }))
+      .rejects.toThrow('Unknown published version')
+    await ctx.workflowWorkbench.command({ kind: 'publish', id: copy.id, expectedRevision: 2 })
+    const publication = (await ctx.workflowWorkbench.snapshot(copy.id)).workflows.find(item => item.id === copy.id)!.versions[0]!
+    const run = await ctx.workflowWorkbench.command({ kind: 'start', id: copy.id, versionId: publication.id, inputs: { leads: [] } })
+    const waiting = await waitRun(ctx, copy.id, run.runIds![0]!, 'waiting')
+    await ctx.workflowWorkbench.command({ kind: 'cancel', runId: waiting.id })
+    await waitRun(ctx, copy.id, waiting.id, 'cancelled')
+    await stopHost(ctx)
+    const restarted = await boot(root)
+    expect((await restarted.ctx.workflowWorkbench.command(request)).workflowId).toBe(copy.id)
+    expect((await restarted.ctx.workflowWorkbench.snapshot(copy.id)).workflows.find(item => item.id === copy.id)?.copiedFrom)
+      .toEqual(copy.copiedFrom)
+    await stopHost(restarted.ctx)
+    const full = await boot(root, [], { maxWorkflows: 2 })
+    await expect(full.ctx.workflowWorkbench.command({ ...request, requestId: 'overflow-copy' as never }))
+      .rejects.toThrow('Workflow capacity reached')
+  })
+
+  it('pages committed sources, forwards exact approvals, and idempotently reruns the captured publication with feedback', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root, [textResponse('ranked original'), textResponse('ranked revised')])
+    const { document, version } = await publish(ctx, root, true)
+    const request = { kind: 'start' as const, id: document.id, versionId: version.id, inputs: { leads: ['a'] }, requestId: 'initial' as never }
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: '' as never })).rejects.toThrow('nonempty')
+    const receipt = await ctx.workflowWorkbench.command(request)
+    expect(await ctx.workflowWorkbench.command(request)).toEqual(receipt)
+    await expect(ctx.workflowWorkbench.command({ ...request, inputs: { leads: ['b'] } })).rejects.toThrow('request ID')
+    const runId = receipt.runIds![0]!
+    const waiting = await waitRun(ctx, document.id, runId, 'waiting')
+    expect(await ctx.workflowWorkbench.inspectRun(runId)).toEqual(waiting)
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: 'early-revision' as never, rerunOf: runId }))
+      .rejects.toThrow('settle before rerunning')
+    const page = await ctx.workflowWorkbench.queryRuns({ limit: 1, statuses: ['waiting'], workspaceId: document.workspaceId })
+    expect(page.items).toMatchObject([{ id: runId, waitingAttemptId: waiting.attempts[0]!.id }])
+    expect(page.items[0]).not.toHaveProperty('version')
+    await expect(ctx.workflowWorkbench.queryRuns({ limit: 0 })).rejects.toThrow('limit')
+    await ctx.workflowWorkbench.command({ kind: 'decide', runId, attemptId: waiting.attempts[0]!.id, approve: true })
+    await expect(ctx.workflowWorkbench.command({ kind: 'decide', runId, attemptId: waiting.attempts[0]!.id, approve: true })).rejects.toThrow()
+    await waitRun(ctx, document.id, runId, 'succeeded')
+    const revision = { ...request, requestId: 'revision' as never, rerunOf: runId, feedback: 'Include source references' }
+    const revised = await ctx.workflowWorkbench.command(revision)
+    expect(await ctx.workflowWorkbench.command(revision)).toEqual(revised)
+    const rerun = await waitRun(ctx, document.id, revised.runIds![0]!, 'waiting')
+    await ctx.workflowWorkbench.command({ kind: 'decide', runId: rerun.id, attemptId: rerun.attempts[0]!.id, approve: true })
+    const completed = await waitRun(ctx, document.id, rerun.id, 'succeeded')
+    expect(completed.version.id).toBe(version.id)
+    expect(JSON.stringify(adapter.requests)).toContain('Include source references')
+    const transcript = await ctx.sessionPersistence.inspect(completed.sessionId)
+    expect(JSON.stringify(transcript.events)).toContain('Include source references')
+    expect((await (ctx.get('workflowGateway') as WorkflowGateway).catalog({})).find(item => item.id === document.id)).toEqual({
+      id: document.id, name: document.name, workspaceId: document.workspaceId, archived: false,
+    })
+    expect((await ctx.workflowWorkbench.queryRuns({ limit: 10, workflowId: 'absent' as never })).items).toEqual([])
+    expect((await ctx.workflowWorkbench.queryRuns({ limit: 10, workflowId: document.id, createdFrom: completed.createdAt,
+      createdBefore: completed.createdAt + 1 })).items.map(run => run.id)).toContain(completed.id)
+    expect((await ctx.workflowWorkbench.queryRuns({ limit: 10, createdBefore: 1 })).items).toEqual([])
+    for (const bounds of [{ createdFrom: NaN }, { createdBefore: Infinity }, { createdFrom: 2, createdBefore: 1 }])
+      await expect(ctx.workflowWorkbench.queryRuns({ limit: 1, ...bounds })).rejects.toThrow('creation bounds')
+    const first = await ctx.workflowWorkbench.queryRuns({ limit: 1 })
+    const second = await ctx.workflowWorkbench.queryRuns({ limit: 1, before: first.next! })
+    expect(new Set([...first.items, ...second.items].map(item => item.id)).size).toBe(2)
+    const third = await ctx.workflowWorkbench.command({ ...request, requestId: 'later' as never })
+    const paused = await waitRun(ctx, document.id, third.runIds![0]!, 'waiting')
+    await expect(ctx.workflowWorkbench.queryRuns({ limit: 1, before: first.next! })).rejects.toThrow('directory changed')
+    const ordered = await ctx.workflowWorkbench.queryRuns({ limit: 3 })
+    expect(ordered.items[0]?.id).toBe(paused.id)
+    expect(ordered.items.slice(1).map(run => run.updatedAt)).toEqual(ordered.items.slice(1).map(run => run.updatedAt).sort((a, b) => b - a))
+    await ctx.workflowWorkbench.command({ kind: 'cancel', runId: paused.id })
+    await waitRun(ctx, document.id, paused.id, 'cancelled')
+    const finalPage = await ctx.workflowWorkbench.queryRuns({ limit: 1 })
+    const owner = ctx.workflowWorkbench
+    await stopHost(ctx)
+    await expect(owner.queryRuns({ limit: 1 })).rejects.toThrow('unloading')
+    await expect(owner.inspectRun(runId)).rejects.toThrow('unloading')
+    const restarted = await boot(root)
+    expect(await restarted.ctx.workflowWorkbench.command(revision)).toEqual(revised)
+    await expect(restarted.ctx.workflowWorkbench.queryRuns({ limit: 1, before: finalPage.next! })).rejects.toThrow('directory changed')
+  })
+
+  it('retains exact delivery evidence, rejects stale acceptance, and creates explicit revision tasks through the assembled owners', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root, [textResponse('Report complete'), textResponse('Revised report')])
+    await ctx.plugin(Skills)
+    await ctx.plugin(FsLocal)
+    await ctx.plugin(Agents, {
+      runtimePreset: 'standard', maxActiveRuns: 8, maxAgents: 100, maxRuns: 1000, maxRecordBytes: 1048576,
+      defaultConcurrency: 1, mcpToolCallTimeoutMs: 10000, maxRunPageSize: 100,
+    })
+    await ctx.plugin(Center, {
+      pageSize: 1, maxPageSize: 100, maxReviewDecisions: 100, maxRecordBytes: 1048576,
+      maxDeliveryBytes: 262144, maxArtifactBytes: 131072,
+      maxStatisticsRuns: 5000, maxStatisticsSessions: 100, maxStatisticsGroups: 1000, maxStatisticsBytes: 1048576,
+      maxDiagnosisSources: 50, maxDiagnosisFindings: 200, maxDiagnosisBytes: 262144,
+    })
+    ctx.llm.registerConfigurableProviders([{ provider: 'mock', displayName: 'Test executor', settingsNs: '', settingsPath: [], localCommand: process.execPath, defaultModel: 'mock' }])
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const agent = await ctx.workbenchAgents.command({ kind: 'create', definition: { name: 'Reporter', avatar: '', description: '', instructions: 'Write a report', runtime: 'mock', skills: [], mcpServers: [], starters: [], concurrency: 1 } })
+    const brief = { version: 1 as const, goal: 'Prepare a report', background: '', deliverables: ['report.txt'], acceptanceCriteria: ['Includes references'], constraints: '' }
+    const check = await ctx.workbenchAgents.preflight({ id: agent.agentId, workspaceId: workspace.id, brief })
+    expect(check.issues).toEqual([])
+    expect(adapter.requests).toHaveLength(0)
+    const receipt = await ctx.workbenchAgents.command({ kind: 'submit-task', id: agent.agentId, workspaceId: workspace.id, expectedRevision: 1, requestId: 'report' as never, brief })
+    const ref = { kind: 'agent' as const, id: receipt.runId! }
+    await expect.poll(async () => (await ctx.workbenchAgents.inspectRun(ref.id)).status).toBe('completed')
+    const missing = await ctx.workCenter.detail(ref)
+    expect(missing.delivery?.artifacts[0]).toMatchObject({ state: 'unavailable' })
+    await expect(ctx.workCenter.command({ kind: 'review', ref, version: missing.delivery!.version, expectedRevision: 0,
+      decisionId: 'missing' as never, decision: 'accepted', reason: '' })).rejects.toThrow('artifacts are unavailable')
+    await writeFile(join(root, 'report.txt'), 'Evidence version one')
+    const initial = await ctx.workCenter.detail(ref)
+    expect(initial.delivery?.outputs[0]?.text).toBe('Report complete')
+    expect(initial.delivery?.artifacts[0]).toMatchObject({ state: 'captured', content: 'Evidence version one' })
+    expect(JSON.stringify(adapter.requests)).toContain(JSON.stringify(check.prompt!).slice(1, -1))
+    const accept = { kind: 'review' as const, ref, version: initial.delivery!.version, expectedRevision: 0, decisionId: 'accept' as never, decision: 'accepted' as const, reason: 'Checked the file' }
+    await writeFile(join(root, 'report.txt'), 'Evidence version two')
+    await expect(ctx.workCenter.command(accept)).rejects.toThrow('changed')
+    const current = await ctx.workCenter.detail(ref)
+    const changes = { ...accept, version: current.delivery!.version, decisionId: 'changes' as never, decision: 'changes-requested' as const, reason: 'Add missing references' }
+    expect(await ctx.workCenter.command(changes)).toEqual({ ref, reviewRevision: 1 })
+    expect(await ctx.workCenter.command(changes)).toEqual({ ref, reviewRevision: 1 })
+    await expect(ctx.workCenter.command({ ...changes, reason: 'Different feedback' })).rejects.toThrow('another review')
+    expect(adapter.requests).toHaveLength(1)
+    await expect(ctx.workCenter.command({ ...changes, decisionId: 'conflict' as never })).rejects.toThrow('another window')
+    const amended = await ctx.workCenter.revisionBrief({ ref, reviewRevision: 1, brief })
+    const preview = await ctx.workbenchAgents.preflight({ id: agent.agentId, workspaceId: workspace.id, brief: amended })
+    const revision = { kind: 'revise-agent' as const, ref, reviewRevision: 1, requestId: 'revised-report' as never, agentRevision: 1, brief }
+    const next = await ctx.workCenter.command(revision)
+    expect(await ctx.workCenter.command(revision)).toEqual(next)
+    await expect.poll(async () => next.ref.kind === 'agent' && (await ctx.workbenchAgents.inspectRun(next.ref.id)).status).toBe('completed')
+    expect(JSON.stringify(adapter.requests)).toContain(JSON.stringify(preview.prompt!).slice(1, -1))
+    await writeFile(join(root, 'report.txt'), 'Evidence version three')
+    const reviewed = await ctx.workCenter.detail(ref)
+    expect(reviewed.review?.delivery.artifacts[0]).toMatchObject({ content: 'Evidence version two' })
+    expect(reviewed.delivery?.artifacts[0]).toMatchObject({ content: 'Evidence version three' })
+    await ctx.workCenter.command({ ...accept, decisionId: 'accepted-current' as never, version: reviewed.delivery!.version, expectedRevision: 1 })
+    const history = await ctx.workCenter.detail(ref)
+    expect(history.priorReviews?.[0]?.delivery).toEqual(reviewed.review?.delivery)
+    expect(await ctx.workCenter.command(changes)).toEqual({ ref, reviewRevision: 1 })
+    await writeFile(join(root, 'report.txt'), 'x'.repeat(131073))
+    const oversized = await ctx.workCenter.detail(ref)
+    expect(oversized.delivery?.artifacts[0]).toMatchObject({ state: 'unavailable' })
+    await expect(ctx.workCenter.command({ ...accept, decisionId: 'oversized' as never,
+      version: oversized.delivery!.version, expectedRevision: 2 })).rejects.toThrow('artifacts are unavailable')
+    const failedSource = vi.spyOn(ctx.workflowWorkbench, 'queryRuns').mockRejectedValueOnce(new Error('Workflow directory offline'))
+    expect((await ctx.workCenter.query({ limit: 1 })).failures).toEqual([{ source: 'workflow', message: 'Workflow directory offline' }])
+    failedSource.mockRestore()
+    const page = await ctx.workCenter.query({ limit: 1, source: 'agent', workspaceId: workspace.id })
+    expect(page.items).toHaveLength(1)
+    expect(page.next).toBeDefined()
+    expect((await ctx.workCenter.query({ limit: 1, source: 'agent', workspaceId: workspace.id, cursor: page.next! })).items).toHaveLength(1)
+    await expect(ctx.workCenter.query({ limit: 2, cursor: page.next! })).rejects.toThrow('another work query')
+    await stopHost(ctx)
+    const restarted = await boot(root)
+    await restarted.ctx.plugin(Skills)
+    await restarted.ctx.plugin(FsLocal)
+    await restarted.ctx.plugin(Agents, {
+      runtimePreset: 'standard', maxActiveRuns: 8, maxAgents: 100, maxRuns: 1000, maxRecordBytes: 1048576,
+      defaultConcurrency: 1, mcpToolCallTimeoutMs: 10000, maxRunPageSize: 100,
+    })
+    await restarted.ctx.plugin(Center, {
+      pageSize: 1, maxPageSize: 100, maxReviewDecisions: 100, maxRecordBytes: 1048576,
+      maxDeliveryBytes: 262144, maxArtifactBytes: 131072,
+      maxStatisticsRuns: 5000, maxStatisticsSessions: 100, maxStatisticsGroups: 1000, maxStatisticsBytes: 1048576,
+      maxDiagnosisSources: 50, maxDiagnosisFindings: 200, maxDiagnosisBytes: 262144,
+    })
+    expect((await restarted.ctx.workCenter.detail(ref)).priorReviews?.[0]?.delivery).toEqual(reviewed.review?.delivery)
+    expect(await restarted.ctx.workCenter.command(changes)).toEqual({ ref, reviewRevision: 1 })
+  })
+
   it('saves without a conversation, rejects conflicting edits, and retains immutable publications after restart', async () => {
     const root = await scratch()
     const { ctx } = await boot(root)
@@ -503,5 +697,77 @@ describe('workspace workflow workbench', () => {
     expect(run.outputs).toEqual({})
     expect(run.attempts[0]?.status).toBe('failed')
     expect(ctx.agents.list()).toEqual([])
+  })
+})
+
+describe('complete workflow retry ownership', () => {
+  it('retains the publication, original route, inputs and feedback, and recovers one retry after restart', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root, [textResponse('ranked retry')])
+    const { document, version } = await publish(ctx, root, true)
+    const initial = { kind: 'start' as const, id: document.id, versionId: version.id, inputs: { leads: ['original'] },
+      feedback: 'Keep this business feedback', requestId: 'original-submission' as never }
+    const sourceId = (await ctx.workflowWorkbench.command(initial)).runIds![0]!
+    const waiting = await waitRun(ctx, document.id, sourceId, 'waiting')
+    await ctx.workflowWorkbench.command({ kind: 'decide', runId: sourceId, attemptId: waiting.attempts[0]!.id, approve: false })
+    const source = await waitRun(ctx, document.id, sourceId, 'failed')
+    const request = { kind: 'retry' as const, runId: sourceId, requestId: 'complete-retry' as never }
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: '' as never })).rejects.toThrow('nonempty')
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: initial.requestId })).rejects.toThrow('another workflow submission or retry')
+    const defaults = vi.spyOn(ctx.agentDefaultModel, 'currentSelection').mockReturnValue({ provider: 'changed-default', model: 'changed-default' })
+    const [first, repeated] = await Promise.all([ctx.workflowWorkbench.command(request), ctx.workflowWorkbench.command(request)])
+    expect(repeated).toEqual(first)
+    const retried = await waitRun(ctx, document.id, first.runIds![0]!, 'waiting')
+    expect(retried).toMatchObject({ version: source.version, inputs: source.inputs, execution: source.execution,
+      feedback: source.feedback, rerunOf: sourceId, retryRequest: request.requestId, mode: 'execution' })
+    expect(retried.attempts.map(attempt => attempt.id)).not.toEqual(source.attempts.map(attempt => attempt.id))
+    expect(defaults).not.toHaveBeenCalled()
+    defaults.mockRestore()
+    await expect(ctx.workflowWorkbench.command({ ...initial, requestId: request.requestId })).rejects.toThrow('another workflow submission')
+    await expect(ctx.workflowWorkbench.command({ ...request, runId: first.runIds![0]! })).rejects.toThrow('another workflow submission or retry')
+    await ctx.workflowWorkbench.command({ kind: 'decide', runId: retried.id, attemptId: retried.attempts[0]!.id, approve: true })
+    await waitRun(ctx, document.id, retried.id, 'succeeded')
+    expect(adapter.requests).toHaveLength(1)
+    expect(JSON.stringify(adapter.requests)).toContain(initial.feedback)
+    expect(await ctx.workflowWorkbench.inspectRun(sourceId)).toEqual(source)
+    await expect(ctx.workflowWorkbench.command({ ...request, runId: retried.id, requestId: 'successful-run' as never })).rejects.toThrow('Only failed')
+    const current = (await ctx.workflowWorkbench.snapshot(document.id)).workflows[0]!
+    await ctx.workflowWorkbench.command({ kind: 'archive', id: document.id, expectedRevision: current.revision, archived: true })
+    expect(await ctx.workflowWorkbench.command(request)).toEqual(first)
+    await expect(ctx.workflowWorkbench.command({ ...request, requestId: 'archived-retry' as never })).rejects.toThrow('archived')
+    await stopHost(ctx)
+    const restarted = await boot(root, [])
+    expect(await restarted.ctx.workflowWorkbench.command(request)).toEqual(first)
+    expect((await restarted.ctx.workflowWorkbench.queryRuns({ limit: 10 })).items).toHaveLength(2)
+  })
+  it('retries one failed acceptance case as a new verification run rather than a normal execution', async () => {
+    const root = await scratch()
+    const { ctx } = await boot(root, [textResponse('does not satisfy the criterion'), textResponse('ranked output')])
+    const { document, version } = await publish(ctx, root)
+    const sourceId = (await ctx.workflowWorkbench.command({ kind: 'verify', id: document.id, versionId: version.id })).runIds![0]!
+    const source = await waitRun(ctx, document.id, sourceId, 'succeeded')
+    expect(source.assertion?.passed).toBe(false)
+    const request = { kind: 'retry' as const, runId: sourceId, requestId: 'retry-acceptance' as never }
+    const next = await ctx.workflowWorkbench.command(request)
+    const retried = await waitRun(ctx, document.id, next.runIds![0]!, 'succeeded')
+    expect(retried).toMatchObject({ mode: 'verification', caseName: source.caseName, inputs: source.inputs, execution: source.execution,
+      retryRequest: request.requestId, rerunOf: sourceId, assertion: { passed: true } })
+    expect(retried.batchId).not.toBe(source.batchId)
+    expect(await ctx.workflowWorkbench.command(request)).toEqual(next)
+    await expect(ctx.workflowWorkbench.command({ ...request, runId: retried.id, requestId: 'passed-case' as never })).rejects.toThrow('Only failed')
+  })
+  it('rejects active sources and preserves the shared workspace execution lock during retry admission', async () => {
+    const root = await scratch()
+    const { ctx } = await boot(root, [])
+    const { document, version } = await publish(ctx, root, true)
+    const start = { kind: 'start' as const, id: document.id, versionId: version.id, inputs: { leads: [] } }
+    const sourceId = (await ctx.workflowWorkbench.command(start)).runIds![0]!
+    const source = await waitRun(ctx, document.id, sourceId, 'waiting')
+    await expect(ctx.workflowWorkbench.command({ kind: 'retry', runId: sourceId, requestId: 'active' as never })).rejects.toThrow('Only failed')
+    await ctx.workflowWorkbench.command({ kind: 'decide', runId: sourceId, attemptId: source.attempts[0]!.id, approve: false })
+    await waitRun(ctx, document.id, sourceId, 'failed')
+    const otherId = (await ctx.workflowWorkbench.command(start)).runIds![0]!
+    await waitRun(ctx, document.id, otherId, 'waiting')
+    await expect(ctx.workflowWorkbench.command({ kind: 'retry', runId: sourceId, requestId: 'busy' as never })).rejects.toThrow('unfinished workflow run')
   })
 })

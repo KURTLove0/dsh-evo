@@ -22,6 +22,8 @@ The React-free directory manager owns host data and coalesces live notifications
 
 The execution card pairs a local runtime selector with its model selector. Local services and native defaults come from the same provider directory as Runtimes. Changing services clears the model override, and an unavailable or removed service cannot silently fall back to a global provider. Catalog loading, failure, retry, and empty states remain explicit.
 
+Retry opens a confirmation showing captured versus current sanitized configuration, the source execution, and the confirmed revision. Repeated external side effects require explicit acknowledgment through submission. Closing retains the pending request; discard is explicit. Before first admission, changed or missing configuration disables submission. A submitted request can be manually recovered with the same identity after a lost acknowledgment, including across page remounts. It is never automatically submitted on reconnect and does not survive an application reload.
+
 ## Model Experience
 
 Indirectly, through submitted tasks and design requests handled by the independent host workbench-agent service.

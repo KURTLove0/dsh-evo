@@ -471,6 +471,12 @@ export const TOOL_ABORTED = 'ABORTED'
 /** Canonical error code for cancellation before a tool body was invoked. */
 export const TOOL_ABORTED_BEFORE_DISPATCH = 'ABORTED_BEFORE_DISPATCH'
 
+/** Canonical failure code for a call refused before its body runs. */
+export const TOOL_DENIED = 'TOOL_DENIED'
+
+/** Canonical failure code for a result blocked after its body has run. */
+export const TOOL_RESULT_BLOCKED = 'TOOL_RESULT_BLOCKED'
+
 /** Structured error metadata for a failed tool call (alongside the model-facing text). */
 export interface ToolErrorInfo {
   name: string
@@ -1493,7 +1499,7 @@ export class ToolRuntime extends Service {
           result: this.materializeFinalResult({
             content: [{ type: 'text', text: `Error: ${denialReason}` }],
             isError: true,
-            error: { message: denialReason },
+            error: { message: denialReason, info: { name: 'ToolPolicyError', code: TOOL_DENIED } },
           }),
         })
       }
@@ -1750,7 +1756,7 @@ export class ToolRuntime extends Service {
       return this.markCanonical(exec, {
         content: decision.feedback,
         isError: true,
-        error: { message },
+        error: { message, info: { name: 'ToolPolicyError', code: TOOL_RESULT_BLOCKED } },
         ...decisionContexts.length > 0 ? { additionalContexts: decisionContexts } : {},
       })
     }

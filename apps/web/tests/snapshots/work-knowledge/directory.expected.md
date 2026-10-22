@@ -1,0 +1,21 @@
+- complementary "Material sources":
+  - heading "Material sources" [level=2]
+  - form "Add and enable source":
+    - text: Project file path
+    - textbox "Project file path"
+    - paragraph: UTF-8 text, Markdown, and code. Adding grants knowledge access; other files are not scanned.
+    - button "Add and enable source" [disabled]
+  - list:
+    - listitem:
+      - button "project-notes.ts Enabled · Captured versions 2":
+        - strong: project-notes.ts
+        - text: Enabled · Captured versions 2
+    - listitem:
+      - button "source.md Disabled · Captured versions 1":
+        - strong: source.md
+        - text: Disabled · Captured versions 1
+    - listitem:
+      - button "uncertain.md Enabled · Captured versions 1":
+        - strong: uncertain.md
+        - text: Enabled · Captured versions 1
+  - paragraph: File limit 131072 bytes; up to 64 sources and 20 successful versions per source.

@@ -21,6 +21,7 @@ flowchart TD
   subgraph group_llm["packages/llm"]
     pkg_llm["llm"]
     pkg_llm_claude_cli["llm-claude-cli"]
+    pkg_llm_codex_cli["llm-codex-cli"]
     pkg_llm_cursor_cli["llm-cursor-cli"]
     pkg_llm_deepseek["llm-deepseek"]
     pkg_llm_pi_ai["llm-pi-ai"]
@@ -125,7 +126,14 @@ flowchart TD
   subgraph group_business["packages/business"]
     pkg_business_workflow["business-workflow"]
     pkg_business_workflow_local["business-workflow-local"]
+    pkg_capability_health["capability-health"]
     pkg_tool_business_workflow["tool-business-workflow"]
+    pkg_work_artifacts["work-artifacts"]
+    pkg_work_center["work-center"]
+    pkg_work_knowledge["work-knowledge"]
+    pkg_work_remote["work-remote"]
+    pkg_work_templates["work-templates"]
+    pkg_work_triggers["work-triggers"]
     pkg_workbench_agent["workbench-agent"]
   end
   subgraph group_client["packages/client"]
@@ -138,6 +146,7 @@ flowchart TD
     pkg_client_ui_attachment["client-ui-attachment"]
     pkg_client_ui_brand_official["client-ui-brand-official"]
     pkg_client_ui_business_workflow["client-ui-business-workflow"]
+    pkg_client_ui_capability_health["client-ui-capability-health"]
     pkg_client_ui_commands["client-ui-commands"]
     pkg_client_ui_conversation["client-ui-conversation"]
     pkg_client_ui_deliverables["client-ui-deliverables"]
@@ -169,6 +178,12 @@ flowchart TD
     pkg_client_ui_tool["client-ui-tool"]
     pkg_client_ui_trajectory["client-ui-trajectory"]
     pkg_client_ui_user_questions["client-ui-user-questions"]
+    pkg_client_ui_work_artifacts["client-ui-work-artifacts"]
+    pkg_client_ui_work_center["client-ui-work-center"]
+    pkg_client_ui_work_knowledge["client-ui-work-knowledge"]
+    pkg_client_ui_work_remote["client-ui-work-remote"]
+    pkg_client_ui_work_templates["client-ui-work-templates"]
+    pkg_client_ui_work_triggers["client-ui-work-triggers"]
     pkg_client_ui_workbench_agent["client-ui-workbench-agent"]
     pkg_client_ui_workflow_run["client-ui-workflow-run"]
     pkg_client_ui_workspace["client-ui-workspace"]
@@ -350,6 +365,7 @@ flowchart TD
   subgraph group_workspace["packages/workspace"]
     pkg_workspace["workspace"]
   end
+  pkg_llm_codex_cli --> pkg_invariants
   pkg_llm_cursor_cli --> pkg_invariants
   pkg_tool_fs --> pkg_session
   pkg_tool_fs_search --> pkg_session
@@ -371,7 +387,14 @@ flowchart TD
   pkg_api_gateway --> pkg_typert_registry
   pkg_business_workflow --> pkg_invariants
   pkg_business_workflow_local --> pkg_invariants
+  pkg_capability_health --> pkg_invariants
   pkg_tool_business_workflow --> pkg_invariants
+  pkg_work_artifacts --> pkg_invariants
+  pkg_work_center --> pkg_invariants
+  pkg_work_knowledge --> pkg_invariants
+  pkg_work_remote --> pkg_invariants
+  pkg_work_templates --> pkg_invariants
+  pkg_work_triggers --> pkg_invariants
   pkg_workbench_agent --> pkg_invariants
   pkg_client_locale --> pkg_api_remotes
   pkg_client_locale --> pkg_client_connection
@@ -415,8 +438,15 @@ flowchart TD
   pkg_workflow_worker_thread --> pkg_brand
   pkg_workspace --> pkg_storage
   pkg_client_runtime --> pkg_business_workflow
+  pkg_client_runtime --> pkg_capability_health
   pkg_client_runtime --> pkg_typert_registry
+  pkg_client_runtime --> pkg_work_artifacts
+  pkg_client_runtime --> pkg_work_center
+  pkg_client_runtime --> pkg_work_remote
+  pkg_client_runtime --> pkg_work_templates
+  pkg_client_runtime --> pkg_work_triggers
   pkg_client_runtime --> pkg_workbench_agent
+  pkg_client_runtime --> pkg_workspace
   pkg_client_ui_conversation --> pkg_api_remotes
   pkg_client_ui_conversation --> pkg_goal
   pkg_client_ui_conversation --> pkg_permission_presets
@@ -435,9 +465,7 @@ flowchart TD
   pkg_client_ui_agent_preset --> pkg_client_locale
   pkg_client_ui_agent_preset --> pkg_client_runtime
   pkg_client_ui_agent_preset --> pkg_client_ui_conversation
-  pkg_client_ui_agent_preset --> pkg_client_ui_layout
   pkg_client_ui_agent_preset --> pkg_client_ui_settings
-  pkg_client_ui_agent_preset --> pkg_client_ui_sidebar
   pkg_client_ui_agent_preset --> pkg_invariants
   pkg_client_ui_business_workflow --> pkg_business_workflow
   pkg_client_ui_business_workflow --> pkg_client_locale
@@ -448,6 +476,14 @@ flowchart TD
   pkg_client_ui_business_workflow --> pkg_invariants
   pkg_client_ui_business_workflow --> pkg_session
   pkg_client_ui_business_workflow --> pkg_tool_business_workflow
+  pkg_client_ui_capability_health --> pkg_api_remotes
+  pkg_client_ui_capability_health --> pkg_client_connection
+  pkg_client_ui_capability_health --> pkg_client_locale
+  pkg_client_ui_capability_health --> pkg_client_runtime
+  pkg_client_ui_capability_health --> pkg_client_ui_layout
+  pkg_client_ui_capability_health --> pkg_client_ui_settings_general
+  pkg_client_ui_capability_health --> pkg_client_ui_sidebar
+  pkg_client_ui_capability_health --> pkg_invariants
   pkg_client_ui_jobs --> pkg_client_ui_conversation
   pkg_client_ui_renderer --> pkg_client_runtime
   pkg_client_ui_settings_runtimes --> pkg_api_remotes
@@ -463,6 +499,28 @@ flowchart TD
   pkg_client_ui_settings_stats --> pkg_client_ui_settings
   pkg_client_ui_settings_stats --> pkg_invariants
   pkg_client_ui_settings_stats --> pkg_token_meter
+  pkg_client_ui_work_center --> pkg_api_remotes
+  pkg_client_ui_work_center --> pkg_client_connection
+  pkg_client_ui_work_center --> pkg_client_locale
+  pkg_client_ui_work_center --> pkg_client_runtime
+  pkg_client_ui_work_center --> pkg_client_ui_layout
+  pkg_client_ui_work_center --> pkg_client_ui_settings_general
+  pkg_client_ui_work_center --> pkg_client_ui_sidebar
+  pkg_client_ui_work_center --> pkg_invariants
+  pkg_client_ui_work_knowledge --> pkg_api_remotes
+  pkg_client_ui_work_knowledge --> pkg_client_connection
+  pkg_client_ui_work_knowledge --> pkg_client_locale
+  pkg_client_ui_work_knowledge --> pkg_client_runtime
+  pkg_client_ui_work_knowledge --> pkg_client_ui_layout
+  pkg_client_ui_work_knowledge --> pkg_client_ui_sidebar
+  pkg_client_ui_work_knowledge --> pkg_invariants
+  pkg_client_ui_work_remote --> pkg_api_remotes
+  pkg_client_ui_work_remote --> pkg_client_connection
+  pkg_client_ui_work_remote --> pkg_client_locale
+  pkg_client_ui_work_remote --> pkg_client_runtime
+  pkg_client_ui_work_remote --> pkg_client_ui_layout
+  pkg_client_ui_work_remote --> pkg_client_ui_sidebar
+  pkg_client_ui_work_remote --> pkg_invariants
   pkg_client_ui_workbench_agent --> pkg_api_remotes
   pkg_client_ui_workbench_agent --> pkg_client_connection
   pkg_client_ui_workbench_agent --> pkg_client_locale
@@ -470,6 +528,30 @@ flowchart TD
   pkg_client_ui_workbench_agent --> pkg_client_ui_layout
   pkg_client_ui_workbench_agent --> pkg_client_ui_sidebar
   pkg_client_ui_workbench_agent --> pkg_invariants
+  pkg_client_ui_work_artifacts --> pkg_api_remotes
+  pkg_client_ui_work_artifacts --> pkg_client_connection
+  pkg_client_ui_work_artifacts --> pkg_client_locale
+  pkg_client_ui_work_artifacts --> pkg_client_runtime
+  pkg_client_ui_work_artifacts --> pkg_client_ui_layout
+  pkg_client_ui_work_artifacts --> pkg_client_ui_sidebar
+  pkg_client_ui_work_artifacts --> pkg_client_ui_work_center
+  pkg_client_ui_work_artifacts --> pkg_invariants
+  pkg_client_ui_work_templates --> pkg_api_remotes
+  pkg_client_ui_work_templates --> pkg_client_connection
+  pkg_client_ui_work_templates --> pkg_client_locale
+  pkg_client_ui_work_templates --> pkg_client_runtime
+  pkg_client_ui_work_templates --> pkg_client_ui_layout
+  pkg_client_ui_work_templates --> pkg_client_ui_sidebar
+  pkg_client_ui_work_templates --> pkg_client_ui_work_center
+  pkg_client_ui_work_templates --> pkg_invariants
+  pkg_client_ui_work_triggers --> pkg_api_remotes
+  pkg_client_ui_work_triggers --> pkg_client_connection
+  pkg_client_ui_work_triggers --> pkg_client_locale
+  pkg_client_ui_work_triggers --> pkg_client_runtime
+  pkg_client_ui_work_triggers --> pkg_client_ui_layout
+  pkg_client_ui_work_triggers --> pkg_client_ui_sidebar
+  pkg_client_ui_work_triggers --> pkg_client_ui_work_center
+  pkg_client_ui_work_triggers --> pkg_invariants
 ```
 
 | Package | Group | Depends on |
@@ -655,6 +737,7 @@ flowchart TD
 | [`typert-protocol`](../packages/typert/protocol) | `typert` | — |
 | [`typert-registry`](../packages/typert/registry) | `typert` | — |
 | [`workflow`](../packages/workflow/workflow) | `workflow` | — |
+| [`llm-codex-cli`](../packages/llm/llm-codex-cli) | `llm` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`llm-cursor-cli`](../packages/llm/llm-cursor-cli) | `llm` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`tool-fs`](../packages/fs/tool-fs) | `fs` | [`session`](../packages/core/session) |
 | [`tool-fs-search`](../packages/fs/tool-fs-search) | `fs` | [`session`](../packages/core/session) |
@@ -669,7 +752,14 @@ flowchart TD
 | [`api-gateway`](../packages/api/gateway) | `api` | [`typert-registry`](../packages/typert/registry) |
 | [`business-workflow`](../packages/business/business-workflow) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`business-workflow-local`](../packages/business/business-workflow-local) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`capability-health`](../packages/business/capability-health) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`tool-business-workflow`](../packages/business/tool-business-workflow) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-artifacts`](../packages/business/work-artifacts) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-center`](../packages/business/work-center) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-knowledge`](../packages/business/work-knowledge) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-remote`](../packages/business/work-remote) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-templates`](../packages/business/work-templates) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`work-triggers`](../packages/business/work-triggers) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`workbench-agent`](../packages/business/workbench-agent) | `business` | [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-locale`](../packages/client/locale) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection) |
 | [`client-ui-attachment`](../packages/client/ui-attachment) | `client` | [`attachment`](../packages/attachment/attachment) |
@@ -701,15 +791,22 @@ flowchart TD
 | [`tool-workflow`](../packages/workflow/tool-workflow) | `workflow` | [`agent`](../packages/core/agent) |
 | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | `workflow` | [`brand`](../packages/util/brand) |
 | [`workspace`](../packages/workspace/workspace) | `workspace` | [`storage`](../packages/storage/storage) |
-| [`client-runtime`](../packages/client/runtime) | `client` | [`business-workflow`](../packages/business/business-workflow), [`typert-registry`](../packages/typert/registry), [`workbench-agent`](../packages/business/workbench-agent) |
+| [`client-runtime`](../packages/client/runtime) | `client` | [`business-workflow`](../packages/business/business-workflow), [`capability-health`](../packages/business/capability-health), [`typert-registry`](../packages/typert/registry), [`work-artifacts`](../packages/business/work-artifacts), [`work-center`](../packages/business/work-center), [`work-remote`](../packages/business/work-remote), [`work-templates`](../packages/business/work-templates), [`work-triggers`](../packages/business/work-triggers), [`workbench-agent`](../packages/business/workbench-agent), [`workspace`](../packages/workspace/workspace) |
 | [`client-ui-conversation`](../packages/client/ui-conversation) | `client` | [`api-remotes`](../packages/api/remotes), [`goal`](../packages/goal/goal), [`permission-presets`](../packages/interaction/permission-presets), [`plan-mode`](../packages/plan/plan-mode), [`session-stats`](../packages/session/session-stats), [`token-meter`](../packages/llm/token-meter), [`tool-todo`](../packages/todo/tool-todo) |
 | [`client-ui-skill`](../packages/client/ui-skill) | `client` | [`client-connection`](../packages/client/connection), [`client-ui-tool`](../packages/client/ui-tool) |
 | [`client-ui-subagent`](../packages/client/ui-subagent) | `client` | [`client-ui-input-trigger`](../packages/client/ui-input-trigger), [`subagent`](../packages/subagent/subagent), [`token-meter`](../packages/llm/token-meter) |
 | [`acp-demo`](../packages/examples/acp-demo) | `examples` | [`session-query`](../packages/session-query/session-query) |
-| [`client-ui-agent-preset`](../packages/client/ui-agent-preset) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-conversation`](../packages/client/ui-conversation), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-settings`](../packages/client/ui-settings), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-agent-preset`](../packages/client/ui-agent-preset) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-conversation`](../packages/client/ui-conversation), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-ui-business-workflow`](../packages/client/ui-business-workflow) | `client` | [`business-workflow`](../packages/business/business-workflow), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-conversation`](../packages/client/ui-conversation), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants), [`session`](../packages/core/session), [`tool-business-workflow`](../packages/business/tool-business-workflow) |
+| [`client-ui-capability-health`](../packages/client/ui-capability-health) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-settings-general`](../packages/client/ui-settings-general), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-ui-jobs`](../packages/client/ui-jobs) | `client` | [`client-ui-conversation`](../packages/client/ui-conversation) |
 | [`client-ui-renderer`](../packages/client/ui-renderer) | `client` | [`client-runtime`](../packages/client/runtime) |
 | [`client-ui-settings-runtimes`](../packages/client/ui-settings-runtimes) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-ui-settings-stats`](../packages/client/ui-settings-stats) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-settings`](../packages/client/ui-settings), [`invariants`](../packages/runtime-diagnostics/invariants), [`token-meter`](../packages/llm/token-meter) |
+| [`client-ui-work-center`](../packages/client/ui-work-center) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-settings-general`](../packages/client/ui-settings-general), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-work-knowledge`](../packages/client/ui-work-knowledge) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-work-remote`](../packages/client/ui-work-remote) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
 | [`client-ui-workbench-agent`](../packages/client/ui-workbench-agent) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-work-artifacts`](../packages/client/ui-work-artifacts) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`client-ui-work-center`](../packages/client/ui-work-center), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-work-templates`](../packages/client/ui-work-templates) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`client-ui-work-center`](../packages/client/ui-work-center), [`invariants`](../packages/runtime-diagnostics/invariants) |
+| [`client-ui-work-triggers`](../packages/client/ui-work-triggers) | `client` | [`api-remotes`](../packages/api/remotes), [`client-connection`](../packages/client/connection), [`client-locale`](../packages/client/locale), [`client-runtime`](../packages/client/runtime), [`client-ui-layout`](../packages/client/ui-layout), [`client-ui-sidebar`](../packages/client/ui-sidebar), [`client-ui-work-center`](../packages/client/ui-work-center), [`invariants`](../packages/runtime-diagnostics/invariants) |

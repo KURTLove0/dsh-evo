@@ -2,15 +2,19 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 8px;
+  height: 36px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 10px;
   border: 1px solid var(--dsw-alias-border-l2);
-  border-radius: 8px;
+  border-radius: var(--dsw-radius-control);
   background: var(--dsw-alias-bg-layer-1);
 }
 
 .wrap:focus-within {
-  border-color: var(--dsw-alias-brand-primary);
+  border-color: var(--dsw-alias-state-business-primary);
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
 }
 
 .icon {
@@ -34,5 +38,11 @@
 }
 
 .input::placeholder {
-  color: var(--dsw-alias-label-dimmed);
+  color: var(--dsw-alias-label-tertiary);
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .wrap { min-height: 44px; }
+  .input { font-size: 16px; line-height: 24px; }
 }

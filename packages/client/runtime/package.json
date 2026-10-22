@@ -40,7 +40,15 @@
     "@deepseek-ai/cordis": "workspace:^",
     "@deepseek-ai/dsh-typert-registry": "workspace:^",
     "@deepseek-ai/dsh-business-workflow": "workspace:^",
-    "@deepseek-ai/dsh-workbench-agent": "workspace:^"
+    "@deepseek-ai/dsh-workbench-agent": "workspace:^",
+    "@deepseek-ai/dsh-work-center": "workspace:^",
+    "@deepseek-ai/dsh-workspace": "workspace:^",
+    "@deepseek-ai/dsh-work-templates": "workspace:^",
+    "@deepseek-ai/dsh-capability-health": "workspace:^",
+    "@deepseek-ai/dsh-work-artifacts": "workspace:^",
+    "@deepseek-ai/dsh-work-triggers": "workspace:^",
+    "@deepseek-ai/dsh-work-remote": "workspace:^",
+    "@deepseek-ai/dsh-work-knowledge": "workspace:^"
   },
   "dependencies": {
     "@deepseek-ai/dsh-agent": "workspace:^",
@@ -68,7 +76,15 @@
     "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
     "react": "^18.2.0",
     "@deepseek-ai/dsh-business-workflow": "workspace:^",
-    "@deepseek-ai/dsh-workbench-agent": "workspace:^"
+    "@deepseek-ai/dsh-workbench-agent": "workspace:^",
+    "@deepseek-ai/dsh-work-center": "workspace:^",
+    "@deepseek-ai/dsh-workspace": "workspace:^",
+    "@deepseek-ai/dsh-work-templates": "workspace:^",
+    "@deepseek-ai/dsh-capability-health": "workspace:^",
+    "@deepseek-ai/dsh-work-artifacts": "workspace:^",
+    "@deepseek-ai/dsh-work-triggers": "workspace:^",
+    "@deepseek-ai/dsh-work-remote": "workspace:^",
+    "@deepseek-ai/dsh-work-knowledge": "workspace:^"
   },
   "dsh": {
     "client": {

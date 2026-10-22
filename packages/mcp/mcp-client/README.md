@@ -80,6 +80,10 @@ Every MCP tool has two names: the raw MCP name (sent on the wire in `tools/call`
 
 Independent agent scopes may reuse a server name. Unscoped connections share the app root. The [business-agent composition decision](../../../.agents/notes/implemented/feature/2026-10-20-business-agent-composition.md) owns execution-scoped connection ownership.
 
+## Temporary connection probes
+
+`probeMcp(config, options)` initializes and pings a temporary connection without listing, registering, or invoking tools. `McpProbeOptions` supplies positive initialization/ping and post-SDK close-event deadlines plus optional cancellation. `McpProbeOutcome` retains connection and cleanup outcomes independently, with start and completion times and no raw server error text. Stdio probes suppress stderr and use the normal scrubbed environment. SDK shutdown is idempotent across cancellation, failed initialization, and final cleanup; successful cleanup requires the transport close event. A caller must refuse overlapping retries after unconfirmed cleanup. Probes do not affect model history or the live tool registry.
+
 ## Model Experience
 
 ### Discovered MCP tools

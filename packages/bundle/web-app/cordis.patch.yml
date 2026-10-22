@@ -22,7 +22,7 @@
 # their owning package because it scans package-root Loader entries.
 - id: typert-loader
   config:
-    packages: ['@deepseek-ai/dsh-business-workflow-local', '@deepseek-ai/dsh-workbench-agent']
+    packages: ['@deepseek-ai/dsh-business-workflow-local', '@deepseek-ai/dsh-workbench-agent', '@deepseek-ai/dsh-work-center', '@deepseek-ai/dsh-work-templates', '@deepseek-ai/dsh-work-artifacts', '@deepseek-ai/dsh-work-knowledge', '@deepseek-ai/dsh-work-triggers', '@deepseek-ai/dsh-work-remote', '@deepseek-ai/dsh-capability-health']
 
 # TODO: Re-enable shared HMR for Web after its reload lifecycle is tested.
 - id: hmr
@@ -71,6 +71,55 @@
       name: '@deepseek-ai/dsh-workbench-agent'
       config:
         runtimePreset: standard
+
+    - id: ui-capability-health
+      name: '@deepseek-ai/dsh-client-ui-capability-health'
+      config: {}
+    - id: authorization
+      name: '@deepseek-ai/dsh-authorization'
+
+    - id: capability-health
+      name: '@deepseek-ai/dsh-capability-health'
+      config: {}
+    - id: work-triggers
+      name: '@deepseek-ai/dsh-work-triggers'
+      config: {}
+    - id: work-remote
+      name: '@deepseek-ai/dsh-work-remote'
+      config:
+        peers: []
+    - id: ui-work-remote
+      name: '@deepseek-ai/dsh-client-ui-work-remote'
+      config: {}
+    - id: ui-work-triggers
+      name: '@deepseek-ai/dsh-client-ui-work-triggers'
+      config: {}
+    - id: work-knowledge
+      name: '@deepseek-ai/dsh-work-knowledge'
+      config: {}
+    - id: tool-work-knowledge
+      name: '@deepseek-ai/dsh-work-knowledge/tools'
+      config: {}
+    - id: ui-work-knowledge
+      name: '@deepseek-ai/dsh-client-ui-work-knowledge'
+      config: {}
+    - id: work-artifacts
+      name: '@deepseek-ai/dsh-work-artifacts'
+      config: {}
+    - id: work-templates
+      name: '@deepseek-ai/dsh-work-templates'
+
+    - id: ui-work-artifacts
+      name: '@deepseek-ai/dsh-client-ui-work-artifacts'
+
+    - id: ui-work-templates
+      name: '@deepseek-ai/dsh-client-ui-work-templates'
+
+    - id: work-center
+      name: '@deepseek-ai/dsh-work-center'
+
+    - id: ui-work-center
+      name: '@deepseek-ai/dsh-client-ui-work-center'
 
     - id: ui-workbench-agent
       name: '@deepseek-ai/dsh-client-ui-workbench-agent'

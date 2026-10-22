@@ -43,6 +43,14 @@
 | [spill.md](spill.zh.md) | spill 存储 seam：`SaveTextSpill`、`SpillOwner`/`SpillSource`、`SpillRef`、品牌类型 `SpillLocator` |
 | [workflow.md](workflow.zh.md) | 工作流 seam：`WorkflowStartRequest`、`WorkflowMeta`、`WorkflowRun`/`Result`、`workflow/*` 事件载荷、`WorkflowError` 致命性 |
 | [business-workflow.md](business-workflow.zh.md) | 业务工作流 seam：clarify/compose/verify 阶段机、`RequirementSubmission`、`WorkflowComposition`、`VerificationReport`、`business-workflow/*` 事件 |
+| [work-center.md](work-center.zh.md) | 跨执行来源的有界工作分页、任务提交、交付证据与独立人工验收 |
+| [mcp-client.md](mcp-client.zh.md) | MCP 工具桥接与临时连接检测。 |
+| [capability-health.md](capability-health.zh.md) | 配置观察与显式临时 MCP 连接检测。 |
+| [work-templates.md](work-templates.zh.md) | 私有版本化任务与工作流模板。 |
+| [work-remote.md](work-remote.zh.md) | 已认证原生远程执行、带权限范围的身份及持久提交恢复 |
+| [work-triggers.md](work-triggers.zh.md) | 持久时间及执行结束触发、原生幂等交接与保留的应用内通知 |
+| [work-knowledge.md](work-knowledge.zh.md) | 显式文本授权、不可变版本、字面检索和行引用 |
+| [work-artifacts.md](work-artifacts.zh.md) | 显式不可变文件快照、执行及已验收评审来源、带时间的当前文件观察 |
 | [workbench-agent.md](workbench-agent.zh.md) | 独立工作台智能体：身份、配置、执行队列、AI 设计草稿与历史 |
 | [jobs.md](jobs.zh.md) | 后台任务运行时：品牌化 `JobId`、producer 约定、消费方视图和 `ctx.jobs` 服务行为 |
 | [permission-presets.md](permission-presets.zh.md) | 权限预设层：`PresetSpec`/`PresetOption`、派生的 `custom` 状态、仅记日志的 `permission/preset` 事件 |

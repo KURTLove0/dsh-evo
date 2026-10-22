@@ -12,7 +12,9 @@ Sources: the seam vocabulary in [`packages/business/business-workflow/src/types.
 
 The `WorkflowWorkbench` service adds a workspace-owned directory alongside the conversation pipeline. Its browser-safe [types](../../packages/business/business-workflow/src/workbench-types.ts) distinguish `WorkflowDocument` (editable draft and revisions), `WorkflowVersion` (immutable publication), `WorkflowRun` (fixed version, inputs, execution route, outputs and assertion), `WorkflowAttempt` (one node's actual execution context), and `WorkflowOperation` (AI candidate with its source revision). Agent and approval nodes reuse the explicit dependency and input-source rules below.
 
-`command` applies create/save/publish/archive/generate/start/verify/cancel/decide actions. Saves and publications require `expectedRevision`; approval decisions require `runId` and `attemptId`. `snapshot` reads committed directory and selected history; `validate` reports requirement and graph defects. Provider storage, cancellation, recovery, and resource limits belong to the [durable provider](../../packages/business/business-workflow-local/README.md#durable-workbench-entry).
+`command` applies create/save/publish/archive/generate/start/verify/cancel/decide actions. Saves and publications require `expectedRevision`; approval decisions require `runId` and `attemptId`. `snapshot` reads committed directory and selected history; `validate` reports requirement and graph defects. Provider storage, cancellation, recovery, and resource limits belong to the [durable provider](../../packages/business/business-workflow-local/README.md).
+
+`WorkflowRunQuery` filters bounded `WorkflowRunSummary` pages before pagination; `WorkflowRunPosition` and `WorkflowRunPage` put waiting runs first, then descend by checkpoint `updatedAt` and id. `WorkflowRunRevision` rejects continuations after committed run changes or host restart. Summaries expose exact waiting attempts without full publications or output payloads. `WorkflowRequestId` provides idempotent starts across restart. Runs may capture explicit revision feedback, which enters new logged node input. [Work Center](work-center.md) records independent human decisions and requests new executions without editing the original publication.
 
 ## The stage union
 
@@ -113,6 +115,10 @@ The payload types: `BusinessWorkflowInfo` (id plus post-transition stage) and `V
 
 Failures are `BusinessWorkflowError` with machine-routable codes — `REQUIREMENT_INVALID` (a malformed submission), `COMPOSITION_INVALID`, `UNKNOWN_WORKFLOW`, `STAGE_VIOLATION` (an operation the record's stage does not admit), `CAPACITY`, `ABORTED` — while structural defects and verification failures are ordinary outcomes, never errors.
 
+`WorkflowRun.retryRequest` identifies an explicit full retry, with `rerunOf` naming its distinct source. `WorkflowCommand.retry` preserves the original immutable publication, inputs, feedback, route, and verification case. The [provider](../../packages/business/business-workflow-local/README.md#durable-workbench-entry) owns admission and restart recovery.
+
+`WorkflowCatalogEntry` contains only saved identity, name, workspace, and archive state. `WorkflowRunQuery` filters workflow identity and submission-time bounds before pagination. Run summaries derive first-node start and terminal checkpoint times without changing durable records.
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -195,6 +201,26 @@ Providers persist before returning receipts and own work beyond any client conne
 abstract snapshot(id?: WorkflowId): Promise<WorkflowWorkbenchSnapshot>
 
 /**
+ * Read saved workflow identities without graphs or execution history.
+ * @returns committed names, workspaces, and archive flags.
+ */
+abstract catalog(): Promise<WorkflowCatalogEntry[]>
+
+/**
+ * Read bounded run summaries across workflows without loading selected history.
+ * @param request - explicit limit, optional workspace, and generation-scoped waiting/update cursor.
+ * @returns detached committed summaries and continuation.
+ */
+abstract queryRuns(request: WorkflowRunQuery): Promise<WorkflowRunPage>
+
+/**
+ * Read one committed execution and its captured publication.
+ * @param id - original run identity.
+ * @returns detached execution, rejecting unknown identities.
+ */
+abstract inspectRun(id: WorkflowRunId): Promise<WorkflowRun>
+
+/**
  * Apply a management action independently from the caller's conversation.
  * @param request - full command; edits require the currently committed revision.
  * @returns affected identities after persistence; background work remains service-owned.
@@ -208,6 +234,8 @@ abstract command(request: WorkflowCommand): Promise<WorkflowReceipt>
  */
 abstract validate(definition: WorkflowDefinition): WorkflowValidation
 ```
+
+Types: [WorkflowRun](workflow.md)
 
 Source: [`packages/business/business-workflow/src/workbench.ts`](../../packages/business/business-workflow/src/workbench.ts)
 

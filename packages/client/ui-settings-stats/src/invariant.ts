@@ -15,8 +15,8 @@ export const name = 'client-ui-settings-stats-invariant'
 export const inject = ['invariants']
 
 /**
- * No runtime invariant: a read-only section plugin aggregating one wire call
- * into a page snapshot — it emits no cordis events and owns no cross-plugin
+ * No runtime invariant: a read-only section plugin rendering session and execution-owner observations
+ * with explicit filters and no durable writes — it emits no cordis events and owns no cross-plugin
  * mutable relation.
  */
 const install: InvariantInstaller = () => {}

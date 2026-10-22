@@ -427,7 +427,7 @@ describe('ToolRuntime', () => {
     const result = await ctx.tools.execute({ signal: testToolSignal, callId: CallId('block'), name: 'echo', arguments: { text: 'secret' } })
     expect(result).toEqual({
       isError: true,
-      error: { message: 'blocked by policy' },
+      error: { message: 'blocked by policy', info: { name: 'ToolPolicyError', code: 'TOOL_RESULT_BLOCKED' } },
       content: [{ type: 'text', text: 'blocked by policy' }],
     })
     expect('value' in result).toBe(false)
@@ -691,6 +691,7 @@ describe('ToolRuntime', () => {
     const result = await ctx.tools.execute({ signal: testToolSignal, callId: CallId('c1'), name: 'echo', arguments: { text: 'hi' } })
     expect(result.isError).toBe(true)
     expect(result.content[0]).toMatchObject({ text: 'Error: denied by policy' })
+    expect(result.error?.info).toEqual({ name: 'ToolPolicyError', code: 'TOOL_DENIED' })
     expect(postSawFrozen).toBe(true)
   })
 
@@ -1150,7 +1151,7 @@ describe('ToolRuntime', () => {
     await expect(pending).resolves.toEqual({
       content: [{ type: 'text', text: 'Error: policy denied the call' }],
       isError: true,
-      error: { message: 'policy denied the call' },
+      error: { message: 'policy denied the call', info: { name: 'ToolPolicyError', code: 'TOOL_DENIED' } },
     })
     expect(dispatched).toBe(0)
   })

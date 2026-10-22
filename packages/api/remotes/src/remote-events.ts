@@ -1,4 +1,7 @@
+export type {} from '@deepseek-ai/dsh-work-triggers/types'
 export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'
+export type {} from '@deepseek-ai/dsh-work-center/types'
+export type {} from '@deepseek-ai/dsh-work-templates/types'
 
 /**
  * The one home of this application's forwarded-Host-event allowlist. Both
@@ -19,9 +22,15 @@ export type {} from '@deepseek-ai/dsh-business-workflow/workbench-types'
 export const API_REMOTE_FORWARDED_EVENTS = [
   'business-workflow/changed',
   'workbench-agent/changed',
+  'work-center/changed',
+  'work-template/changed',
+  'work-artifact/changed',
+  'work-trigger/changed',
+  'capability-health/probe-changed',
   'agent-preset/selected',
   'commands/change',
   'credentials/reference-updated',
+  'credentials/record-updated',
   'cordis/request-run',
   'cordis/request-run-resolved',
   'cordis/dynamic-package',

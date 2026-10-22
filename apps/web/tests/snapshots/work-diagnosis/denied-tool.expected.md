@@ -1,0 +1,39 @@
+- region "Result and failure diagnosis":
+  - heading "Result and failure diagnosis" [level=2]
+  - paragraph: Categories follow recorded codes and end reasons. An observed tool or model error does not by itself explain the final outcome.
+  - button "Read diagnostic evidence"
+  - button "Open capability checks"
+  - button "Open model settings"
+  - button "Open runtime settings"
+  - paragraph:
+    - text: "Observed at:"
+    - time: {{timestamp}}
+    - text: · Execution ended
+  - heading "Evidence sources" [level=3]
+  - list:
+    - listitem:
+      - strong: {{uuid}}
+      - text: · Run record · Read
+      - button "Open source conversation"
+    - listitem:
+      - strong: {{uuid}}
+      - text: · Original session · Read · Through event sequence 64
+      - button "Open source conversation"
+  - list:
+    - listitem:
+      - heading "Permission or policy denial · Tool result" [level=3]
+      - paragraph: Observed evidence; not an independent root-cause claim
+      - paragraph: {{uuid}} · diagnostic_echo · TOOL_DENIED
+      - paragraph:
+        - text: "tool/result · #23 ·"
+        - time: {{timestamp}}
+      - group: Read original recorded text
+  - group:
+    - text: Inspect full retry configuration
+    - paragraph: Observe a denied tool
+    - paragraph: This is a task execution.
+    - heading "Configuration captured by the original run" [level=3]
+    - text: "{ \"runtime\": \"diagnostic-test\", \"skills\": [], \"instructions\": \"Follow the requested task.\", \"revision\": 1, \"mcpServerNames\": [] }"
+    - heading "Configuration for this new task" [level=3]
+    - text: "{ \"id\": \"{{uuid}}\", \"name\": \"Diagnostic reviewer\", \"revision\": 1, \"archived\": false, \"runtime\": \"diagnostic-test\", \"instructions\": \"Follow the requested task.\", \"skills\": [], \"mcpServerNames\": [] }"
+  - button "Prepare full retry" [disabled]

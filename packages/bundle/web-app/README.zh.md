@@ -8,9 +8,20 @@ dsh 浏览器表层组合包。[`cordis.patch.yml`](cordis.patch.yml) 叠加在 
 
 工作空间工作流工作台通过 `@deepseek-ai/dsh-business-workflow-local/workbench` 加载。所属包显式列入 `typert-loader.packages`，使网关在 Loader 使用子路径入口时也能注册生成的 `workflowGateway` 接口。
 
+本组合包还挂载[能力检查](../../business/capability-health/README.zh.md)及其浏览器入口，并提供授权注册服务以读取现有凭证流的配置状态。配置观察与显式 MCP 握手不提交模型输入；修复入口复用已有设置页面。
+
+本组合包挂载[项目产物](../../business/work-artifacts/README.zh.md)及其浏览器插件，提供带执行来源的显式文件快照。已验收评审捕获保留原始字节；当前文件观察必须显式操作。
+
+
+默认组合挂载持久工作触发提供方及浏览器控件。接纳或观察到期工作需要主机保持运行；浏览器生命周期不拥有已启用规则。
+
+已认证的 [Work Remote](../../business/work-remote/README.zh.md) 调用传输以空机器列表挂载。配置固定机器后可使用[远程执行页面](../../client/ui-work-remote/README.zh.md)，独立授权的接收端仍需显式启用。
+
 ## 模型重试默认值
 
 Web 使用共享的有界 normal 默认值，在首次请求后最多再重试五次符合条件的失败。`deepseek-official` 与由 settings 新增的 pi-ai 路由在省略 `retryPolicy` 时使用该默认值；显式提供方策略仍然优先。Web 不再增加重试专用的组合覆盖，因此非 Web profile 的省略行为与之相同。
+
+Bundle 挂载[项目知识](../../business/work-knowledge/README.zh.md)、其可选日志化模型工具及[知识目录](../../client/ui-work-knowledge/README.zh.md)。目录初始为空，只有显式添加并启用的本地文本来源可被索引或检索。页面导航与元数据刷新不读文件内容。
 
 ## 模型体验
 

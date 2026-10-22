@@ -1,0 +1,15 @@
+- region "MCP connection checks":
+  - heading "MCP connection checks" [level=2]
+  - list:
+    - listitem:
+      - heading "ok" [level=3]
+      - paragraph: Connection not probed. A probe starts the saved local server or connects to its address, then only initializes and pings.
+      - button "Probe connection"
+    - listitem:
+      - heading "reject" [level=3]
+      - paragraph: Connection not probed. A probe starts the saved local server or connects to its address, then only initializes and pings.
+      - button "Probe connection"
+    - listitem:
+      - heading "hang" [level=3]
+      - paragraph: Connection not probed. A probe starts the saved local server or connects to its address, then only initializes and pings.
+      - button "Probe connection"

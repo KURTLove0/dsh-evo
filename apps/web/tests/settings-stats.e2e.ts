@@ -126,7 +126,7 @@ describe('web e2e: the Statistics settings page', () => {
 
   it('matches the stats page aria golden', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-settings-stats-aria'))
-    const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
+    const snapshot = (await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)).replace(/\d{4}-\d{2}-\d{2}/g, '{{date}}')
     await compareOrRefreshGolden(PAGE_EXPECTED, snapshot, MODE)
   }, 60_000)
 

@@ -1,0 +1,29 @@
+- heading "New task" [level=2]
+- paragraph: Unsubmitted text stays in this application only and is lost on reload.
+- group:
+  - text: Executor
+  - combobox "Executor":
+    - option "Choose"
+    - option "Report reviewer" [selected]
+  - text: Workspace
+  - combobox "Workspace":
+    - option "Choose"
+    - option "{{workspace}}" [selected]
+  - text: Task goal
+  - textbox "Task goal": Inspect report.txt
+  - text: Background and input materials
+  - textbox "Background and input materials"
+  - text: Expected file paths (one per line, optional)
+  - textbox "Expected file paths (one per line, optional)": report.txt
+  - text: Acceptance criteria (one per line, optional)
+  - textbox "Acceptance criteria (one per line, optional)": Include source references
+  - text: Constraints
+  - textbox "Constraints"
+- group: Task templates
+- button "Check and preview"
+- button "Confirm task submission"
+- button "Close and retain draft"
+- button "Clear draft"
+- heading "Checked at {{time}}" [level=3]
+- paragraph: Basic dependency checks passed
+- group: "Actual task content preview Goal: Inspect report.txt Background: Expected deliverables: report.txt Acceptance criteria: Include source references Constraints:"

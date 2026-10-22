@@ -8,9 +8,20 @@ The independent Agents page mounts `dsh-workbench-agent` and `dsh-client-ui-work
 
 The workspace workbench loads through `@deepseek-ai/dsh-business-workflow-local/workbench`. Its owning package is explicitly listed in `typert-loader.packages`, so the Gateway registers the generated `workflowGateway` endpoints even though the Loader entry uses a subpath.
 
+The bundle also mounts [Capability Health](../../business/capability-health/README.md), its browser entry, and the authorization registry used to inspect existing credential flows. Configuration observations and explicit MCP handshakes submit no model input; repair actions reuse existing settings pages.
+
+The bundle mounts [Project Artifacts](../../business/work-artifacts/README.md) and its browser plugin for explicit file snapshots with execution provenance. Accepted-review captures retain original bytes; current-file observations require an explicit action.
+
+
+The default composition mounts the durable work trigger provider and browser controls. The host must remain running to admit or observe due work; browser lifetime does not own enabled rules.
+
+The authenticated [Work Remote](../../business/work-remote/README.md) calling transport is mounted with no peers. Configure pinned peers to use the [remote execution page](../../client/ui-work-remote/README.md); the independently authorized receiver remains opt-in.
+
 ## Model retry defaults
 
 Web uses the shared bounded normal default of five eligible retries after the initial request. The `deepseek-official` route and settings-added pi-ai routes use that default when they omit `retryPolicy`; explicit provider policies still win. Web adds no retry-specific composition override, so the same omission behavior applies to non-Web profiles.
+
+The bundle mounts [Project Knowledge](../../business/work-knowledge/README.md), its optional logged model tools, and the [knowledge directory](../../client/ui-work-knowledge/README.md). The directory begins empty; only explicitly added/enabled local text sources can be indexed or retrieved. Page navigation and metadata refresh read no file content.
 
 ## Model Experience
 

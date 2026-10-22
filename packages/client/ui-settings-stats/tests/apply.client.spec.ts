@@ -1,6 +1,6 @@
 /** Stats section registration: slot declaration injection and the locale-following label thunk. */
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import { SlotRegistry } from '@deepseek-ai/dsh-client-runtime/client'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
@@ -17,8 +17,17 @@ async function bench() {
   const locale = new LocaleRuntime(ctx)
   locale.setLocale('zh')
   ctx.provide('locale', locale)
-  ctx.provide('connection', { api: {}, isLoopback: true } as never)
-  return { ctx, slots: ctx.get('slots') as SlotRegistry, locale }
+  ctx.provide('connection', { api: {}, isLoopback: true, hostDescription: { getSnapshot: () => undefined, subscribe: () => () => {} } } as never)
+  const byId: Record<string, { id: string; pendingInteraction?: string }> = {}
+  let changed = () => {}
+  ctx.provide('sessions', { list: { getSnapshot: () => ({ byId }), subscribe: (listener: () => void) => { changed = listener; return () => {} } } } as never)
+  const remote = { $on: vi.fn((_event: string, _listener: () => void) => () => {}), workCenterGateway: {
+    statisticsChoices: vi.fn(async () => ({ ok: true, value: { executors: [], failures: [] } })),
+    statistics: vi.fn(async (query: unknown) => ({ ok: true, value: { query, observedAt: 1 } })),
+  } }
+  ctx.provide('remote', remote as never)
+  ctx.provide('remote.workCenterGateway', {} as never)
+  return { ctx, slots: ctx.get('slots') as SlotRegistry, locale, remote, byId, changed: () => { changed() } }
 }
 
 function declare(slots: SlotRegistry): () => void {
@@ -52,6 +61,22 @@ describe('ui-settings-stats apply', () => {
     expect(injected.t('title')).toBe('统计')
     expect(typeof injected.controller.load).toBe('function')
     expect(injected.hooks.snapshot).toBe(injected.controller.store)
+    const runEntry = before.slots.entries('settings.stats.runs')[0]!
+    const runFace = (runEntry.inject as unknown as () => import('../src/client/RunStatisticsPanel.tsx').RunStatisticsInjected)()
+    await runFace.choices()
+    await runFace.read({ from: 0, to: 1, timeZone: 'UTC', usage: 'skip' })
+    expect(runFace.hooks.work.getSnapshot().report?.observedAt).toBe(1)
+    runFace.invalidate()
+    expect(runFace.hooks.work.getSnapshot().stale).toBe(true)
+    before.byId['attention'] = { id: 'attention', pendingInteraction: 'approval' }
+    before.byId['quiet'] = { id: 'quiet' }
+    before.changed(); before.changed()
+    await runFace.read({ from: 0, to: 1, timeZone: 'UTC', usage: 'skip' })
+    for (const [, listener] of before.remote.$on.mock.calls) listener()
+    before.ctx.emit('connection/reset')
+    before.remote.workCenterGateway.statistics.mockResolvedValueOnce({ ok: false, error: { message: 'Query refused' } } as never)
+    await runFace.read({ from: 0, to: 1, timeZone: 'UTC', usage: 'skip' })
+    expect(runFace.hooks.work.getSnapshot().error).toBe('Query refused')
 
     const after = await bench()
     await after.ctx.plugin({ inject: [...inject], apply }).await()
@@ -87,4 +112,19 @@ describe('ui-settings-stats apply', () => {
     expect(() => b.locale.register('settings.stats', 'zh', {})).not.toThrow()
     expect(() => b.locale.register('settings.stats', 'en', {})).not.toThrow()
   })
+})
+
+it('keeps the session summary registered without the optional work statistics service', async () => {
+  const ctx = new Context()
+  await ctx.plugin(SlotRegistry).await()
+  const locale = new LocaleRuntime(ctx); ctx.provide('locale', locale)
+  ctx.provide('connection', { api: {} } as never)
+  const slots = ctx.get('slots') as SlotRegistry
+  declare(slots)
+  const fiber = ctx.plugin({ inject: [...inject], apply }); await fiber.await()
+  expect(slots.entries('settings.section')).toHaveLength(1)
+  expect(slots.entries('settings.stats.runs')).toHaveLength(0)
+  await fiber.dispose()
+  expect(slots.entries('settings.section')).toHaveLength(0)
+  await ctx.fiber.dispose()
 })

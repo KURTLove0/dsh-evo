@@ -1,0 +1,28 @@
+{
+  "time": {
+    "phase": "settled",
+    "attempts": 2,
+    "notices": [
+      "admission-unconfirmed",
+      "settled"
+    ],
+    "acknowledged": true
+  },
+  "interval": {
+    "enabled": false,
+    "occurrences": 1,
+    "phase": "settled",
+    "workflowStatus": "succeeded",
+    "publicationPinned": true,
+    "inputs": {
+      "report": "Original input"
+    }
+  },
+  "event": {
+    "rule": "on-settled",
+    "occurrences": 1,
+    "phase": "settled"
+  },
+  "nativeAgentRuns": 2,
+  "modelRequests": 2
+}

@@ -6,6 +6,10 @@
 
 `AgentDirectoryManager` 持有独立工作成员目录和所选任务历史。它合并通知、丢弃过期选择响应，在后续刷新失败时保留已提交的操作回执，并在卸载时停止发布。
 
+`WorkCenterManager` 持有有界运行分页、分页工作流等待项、执行者选择、所选交付证据与执行前检查结果。它串行处理刷新和续页读取，丢弃过期查询与选择，在当前连接观察到的规范化待处理会话集合变化时重置分页，在输入变化时使尚未返回的预览失效，并明确返回来源错误。浏览器草稿仍由页面声明的查看状态 store 保存。
+
+`TemplateManager` 持有有界私有模板目录、已发布工作流选项、样例与所选不可变历史。它合并失效刷新，丢弃过期选择结果，独立发布成功读取的数据而不受其他来源失败影响，并在刷新失败时保留已确认变更收据。模板名称与版本控件仍由页面视图 store 保存。
+
 对于每条可到达本地根 Agent 或可继续子 Agent 的提示词，运行时都会采样浏览器当前的 `Intl.DateTimeFormat().resolvedOptions().timeZone`，并只把该值附加到这一次 Session 或 subagent 提示词 RPC。该值既不缓存，也不包含在 Session 创建或 fork 状态中，因此旅行与并发标签页都能保留消息本地的来源信息。浏览器若无法提供非空时区，会在本地拒绝该提示词，而不会悄然使用部署状态代替。
 
 设置所有者共用本包定义的不依赖 React 的 `SettingsScopeSpec`、`SettingsScope` 与快照类型。ui-settings 拥有 `ctx.settingsScope.bind(spec)`、对应的 Host 传输、schema 校验与生命周期；详见[该包的约定](../ui-settings/README.zh.md)。
@@ -13,6 +17,11 @@
 <a id="slot-declaration-injection"></a>
 
 `WorkflowManager` 在不依赖 React 的对象层拥有独立工作流目录与选中运行历史。应用接口使用生成的 Remote 方法；通知与重连合并完整刷新请求，选择变化阻止旧响应发布其他工作流的历史。
+
+
+`TriggerManager` 分别拥有触发目录、所选详情及原目标准备的读取。它丢弃过时响应，保留出错后的上次结果，合并相同的进行中命令，并在未确认控制后刷新权威状态，不自动重新提交。
+
+`RemoteWorkManager` 拥有带权限身份的机器、目录、保留历史与原提交读取。选择及连接变化使旧读取代际失效；机器重新分配时清除旧 Host／主体的观察。命令只合并相同进行中输入并保留固定权限身份，重连只读取。[远程执行 UI](../ui-work-remote/README.zh.md) 拥有草稿及未确认操作保留。
 
 ## Slot 声明注入
 
@@ -28,7 +37,7 @@ Workspace 和 Session 列表各自具有单调的 `pending` → `ready` 基线�
 
 `WorkspaceRuntime.delete(workspaceId)` 在一元响应成功后从客户端投影中移除注册记录；对应的 `host/workspace-removed` 帧具有幂等性，并负责同步其他标签页。Session 状态与当前 Session selection 相互独立，因此 Workspace 消失后，其已纳入客户端投影的 Session 会立即投影到 Ungrouped 下。
 
-`WorkspaceListState.archivedSessionIds` 镜像 Host 的注册表级全局归档集合（一个按 Host 顺序的 `readonly SessionId[]`，仅在成员变化时才替换；需要 O(1) 查询的消费方自建临时 Set）。它是全快照状态：`workspace.list` 基线、`archiveSession` 一元回声和 `host/archived-sessions-changed` 帧各自安装完整集合。`WorkspaceRuntime.archiveSession(sessionId)` 通过 wire 归档；投影层在当前 selection 落入归档集合时统一清空为 New Session 视图状态——一条规则同时覆盖本地回声、其他标签页的帧、以及重连基线恢复出一个离线期间被归档的 selection。在 `workspace.list` 请求进行中安装的集合还会取代该过期基线携带的集合。各分组视图在所有位置隐藏集合成员，而会话行本身仍留在列表 store 中。
+`WorkspaceListState.archivedSessionIds` 镜像 Host 的注册表级全局归档集合（一个按 Host 顺序的 `readonly SessionId[]`，仅在成员变化时才替换；需要 O(1) 查询的消费方自建临时 Set）。它是全快照状态：`workspace.list` 基线、归档／恢复的一元回声和 `host/archived-sessions-changed` 帧各自安装完整集合。`WorkspaceRuntime.archiveSession(sessionId)` 和 `restoreSession(sessionId)` 串行提交本地成员修改；较新的 Host 观察优先于较旧回执。恢复不改变选择或记账；`refresh()` 重读工作空间／归档观察；投影层在当前 selection 落入归档集合时统一清空为 New Session 视图状态——一条规则同时覆盖本地回声、其他标签页的帧、以及重连基线恢复出一个离线期间被归档的 selection。在 `workspace.list` 请求进行中安装的集合还会取代该过期基线携带的集合。各分组视图在所有位置隐藏集合成员，而会话行本身仍留在列表 store 中。
 
 SlotRegistry 分别为 renderer 提供 `useSessions` 与 `useWorkspaces` 的裸 observable；ui-renderer 创建钩子。Workspace 业务状态不会进入 `SessionListState` 或条目 store。
 
@@ -85,6 +94,18 @@ reason 为 `max-tokens` 的 `turn/end` 会在该轮位置投影出一个 `turn-m
 ## 会话模型选择
 
 每个常驻 `Session` 都拥有一个 `modelSelection` 快照，其中包含当前模型选择、按提供方分组的目录、逐提供方失败记录，以及 `idle`／`loading`／`ready`／`selecting`／`error` 状态。历史记录会建立或刷新当前模型选择，打开选择器会刷新目录；选择失败会保留上一次模型选择和可用分组。目录与选择操作共用单调递增的代次，因此较旧响应无法覆盖较新的模型选择。重连重建会恢复 Host 报告的模型选择，同时不替换未变化的选择子结构。
+
+## 能力观察
+
+`HealthManager` 独立于页面挂载保留配置报告及显式检测标识。配置失效会丢弃过期读取。准入拒绝会清除待确认请求；传输失败则保留请求，供只读恢复。完成事件优先于较早的运行中响应。重新连接仅读取已保留的标识，不重新提交检测；宿主缺失的记录仍为未知。单个检测的失败不会覆盖其他观察结果。
+
+`WorkCenterManager.diagnose` 显式读取所选执行证据，抑制并发请求，忽略选择变化、刷新或卸载后的迟到响应。来源刷新只标记保留报告过期，不自动读取；读取失败保留最后已知报告并展示错误。
+
+`WorkStatisticsManager` 持有显式读取的执行范围及安全筛选选项。来源、待处理集合、筛选和重连变化只标记结果过期，不重新检查日志。独立读取代次忽略迟到响应，卸载后停止发布；失败保留原已提交筛选对应的报告。选项和报告的失败彼此独立。
+
+`ArtifactManager` 分别管理元数据分页、不可变预览、显式当前文件观察及固定输入的单次登记。元数据刷新不检查文件；失效后保留观察并标记过期。过时读取不能替换较新目标，管理器卸载后不发送尚未提交的排队写入。
+
+`KnowledgeManager` 负责带空间身份的来源元数据、显式字面检索/引用读取及一个保留的待确认操作。读取世代丢弃过时回复；空间、连接和授权变化清除资料文本。重连只刷新元数据。固定操作输入跨页面重挂载保留；成功回执与之后的元数据失败分开。[知识目录页面](../ui-work-knowledge/README.zh.md) 负责受控草稿和剪贴板反馈。
 
 ## 模型体验
 

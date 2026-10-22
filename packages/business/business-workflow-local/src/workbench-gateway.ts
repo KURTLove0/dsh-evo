@@ -4,6 +4,7 @@ import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-business-workflow/workbench'
 import type {
   WorkflowCommand,
+  WorkflowCatalogEntry,
   WorkflowId,
   WorkflowReceipt,
   WorkflowDefinition,
@@ -17,6 +18,14 @@ export class WorkflowGateway extends TypertRemoteService {
   constructor(ctx: Context) {
     super(ctx, 'workflowGateway')
   }
+
+  /**
+   * List workflow identities without publications or execution history.
+   * @param _request - empty directory request.
+   * @returns saved workflow names, workspaces, and archive flags.
+   */
+  @Remote('catalog')
+  catalog(_request: Record<string, never>): Promise<WorkflowCatalogEntry[]> { return this.ctx.workflowWorkbench.catalog() }
 
   /**
    * Query committed workflows and one selected history.

@@ -29,6 +29,9 @@ import type {
   WorkflowWorkbenchSnapshot,
   WorkflowReceipt,
   WorkflowValidation,
+  WorkflowRunQuery,
+  WorkflowRunPage,
+  WorkflowRunRevision,
 } from '@deepseek-ai/dsh-business-workflow/workbench-types'
 import { definitionSchema, runSchema, workbenchDomain } from './workbench-schema.ts'
 import {
@@ -57,6 +60,8 @@ export interface Config {
   maxActiveRuns: number
   /** Maximum duration of an Agent node or generation operation. */
   nodeTimeoutMs: number
+  /** Maximum summaries returned by a cross-workflow query. */
+  maxRunPageSize: number
 }
 
 /** One owned lifecycle; abort requests cancellation and done includes resource cleanup. */
@@ -88,9 +93,11 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
     maxRecordBytes: z.number().step(1).min(1024).max(Number.MAX_SAFE_INTEGER).default(4_194_304),
     maxActiveRuns: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(8),
     nodeTimeoutMs: z.number().step(1).min(1).max(Number.MAX_SAFE_INTEGER).default(300_000),
+    maxRunPageSize: z.number().step(1).min(1).default(100),
   })
   private domain!: Domain<typeof workbenchDomain>
   private readonly active = new Map<string, ActiveWork>()
+  private runDirectoryRevision = randomUUID() as WorkflowRunRevision
   private readonly committed = new Map<WorkflowRunId, WorkflowRun>()
   private tail: Promise<void> = Promise.resolve()
   private closing = false
@@ -198,6 +205,55 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
     })
   }
 
+  catalog(): Promise<import('@deepseek-ai/dsh-business-workflow/workbench-types').WorkflowCatalogEntry[]> {
+    return this.enqueue(() => [...this.domain.table('workflows').entries()]
+      .map(([, { id, workspaceId, name, archived }]) => ({ id, workspaceId, name, archived })))
+  }
+
+  queryRuns(request: WorkflowRunQuery): Promise<WorkflowRunPage> {
+    if (this.closing) return Promise.reject(new Error('Workflow service is unloading.'))
+    return this.enqueue(() => {
+      if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > this.config.maxRunPageSize)
+        throw new Error(`Run page limit must be an integer from 1 to ${this.config.maxRunPageSize}.`)
+      if (request.before !== undefined && request.before.revision !== this.runDirectoryRevision)
+        throw new Error('Run directory changed. Refresh before continuing.')
+      if ((request.createdFrom !== undefined && !Number.isFinite(request.createdFrom)) ||
+        (request.createdBefore !== undefined && !Number.isFinite(request.createdBefore)) ||
+        (request.createdFrom !== undefined && request.createdBefore !== undefined && request.createdFrom >= request.createdBefore))
+        throw new Error('Run creation bounds must be finite and increasing.')
+      const rows = [...this.committed.values()]
+        .filter(run => request.workspaceId === undefined || run.workspaceId === request.workspaceId)
+        .filter(run => request.workflowId === undefined || run.workflowId === request.workflowId)
+        .filter(run => request.createdFrom === undefined || run.createdAt >= request.createdFrom)
+        .filter(run => request.createdBefore === undefined || run.createdAt < request.createdBefore)
+        .filter(run => request.statuses === undefined || request.statuses.includes(run.status))
+        .filter(run => request.before === undefined || Number(run.status === 'waiting') < Number(request.before.attention) ||
+          ((run.status === 'waiting') === request.before.attention && (run.updatedAt < request.before.updatedAt ||
+            (run.updatedAt === request.before.updatedAt && run.id < request.before.id))))
+        .sort((a, b) => Number(b.status === 'waiting') - Number(a.status === 'waiting') || b.updatedAt - a.updatedAt || (a.id < b.id ? 1 : a.id > b.id ? -1 :
+          /* v8 ignore next -- Committed run IDs are unique within this array. */ 0))
+      const items = rows.slice(0, request.limit).map((run) => {
+        const waiting = run.attempts.find(attempt => attempt.status === 'waiting')
+        const starts = run.attempts.flatMap(attempt => attempt.startedAt === undefined ? [] : [attempt.startedAt])
+        return { id: run.id, workflowId: run.workflowId, workspaceId: run.workspaceId, sessionId: run.sessionId,
+          mode: run.mode, status: run.status, createdAt: run.createdAt, updatedAt: run.updatedAt,
+          workflowName: this.document(run.workflowId).name,
+          ...(starts.length === 0 ? {} : { startedAt: Math.min(...starts) }),
+          ...(terminal(run) ? { endedAt: run.updatedAt } : {}),
+          ...(run.error === undefined ? {} : { error: run.error }),
+          ...(waiting === undefined ? {} : { waitingAttemptId: waiting.id }) }
+      })
+      const last = items.at(-1)
+      return structuredClone({ items, revision: this.runDirectoryRevision,
+        ...(rows.length <= request.limit || last === undefined ? {} : { next: { id: last.id, updatedAt: last.updatedAt, attention: last.status === 'waiting', revision: this.runDirectoryRevision } }) })
+    })
+  }
+
+  inspectRun(id: WorkflowRunId): Promise<WorkflowRun> {
+    if (this.closing) return Promise.reject(new Error('Workflow service is unloading.'))
+    return this.enqueue(() => this.readRun(id))
+  }
+
   validate(definition: WorkflowDefinition): WorkflowValidation {
     const issues: string[] = []
     const parsed = definitionSchema.safeParse(definition)
@@ -232,7 +288,7 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
     })
   }
 
-  private enqueue<T>(action: () => Promise<T>): Promise<T> {
+  private enqueue<T>(action: () => T | Promise<T>): Promise<T> {
     if (this.closing) return Promise.reject(new Error('workflow service is unloading'))
     const work = this.tail.then(action)
     this.tail = work.then(
@@ -244,6 +300,33 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
 
   private async applyCommand(request: WorkflowCommand): Promise<WorkflowReceipt> {
     switch (request.kind) {
+      case 'copy': {
+        if (request.requestId === '') throw new Error('Copy request ID must be nonempty.')
+        const repeated = [...this.domain.table('workflows').entries()].map(([, value]) => value)
+          .find(value => value.copyRequest?.id === request.requestId)
+        if (repeated !== undefined) {
+          if (repeated.workspaceId !== request.workspaceId || repeated.copyRequest?.name !== request.name.trim() ||
+            repeated.copiedFrom?.id !== request.id || repeated.copiedFrom.versionId !== request.versionId ||
+            repeated.copiedFrom.template?.id !== request.template?.id ||
+            repeated.copiedFrom.template?.version !== request.template?.version)
+            throw new Error('This copy request ID belongs to another workflow copy.')
+          return { workflowId: repeated.id, revision: repeated.revision }
+        }
+        if (this.domain.table('workflows').size >= this.config.maxWorkflows) throw new Error('Workflow capacity reached.')
+        if (request.name.trim() === '') throw new Error('A copy name is required.')
+        await this.workspace(request.workspaceId)
+        const source = this.document(request.id).versions.find(value => value.id === request.versionId)
+        if (source === undefined) throw new Error('Unknown published version.')
+        const id = randomUUID() as WorkflowId
+        const now = Date.now()
+        const document: WorkflowDocument = { id, workspaceId: request.workspaceId, name: request.name.trim(),
+          revision: 1, createdAt: now, updatedAt: now, archived: false, versions: [], draft: structuredClone(source.definition),
+          copyRequest: { id: request.requestId, name: request.name.trim() }, copiedFrom: { id: request.id, versionId: source.id,
+            ...(request.template === undefined ? {} : { template: request.template }) } }
+        this.assertSize(document)
+        await this.domain.table('workflows').put(id, document)
+        return { workflowId: id, revision: 1 }
+      }
       case 'create': {
         if (this.domain.table('workflows').size >= this.config.maxWorkflows)
           throw new Error('Workflow capacity reached.')
@@ -336,6 +419,18 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
       }
       case 'start':
       case 'verify': {
+        if (request.kind === 'start' && request.requestId !== undefined) {
+          if (request.requestId === '') throw new Error('Workflow request ID must be nonempty.')
+          const repeated = [...this.committed.values()]
+            .find(run => run.requestId === request.requestId || run.retryRequest === request.requestId)
+          if (repeated !== undefined) {
+            if (repeated.retryRequest !== undefined || repeated.workflowId !== request.id || repeated.version.id !== request.versionId ||
+              repeated.rerunOf !== request.rerunOf ||
+              repeated.feedback !== request.feedback || JSON.stringify(repeated.inputs) !== JSON.stringify(request.inputs))
+              throw new Error('This request ID already belongs to another workflow submission.')
+            return { workflowId: repeated.workflowId, runIds: [repeated.id] }
+          }
+        }
         const document = this.document(request.id)
         if (document.archived) throw new Error('Cannot run an archived workflow.')
         const version = document.versions.find(item => item.id === request.versionId)
@@ -352,13 +447,9 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
           const prior = await this.readRun(request.rerunOf)
           if (prior.workflowId !== document.id || prior.version.id !== version.id)
             throw new Error('Rerun must reference this workflow and version.')
+          if (!terminal(prior)) throw new Error('Wait for the original workflow run to settle before rerunning it.')
         }
-        // Shared writable directories admit one active run, including waiting runs.
-        for (const [runId, index] of this.domain.table('runs').entries()) {
-          const owner = this.document(index.workflowId)
-          if (owner.workspaceId === workspace.id && !terminal(await this.readRun(runId)))
-            throw new Error('This workspace already has an unfinished workflow run.')
-        }
+        await this.assertWorkspaceIdle(workspace.id)
         this.assertCapacity()
         const batchId = request.kind === 'verify' ? (randomUUID() as WorkflowBatchId) : undefined
         const runs: WorkflowRun[] = cases.map((kase) => {
@@ -376,6 +467,8 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
             ...(batchId === undefined ? {} : { batchId }),
             ...(kase.name === undefined ? {} : { caseName: kase.name }),
             ...(request.kind === 'start' && request.rerunOf !== undefined ? { rerunOf: request.rerunOf } : {}),
+            ...(request.kind === 'start' && request.requestId !== undefined ? { requestId: request.requestId } : {}),
+            ...(request.kind === 'start' && request.feedback !== undefined ? { feedback: request.feedback } : {}),
             execution: {
               ...this.selfCtx.agentDefaultModel.currentSelection(),
               subagentProvider: this.config.subagentProvider,
@@ -402,6 +495,41 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
         assert(first !== undefined)
         this.launchRun(first.id)
         return { workflowId: document.id, runIds: runs.map(run => run.id) }
+      }
+      case 'retry': {
+        if (request.requestId === '') throw new Error('Workflow retry request ID must be nonempty.')
+        const repeated = [...this.committed.values()]
+          .find(run => run.retryRequest === request.requestId || run.requestId === request.requestId)
+        if (repeated !== undefined) {
+          if (repeated.retryRequest !== request.requestId || repeated.rerunOf !== request.runId)
+            throw new Error('This request ID already belongs to another workflow submission or retry.')
+          return { workflowId: repeated.workflowId, runIds: [repeated.id] }
+        }
+        const prior = await this.readRun(request.runId)
+        if (!terminal(prior) || (prior.status === 'succeeded' && !(prior.mode === 'verification' && prior.assertion?.passed === false)))
+          throw new Error('Only failed, stopped, or failed-acceptance workflow runs can be retried.')
+        if (this.document(prior.workflowId).archived) throw new Error('Cannot retry an archived workflow.')
+        const validation = this.validate(prior.version.definition)
+        if (!validation.valid) throw new Error(validation.issues.join('\n'))
+        const workspace = await this.workspace(prior.workspaceId)
+        await this.assertWorkspaceIdle(workspace.id)
+        this.assertCapacity()
+        const now = Date.now()
+        const run: WorkflowRun = {
+          id: randomUUID() as WorkflowRunId, workflowId: prior.workflowId, workspaceId: prior.workspaceId,
+          version: structuredClone(prior.version), sessionId: SessionId(randomUUID()), mode: prior.mode,
+          ...(prior.mode === 'verification' ? { batchId: randomUUID() as WorkflowBatchId } : {}),
+          ...(prior.caseName === undefined ? {} : { caseName: prior.caseName }),
+          ...(prior.feedback === undefined ? {} : { feedback: prior.feedback }),
+          rerunOf: prior.id, retryRequest: request.requestId,
+          execution: structuredClone(prior.execution), inputs: structuredClone(prior.inputs),
+          seq: 0, status: 'queued', createdAt: now, updatedAt: now, outputs: {},
+          attempts: prior.version.definition.nodes.map(node => ({ id: randomUUID() as WorkflowAttemptId, nodeId: node.id,
+            status: 'pending', inputs: {}, sources: {}, preset: node.preset, cwd: workspace.path })),
+        }
+        await this.reserveRun(run)
+        this.launchRun(run.id)
+        return { workflowId: run.workflowId, runIds: [run.id] }
       }
       case 'cancel': {
         const run = await this.readRun(request.runId)
@@ -520,6 +648,14 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
     })
   }
 
+  private async assertWorkspaceIdle(workspaceId: WorkflowDocument['workspaceId']): Promise<void> {
+    for (const [runId, index] of this.domain.table('runs').entries()) {
+      const owner = this.document(index.workflowId)
+      if (owner.workspaceId === workspaceId && !terminal(await this.readRun(runId)))
+        throw new Error('This workspace already has an unfinished workflow run.')
+    }
+  }
+
   private async scheduleNext(workspaceId: WorkflowDocument['workspaceId']): Promise<void> {
     const runs = await Promise.all([...this.domain.table('runs').keys()].map(id => this.readRun(id)))
     const unfinished = runs.filter(run => run.workspaceId === workspaceId && !terminal(run))
@@ -577,6 +713,7 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
       throw this.auditFailure
     }
     this.committed.set(run.id, structuredClone(checkpoint))
+    this.runDirectoryRevision = randomUUID() as WorkflowRunRevision
     this.notify(run.workflowId)
   }
 
@@ -666,6 +803,7 @@ export class DurableWorkflowWorkbench extends WorkflowWorkbench {
             return [input.name, { kind: 'step', nodeId: prior.nodeId, attemptId: prior.id }]
           }))
           attempt.prompt = `${requirement.summary}\nObjectives: ${JSON.stringify(requirement.objectives)}\nConstraints: ${JSON.stringify(requirement.constraints)}\n\n${node.title}\n${node.instruction}\n\nInputs:\n${JSON.stringify(inputs)}`
+          if (run.feedback !== undefined) attempt.prompt += `\n\nRequested changes for this new execution:\n${run.feedback}`
           attempt.startedAt = Date.now()
           attempt.status = node.kind === 'approval' ? 'waiting' : 'running'
           await this.commit({ ...run, status: node.kind === 'approval' ? 'waiting' : 'running' })

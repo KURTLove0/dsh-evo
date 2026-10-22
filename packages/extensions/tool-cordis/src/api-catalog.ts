@@ -533,6 +533,43 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'capabilityHealth',
+    summary: 'Observations do not establish task success, credential validity, or MCP tool-call readiness.',
+    description: 'Observations do not establish task success, credential validity, or MCP tool-call readiness.',
+    methods: [
+      {
+        signature: 'abstract choices(): Promise<HealthAgent[]>',
+        description: 'Read saved executors without inspecting their dependencies.',
+        parameters: [],
+        returns: 'bounded saved executor choices, excluding connection secrets.',
+      },
+      {
+        signature: 'abstract check(request: HealthCheckRequest): Promise<HealthReport>',
+        description: 'Read current configuration and model catalogs without submitting model input.',
+        parameters: [{ name: 'request', description: 'global scope or explicit saved executor revision and workspace.' }],
+        returns: 'timestamped source-local observations without secret values or raw provider errors.',
+      },
+      {
+        signature: 'abstract startProbe(request: HealthProbeRequest): Promise<HealthProbeRecord>',
+        description: 'Admit one explicit initialization/ping operation; exact request retries reuse it.',
+        parameters: [{ name: 'request', description: 'client-owned identity and saved server selection.' }],
+        returns: 'the admitted or already retained record, without waiting for connection completion.',
+      },
+      {
+        signature: 'abstract readProbe(id: HealthProbeId): HealthProbeRecord | null',
+        description: 'Recover an admitted probe without repeating network or process work.',
+        parameters: [{ name: 'id', description: 'previously supplied probe identity.' }],
+        returns: 'its current record, or null when this host has no retained record.',
+      },
+      {
+        signature: 'abstract cancelProbe(id: HealthProbeId): Promise<HealthProbeRecord>',
+        description: 'Cancel and await an owned probe, including transport cleanup.',
+        parameters: [{ name: 'id', description: 'retained probe identity.' }],
+        returns: 'its settled record; unknown identities reject.',
+      },
+    ],
+  },
+  {
     key: 'clientModules',
     summary: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows.',
     description: 'The web plugin table service: incremental `dsh.client` scan + wire composition + bundle route + index injection rows. Construction runs the activation scan synchronously — a malformed declaration or missing bundle among the already-loaded entries aggregates into one loud throw (FAILED fiber; the boot activation audit reports it).',
@@ -1167,6 +1204,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Select whether plan mode should be active. Between turns the method appends the change immediately because no in-turn pre-step will run until another prompt starts a turn. The open-turn fold is the idle signal: agent status stays `running` through post-turn checkpointing, when no further in-turn pre-step runs. During an open turn the selection remains pending until the next accepted in-turn pre-step. Repeated selection of the current or already-pending state is a no-op.',
         parameters: [{ name: 'agent', description: 'The agent to switch.' }, { name: 'active', description: 'Whether plan mode should be active.' }],
         returns: 'what happened: `committed` (logged now), `queued` (awaiting the next accepted in-turn pre-step), `cancelled` (an opposite pending selection was cleared; the logged state already matches), or `noop` (already in that state).',
+      },
+    ],
+  },
+  {
+    key: 'remoteWork',
+    summary: 'A disconnected caller cannot infer whether a native command committed.',
+    description: 'A disconnected caller cannot infer whether a native command committed.',
+    methods: [
+      {
+        signature: 'abstract peers(): Promise<RemotePeer[]>',
+        description: 'Describe explicitly configured execution peers without exposing credentials.',
+        parameters: [],
+        returns: 'identities and current credential-presence observations, without network probes.',
+      },
+      {
+        signature: 'abstract call(request: RemoteCallRequest): Promise<RemoteWorkResult>',
+        description: 'Invoke one explicit operation without automatic transport retries.',
+        parameters: [{ name: 'request', description: 'fixed peer identity and operation input.' }],
+        returns: 'a validated, Host/principal-qualified remote result; unavailable responses leave writes uncertain.',
       },
     ],
   },
@@ -2336,6 +2392,43 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'workArtifacts',
+    summary: 'Registration never executes work or rewrites source files.',
+    description: 'Registration never executes work or rewrites source files.',
+    methods: [
+      {
+        signature: 'abstract options(): ArtifactOptions',
+        description: 'Read deployment-selected directory and capture limits.',
+        parameters: [],
+        returns: 'the browser\'s explicit page size and per-file byte limit.',
+      },
+      {
+        signature: 'abstract query(request: ArtifactQuery): Promise<ArtifactPage>',
+        description: 'Query bounded latest-version metadata without reading source files.',
+        parameters: [{ name: 'request', description: 'explicit text, workspace, source, origin, and page selection.' }],
+        returns: 'detached metadata with a generation-bound continuation.',
+      },
+      {
+        signature: 'abstract read(id: WorkArtifactId, version: number): Promise<ArtifactDetail>',
+        description: 'Read one retained version and its content-free history.',
+        parameters: [{ name: 'id', description: 'registered file identity.' }, { name: 'version', description: 'exact immutable capture number.' }],
+        returns: 'stored bytes and provenance, independent of live file availability.',
+      },
+      {
+        signature: 'abstract register(request: ArtifactRegistration): Promise<ArtifactReceipt>',
+        description: 'Commit an explicit snapshot or promote one accepted review\'s retained file.',
+        parameters: [{ name: 'request', description: 'source, exact path, expected version, and idempotency identity.' }],
+        returns: 'the original receipt on identical retries, including after restart.',
+      },
+      {
+        signature: 'abstract inspectCurrent(id: WorkArtifactId, version: number): Promise<ArtifactObservation>',
+        description: 'Explicitly compare a current workspace file with one retained version.',
+        parameters: [{ name: 'id', description: 'registered file identity.' }, { name: 'version', description: 'immutable capture to compare against.' }],
+        returns: 'timestamped current-file evidence; history and acceptance remain unchanged.',
+      },
+    ],
+  },
+  {
     key: 'workbenchAgents',
     summary: 'Providers commit mutations before notifying directory consumers.',
     description: 'Providers commit mutations before notifying directory consumers.',
@@ -2364,6 +2457,97 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'workspaceId', description: 'workspace whose project and deployment skills are merged.' }],
         returns: 'user-invocable skill summaries without creating an agent or session.',
       },
+      {
+        signature: 'abstract queryRuns(request: AgentRunQuery): Promise<AgentRunPage>',
+        description: 'Read a bounded cross-identity history page, excluding captured credentials.',
+        parameters: [{ name: 'request', description: 'generation-scoped attention/update cursor, optional workspace, and explicit page limit.' }],
+        returns: 'detached run summaries and continuation position.',
+      },
+      {
+        signature: 'abstract inspectRun(id: AgentRunId): Promise<AgentRunSummary>',
+        description: 'Read one committed run without captured credentials.',
+        parameters: [{ name: 'id', description: 'original execution identity.' }],
+        returns: 'detached run summary; unknown identities reject.',
+      },
+      {
+        signature: 'abstract preflight(request: { id: WorkbenchAgentId; workspaceId: WorkspaceId; brief?: TaskBrief }): Promise<TaskPreflight>',
+        description: 'Check current task dependencies without executing work or probing MCP.',
+        parameters: [{ name: 'request', description: 'selected identity and workspace.' }],
+        returns: 'timestamped issues, captured revision, and unchecked MCP names.',
+      },
+    ],
+  },
+  {
+    key: 'workCenter',
+    summary: 'Execution facts remain owned by their source services.',
+    description: 'Execution facts remain owned by their source services.',
+    methods: [
+      {
+        signature: 'abstract statistics(request: WorkStatisticsQuery): Promise<WorkStatisticsReport>',
+        description: 'Aggregate a bounded submission-time cohort across execution owners.',
+        parameters: [{ name: 'request', description: 'date/time zone, workspace, executor, and explicit usage-read choice.' }],
+        returns: 'counts and measurement coverage, with independent source failures.',
+      },
+      {
+        signature: 'abstract statisticsChoices(): Promise<WorkStatisticsChoices>',
+        description: 'Read safe executor filter choices without loading their history or credentials.',
+        parameters: [],
+        returns: 'source-qualified identities and explicit directory failures.',
+      },
+      {
+        signature: 'abstract query(request: WorkQuery): Promise<WorkPage>',
+        description: 'Merge bounded source pages with attention first, then latest execution updates.',
+        parameters: [{ name: 'request', description: 'explicit page limit and optional source/workspace scope.' }],
+        returns: 'detached records, source failures, and an owned continuation.',
+      },
+      {
+        signature: 'abstract detail(ref: WorkReference): Promise<WorkDetail>',
+        description: 'Read captured delivery evidence for one execution.',
+        parameters: [{ name: 'ref', description: 'typed original execution identity.' }],
+        returns: 'detail, optional delivery, and review; unavailable evidence stays explicit.',
+      },
+      {
+        signature: 'abstract source(ref: WorkReference): Promise<WorkSource>',
+        description: 'Read source execution metadata without inspecting transcripts or files.',
+        parameters: [{ name: 'ref', description: 'typed source execution.' }],
+        returns: 'original execution identity, workspace, session, name, and status.',
+      },
+      {
+        signature: 'abstract review(ref: WorkReference, revision: number): Promise<DeliveryReview>',
+        description: 'Read one immutable committed human assessment without rereading its source.',
+        parameters: [{ name: 'ref', description: 'reviewed execution identity.' }, { name: 'revision', description: 'exact committed review revision.' }],
+        returns: 'detached retained assessment and its original captured bytes.',
+      },
+      {
+        signature: 'abstract diagnose(ref: WorkReference): Promise<WorkDiagnosis>',
+        description: 'Inspect stable failure codes and original recorded evidence without executing work.',
+        parameters: [{ name: 'ref', description: 'original typed execution identity.' }],
+        returns: 'bounded timestamped findings and explicit unavailable sources.',
+      },
+      {
+        signature: 'abstract command(command: WorkCommand): Promise<WorkReceipt>',
+        description: 'Record an assessment or explicitly request subsequent work.',
+        parameters: [{ name: 'command', description: 'revisioned decision or explicit source action.' }],
+        returns: 'the committed reviewed or newly created execution identity.',
+      },
+      {
+        signature: 'abstract executors(): Promise<WorkExecutor[]>',
+        description: 'Read executor choices and configuration without connection credentials.',
+        parameters: [],
+        returns: 'committed identity names, revisions, archive flags, and runtime IDs.',
+      },
+      {
+        signature: 'abstract options(): { pageSize: number }',
+        description: 'Read deployment-selected directory paging settings.',
+        parameters: [],
+        returns: 'the explicit page size used by browser consumers.',
+      },
+      {
+        signature: 'abstract revisionBrief(request: Pick<Extract<WorkCommand, { kind: \'revise-agent\' }>, \'ref\' | \'reviewRevision\' | \'brief\'>): Promise<TaskBrief>',
+        description: 'Prepare the exact revision brief including committed feedback and original output.',
+        parameters: [{ name: 'request', description: 'source assessment revision and editable task fields.' }],
+        returns: 'the brief used by the subsequent explicit revision command.',
+      },
     ],
   },
   {
@@ -2391,6 +2575,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'committed state and server-authorized presets.',
       },
       {
+        signature: 'abstract catalog(): Promise<WorkflowCatalogEntry[]>',
+        description: 'Read saved workflow identities without graphs or execution history.',
+        parameters: [],
+        returns: 'committed names, workspaces, and archive flags.',
+      },
+      {
+        signature: 'abstract queryRuns(request: WorkflowRunQuery): Promise<WorkflowRunPage>',
+        description: 'Read bounded run summaries across workflows without loading selected history.',
+        parameters: [{ name: 'request', description: 'explicit limit, optional workspace, and generation-scoped waiting/update cursor.' }],
+        returns: 'detached committed summaries and continuation.',
+      },
+      {
+        signature: 'abstract inspectRun(id: WorkflowRunId): Promise<WorkflowRun>',
+        description: 'Read one committed execution and its captured publication.',
+        parameters: [{ name: 'id', description: 'original run identity.' }],
+        returns: 'detached execution, rejecting unknown identities.',
+      },
+      {
         signature: 'abstract command(request: WorkflowCommand): Promise<WorkflowReceipt>',
         description: 'Apply a management action independently from the caller\'s conversation.',
         parameters: [{ name: 'request', description: 'full command; edits require the currently committed revision.' }],
@@ -2401,6 +2603,55 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Check a definition without saving or starting work.',
         parameters: [{ name: 'definition', description: 'draft or generated candidate.' }],
         returns: 'requirement and topology diagnostics.',
+      },
+    ],
+  },
+  {
+    key: 'workKnowledge',
+    summary: 'Executors enforce enabled grants, original workspace identity, and current file readability.',
+    description: 'Executors enforce enabled grants, original workspace identity, and current file readability.',
+    methods: [
+      {
+        signature: 'abstract options(): KnowledgeOptions',
+        description: 'Read complete-value limits without indexing files.',
+        parameters: [],
+        returns: 'deployment limits for complete sources, queries, and results.',
+      },
+      {
+        signature: 'abstract sources(workspaceId: WorkspaceId): Promise<KnowledgeSource[]>',
+        description: 'List content-free source metadata, including disabled grants and completed attempts.',
+        parameters: [{ name: 'workspaceId', description: 'exact workspace selection.' }],
+        returns: 'bounded detached source metadata; no live files are read.',
+      },
+      {
+        signature: 'abstract register(request: KnowledgeRegistration): Promise<KnowledgeSource>',
+        description: 'Register one fixed readable-file target without capturing its text.',
+        parameters: [{ name: 'request', description: 'caller identity, workspace, and relative path; registration grants access.' }],
+        returns: 'current metadata on identical retries; conflicting identities reject.',
+      },
+      {
+        signature: 'abstract setEnabled(request: { id: KnowledgeSourceId; expectedRevision: number; enabled: boolean }): Promise<KnowledgeSource>',
+        description: 'Change future content access without erasing captures or prior session results.',
+        parameters: [{ name: 'request', description: 'source identity, expected metadata revision, and desired grant.' }],
+        returns: 'committed source metadata; stale revisions reject.',
+      },
+      {
+        signature: 'abstract index(request: KnowledgeIndexRequest): Promise<KnowledgeIndexResult>',
+        description: 'Await a bounded text capture; failed attempts preserve earlier successful versions.',
+        parameters: [{ name: 'request', description: 'exact source revision and caller-owned attempt identity.' }],
+        returns: 'committed metadata, including the ready or failed attempt; storage failures reject.',
+      },
+      {
+        signature: 'abstract search(request: KnowledgeSearch): Promise<KnowledgeSearchResult>',
+        description: 'Match a literal substring in latest enabled captures, reporting inaccessible sources separately.',
+        parameters: [{ name: 'request', description: 'workspace, literal text, and explicit hit limit.' }],
+        returns: 'stable source/line ordering, current-file evidence, and exclusions.',
+      },
+      {
+        signature: 'abstract read(workspaceId: WorkspaceId, citation: KnowledgeCitation): Promise<KnowledgeExcerpt>',
+        description: 'Read complete cited lines after rechecking the current file grant and access.',
+        parameters: [{ name: 'workspaceId', description: 'caller-authorized workspace; cannot be widened by the citation.' }, { name: 'citation', description: 'immutable source, version, digest, and inclusive one-based range.' }],
+        returns: 'retained inert text with independently observed current-file freshness.',
       },
     ],
   },
@@ -2446,10 +2697,96 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'resolution after durability.',
       },
       {
+        signature: 'restoreSession(sessionId: SessionId): Promise<void>',
+        description: 'Remove archive membership while preserving workspace accounting and logs. A known session already outside the archive resolves without writing.',
+        parameters: [{ name: 'sessionId', description: 'session to restore.' }],
+        returns: 'resolution after the membership change is durable.',
+      },
+      {
         signature: 'async resolveByPath(path: string): Promise<Workspace | undefined>',
         description: 'Resolve by canonical directory path without creating or mutating a workspace. A missing path rejects during `realpath`; an existing unowned directory returns `undefined`.',
         parameters: [{ name: 'path', description: 'Existing directory path in any spelling.' }],
         returns: 'the workspace owning the canonical path, when one exists.',
+      },
+    ],
+  },
+  {
+    key: 'workTemplates',
+    summary: 'Saved content does not include executor configuration or workspace assignments.',
+    description: 'Saved content does not include executor configuration or workspace assignments.',
+    methods: [
+      {
+        signature: 'abstract list(): Promise<TemplateSummary[]>',
+        description: 'List committed summaries without downloading complete histories.',
+        parameters: [],
+        returns: 'the bounded private directory, including archived records.',
+      },
+      {
+        signature: 'abstract read(id: WorkTemplateId): Promise<TemplateRecord>',
+        description: 'Read an immutable content history.',
+        parameters: [{ name: 'id', description: 'private template identity.' }],
+        returns: 'detached content snapshots and the current archive revision.',
+      },
+      {
+        signature: 'abstract command(request: TemplateMutation): Promise<TemplateReceipt>',
+        description: 'Commit an idempotent content or archive mutation.',
+        parameters: [{ name: 'request', description: 'explicit revision and mutation identity.' }],
+        returns: 'the original committed receipt on identical transport retries.',
+      },
+      {
+        signature: 'abstract copyWorkflow(request: TemplateCopyRequest): Promise<WorkflowReceipt>',
+        description: 'Copy an immutable workflow publication into an independent editable draft.',
+        parameters: [{ name: 'request', description: 'pinned template version, destination, name, and idempotent copy identity.' }],
+        returns: 'the created draft; this operation never publishes or executes it.',
+      },
+      {
+        signature: 'abstract sources(): Promise<TemplateWorkflowSource[]>',
+        description: 'Read immutable workflow source choices.',
+        parameters: [],
+        returns: 'available workflow names and publication IDs, excluding unpublished drafts.',
+      },
+      {
+        signature: 'abstract examples(): TemplateExample[]',
+        description: 'Read editable starter instructions without checking execution capabilities.',
+        parameters: [],
+        returns: 'task-only examples that require a separately selected, checked executor.',
+      },
+    ],
+  },
+  {
+    key: 'workTriggers',
+    summary: 'Durable triggers require a running host, independently of browser and session lifetime.',
+    description: 'Durable triggers require a running host, independently of browser and session lifetime.',
+    methods: [
+      {
+        signature: 'abstract options(): TriggerOptions',
+        description: 'Read deployment-selected polling and interval bounds.',
+        parameters: [],
+        returns: 'limits without observing files, sessions, or execution state.',
+      },
+      {
+        signature: 'abstract prepare(source: WorkReference): Promise<Pick<TriggerDefinition, \'name\' | \'target\'>>',
+        description: 'Prepare a fixed target from an original execution without starting work.',
+        parameters: [{ name: 'source', description: 'exact original agent or formal workflow execution.' }],
+        returns: 'original content and current agent revision, or the original workflow publication.',
+      },
+      {
+        signature: 'abstract query(request: TriggerQuery): Promise<TriggerDirectory>',
+        description: 'Query retained metadata and process-local worker failures.',
+        parameters: [{ name: 'request', description: 'explicit text and optional workspace/enabled filters.' }],
+        returns: 'bounded detached metadata; no source reads occur.',
+      },
+      {
+        signature: 'abstract read(id: WorkTriggerId): Promise<WorkTrigger>',
+        description: 'Inspect one immutable definition, occurrences, and in-app notices.',
+        parameters: [{ name: 'id', description: 'trigger identity.' }],
+        returns: 'detached committed state, excluding private native submission identities.',
+      },
+      {
+        signature: 'abstract command(request: TriggerCommand): Promise<TriggerReceipt>',
+        description: 'Create, pause/resume, recover an uncertain handoff, or acknowledge one notice.',
+        parameters: [{ name: 'request', description: 'caller identity, control revision, or exact occurrence attempt.' }],
+        returns: 'a committed receipt; stale revisions reject without another admission.',
       },
     ],
   },
@@ -2608,6 +2945,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     summary: 'One verification settled (pass or fail).',
     description: 'One verification settled (pass or fail). Emitted after the report is recorded and any stage transition for it has been published, so an observer reading `stage` sees the promoted state. Paired with the record\'s earlier stage events by id.',
     parameters: [{ name: 'info', description: 'the record\'s identity and current stage.' }, { name: 'summary', description: 'the report\'s headline.' }],
+  },
+  {
+    name: 'capability-health/probe-changed',
+    mode: 'emit',
+    signature: '\'capability-health/probe-changed\'(id: HealthProbeId): void',
+    summary: 'A temporary probe was admitted or finished; read its authoritative record.',
+    description: 'A temporary probe was admitted or finished; read its authoritative record.',
+    parameters: [{ name: 'id', description: 'retained probe identity.' }],
   },
   {
     name: 'commands/change',
@@ -2906,6 +3251,38 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'table', description: 'Mutable row table; listeners append in activation order.' }],
   },
   {
+    name: 'work-artifact/changed',
+    mode: 'emit',
+    signature: '\'work-artifact/changed\'(id: WorkArtifactId): void',
+    summary: 'An explicit file registration committed.',
+    description: 'An explicit file registration committed.',
+    parameters: [{ name: 'id', description: 'changed registration identity.' }],
+  },
+  {
+    name: 'work-center/changed',
+    mode: 'emit',
+    signature: '\'work-center/changed\'(ref: WorkReference): void',
+    summary: 'A human delivery assessment committed.',
+    description: 'A human delivery assessment committed.',
+    parameters: [{ name: 'ref', description: 'reviewed source execution.' }],
+  },
+  {
+    name: 'work-template/changed',
+    mode: 'emit',
+    signature: '\'work-template/changed\'(id: WorkTemplateId): void',
+    summary: 'A template mutation has committed.',
+    description: 'A template mutation has committed.',
+    parameters: [{ name: 'id', description: 'template whose content or archive state changed.' }],
+  },
+  {
+    name: 'work-trigger/changed',
+    mode: 'emit',
+    signature: '\'work-trigger/changed\'(id: WorkTriggerId): void',
+    summary: 'A trigger, occurrence, or notice has committed.',
+    description: 'A trigger, occurrence, or notice has committed.',
+    parameters: [{ name: 'id', description: 'trigger whose retained data changed.' }],
+  },
+  {
     name: 'workbench-agent/changed',
     mode: 'emit',
     signature: '\'workbench-agent/changed\'(id: WorkbenchAgentId): void',
@@ -2991,7 +3368,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentCommand',
-    declaration: 'export type AgentCommand = {\n    kind: \'create\';\n    definition: AgentDefinition;\n} | {\n    kind: \'save\';\n    id: WorkbenchAgentId;\n    revision: number;\n    definition: AgentDefinition;\n} | {\n    kind: \'copy\';\n    id: WorkbenchAgentId;\n    name: string;\n} | {\n    kind: \'archive\';\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n} | {\n    kind: \'run\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'design\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'retry\';\n    runId: AgentRunId;\n} | {\n    kind: \'stop\';\n    runId: AgentRunId;\n};',
+    declaration: 'export type AgentCommand = {\n    kind: \'create\';\n    definition: AgentDefinition;\n} | {\n    kind: \'save\';\n    id: WorkbenchAgentId;\n    revision: number;\n    definition: AgentDefinition;\n} | {\n    kind: \'copy\';\n    id: WorkbenchAgentId;\n    name: string;\n} | {\n    kind: \'archive\';\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n} | {\n    kind: \'run\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'submit-task\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    requestId: TaskRequestId;\n    expectedRevision: number;\n    brief: TaskBrief;\n    revisionOf?: AgentRunId;\n} | {\n    kind: \'design\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    prompt: string;\n} | {\n    kind: \'retry\';\n    runId: AgentRunId;\n    requestId: TaskRequestId;\n    expectedRevision: number;\n} | {\n    kind: \'stop\';\n    runId: AgentRunId;\n};',
   },
   {
     name: 'AgentDefinition',
@@ -3035,11 +3412,31 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentRun',
-    declaration: 'export interface AgentRun {\n    id: AgentRunId;\n    agentId: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    sessionId: SessionId;\n    prompt: string;\n    status: \'queued\' | \'running\' | \'completed\' | \'failed\' | \'cancelled\' | \'interrupted\';\n    definition?: WorkbenchAgent;\n    createdAt: number;\n    startedAt?: number;\n    endedAt?: number;\n    error?: string;\n    purpose?: \'design\';\n    candidate?: AgentDefinition;\n    retryOf?: AgentRunId;\n}',
+    declaration: 'export interface AgentRun {\n    id: AgentRunId;\n    agentId: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    sessionId: SessionId;\n    prompt: string;\n    status: \'queued\' | \'running\' | \'completed\' | \'failed\' | \'cancelled\' | \'interrupted\';\n    definition?: WorkbenchAgent;\n    createdAt: number;\n    startedAt?: number;\n    endedAt?: number;\n    settledSeq?: number;\n    error?: string;\n    purpose?: \'design\';\n    candidate?: AgentDefinition;\n    retryOf?: AgentRunId;\n    retryRequest?: {\n        id: TaskRequestId;\n        agentRevision: number;\n    };\n    submission?: {\n        id: TaskRequestId;\n        agentRevision: number;\n        brief: TaskBrief;\n    };\n    revisionOf?: AgentRunId;\n}',
   },
   {
     name: 'AgentRunId',
     declaration: 'export type AgentRunId = Branded<\'AgentRunId\'>;',
+  },
+  {
+    name: 'AgentRunPage',
+    declaration: 'export interface AgentRunPage {\n    revision: AgentRunRevision;\n    items: AgentRunSummary[];\n    next?: AgentRunPosition;\n}',
+  },
+  {
+    name: 'AgentRunPosition',
+    declaration: 'export interface AgentRunPosition {\n    revision: AgentRunRevision;\n    attention: boolean;\n    updatedAt: number;\n    id: AgentRunId;\n}',
+  },
+  {
+    name: 'AgentRunQuery',
+    declaration: 'export interface AgentRunQuery {\n    limit: number;\n    workspaceId?: WorkspaceId;\n    agentId?: WorkbenchAgentId;\n    createdFrom?: number;\n    createdBefore?: number;\n    before?: AgentRunPosition;\n    statuses?: AgentRun[\'status\'][];\n    attentionSessionIds?: SessionId[];\n    attentionOnly?: boolean;\n}',
+  },
+  {
+    name: 'AgentRunRevision',
+    declaration: 'export type AgentRunRevision = Branded<\'AgentRunRevision\'>;',
+  },
+  {
+    name: 'AgentRunSummary',
+    declaration: 'export type AgentRunSummary = Omit<AgentRun, \'definition\' | \'candidate\'> & {\n    agentName: string;\n    updatedAt: number;\n    configuration?: Pick<AgentDefinition, \'instructions\' | \'runtime\' | \'model\' | \'skills\'> & {\n        revision: number;\n        mcpServerNames: string[];\n    };\n};',
   },
   {
     name: 'AgentRuntime',
@@ -3076,6 +3473,58 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ApprovalService',
     declaration: 'export class ApprovalService extends Service {\n    static Config: z<Config>;\n    constructor(ctx: Context, public config: Config);\n    setPolicy(agent: Agent, policy: ApprovalPolicy): void;\n    async request(req: ApprovalRequest): Promise<ApprovalOutcome>;\n    overrideOf(session: Session): ApprovalPolicy | undefined;\n}',
+  },
+  {
+    name: 'ArtifactCursor',
+    declaration: 'export interface ArtifactCursor {\n    generation: ArtifactGeneration;\n    query: string;\n    after: WorkArtifactId;\n}',
+  },
+  {
+    name: 'ArtifactDetail',
+    declaration: 'export interface ArtifactDetail {\n    entry: ArtifactSummary;\n    versions: ArtifactVersion[];\n    snapshot: ArtifactVersion & {\n        content: string;\n    };\n}',
+  },
+  {
+    name: 'ArtifactGeneration',
+    declaration: 'export type ArtifactGeneration = Branded<\'ArtifactGeneration\'>;',
+  },
+  {
+    name: 'ArtifactObservation',
+    declaration: 'export type ArtifactObservation = {\n    id: WorkArtifactId;\n    version: number;\n    observedAt: number;\n} & ({\n    state: \'matching\' | \'different\';\n    sha256: string;\n    bytes: number;\n} | {\n    state: \'missing\';\n} | {\n    state: \'unavailable\';\n    message: string;\n});',
+  },
+  {
+    name: 'ArtifactOptions',
+    declaration: 'export interface ArtifactOptions {\n    pageSize: number;\n    maxFileBytes: number;\n}',
+  },
+  {
+    name: 'ArtifactOrigin',
+    declaration: 'export type ArtifactOrigin = {\n    kind: \'current-file\';\n    source: WorkSource;\n} | {\n    kind: \'accepted-review\';\n    source: WorkSource;\n    reviewRevision: number;\n    deliveryVersion: DeliveryVersion;\n    reviewedAt: number;\n};',
+  },
+  {
+    name: 'ArtifactPage',
+    declaration: 'export interface ArtifactPage {\n    items: ArtifactSummary[];\n    observedAt: number;\n    next?: ArtifactCursor;\n}',
+  },
+  {
+    name: 'ArtifactQuery',
+    declaration: 'export interface ArtifactQuery {\n    text: string;\n    limit: number;\n    workspaceId?: WorkspaceId;\n    source?: WorkReference[\'kind\'];\n    origin?: ArtifactOrigin[\'kind\'];\n    cursor?: ArtifactCursor;\n}',
+  },
+  {
+    name: 'ArtifactReceipt',
+    declaration: 'export interface ArtifactReceipt {\n    id: WorkArtifactId;\n    version: number;\n}',
+  },
+  {
+    name: 'ArtifactRegistration',
+    declaration: 'export interface ArtifactRegistration {\n    id?: WorkArtifactId;\n    expectedVersion: number;\n    requestId: ArtifactRequestId;\n    path: string;\n    source: {\n        kind: \'current-file\';\n        ref: WorkReference;\n    } | {\n        kind: \'accepted-review\';\n        ref: WorkReference;\n        reviewRevision: number;\n    };\n}',
+  },
+  {
+    name: 'ArtifactRequestId',
+    declaration: 'export type ArtifactRequestId = Branded<\'ArtifactRequestId\'>;',
+  },
+  {
+    name: 'ArtifactSummary',
+    declaration: 'export interface ArtifactSummary {\n    id: WorkArtifactId;\n    workspaceId: WorkspaceId;\n    workspacePath: string;\n    path: string;\n    latest: ArtifactVersion;\n}',
+  },
+  {
+    name: 'ArtifactVersion',
+    declaration: 'export interface ArtifactVersion {\n    version: number;\n    capturedAt: number;\n    sha256: string;\n    bytes: number;\n    encoding: \'utf-8\' | \'base64\';\n    origin: ArtifactOrigin;\n}',
   },
   {
     name: 'AskUserQuestionAnswer',
@@ -3446,6 +3895,34 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type CredentialRef = Branded<\'CredentialRef\'>;',
   },
   {
+    name: 'DeliveryArtifact',
+    declaration: 'export type DeliveryArtifact = {\n    path: string;\n    state: \'captured\';\n    sha256: string;\n    bytes: number;\n    encoding: \'utf-8\' | \'base64\';\n    content: string;\n} | {\n    path: string;\n    state: \'unavailable\';\n    error: string;\n};',
+  },
+  {
+    name: 'DeliveryReview',
+    declaration: 'export interface DeliveryReview {\n    ref: WorkReference;\n    version: DeliveryVersion;\n    revision: number;\n    decisionId: ReviewDecisionId;\n    decision: \'accepted\' | \'changes-requested\';\n    reason: string;\n    reviewedAt: number;\n    actor: \'local-operator\';\n    delivery: DeliverySnapshot;\n}',
+  },
+  {
+    name: 'DeliverySnapshot',
+    declaration: 'export interface DeliverySnapshot {\n    version: DeliveryVersion;\n    outputs: {\n        name: string;\n        text: string;\n    }[];\n    criteria: string[];\n    evidence: \'recorded-response\' | \'recorded-workflow-output\';\n    artifacts: DeliveryArtifact[];\n    assertion?: {\n        passed: boolean;\n        detail?: string;\n    };\n}',
+  },
+  {
+    name: 'DeliveryVersion',
+    declaration: 'export type DeliveryVersion = Branded<\'DeliveryVersion\'>;',
+  },
+  {
+    name: 'DiagnosticCategory',
+    declaration: 'export type DiagnosticCategory = \'configuration\' | \'authentication\' | \'denied\' | \'timeout\' | \'model\' | \'tool\' | \'cancelled\' | \'interrupted\' | \'output-limit\' | \'blocked\' | \'assertion\' | \'unknown\';',
+  },
+  {
+    name: 'DiagnosticFinding',
+    declaration: 'export interface DiagnosticFinding {\n    source: number;\n    category: DiagnosticCategory;\n    scope: \'run\' | \'turn\' | \'tool\' | \'node\' | \'assertion\' | \'model-attempt\';\n    terminal: boolean;\n    message: string;\n    code?: string;\n    event?: {\n        seq: number;\n        time: number;\n        type: string;\n    };\n    toolName?: string;\n    modelFailure?: LlmFailure;\n    provider?: string;\n    nodeId?: string;\n}',
+  },
+  {
+    name: 'DiagnosticSource',
+    declaration: 'export interface DiagnosticSource {\n    kind: \'run\' | \'session\';\n    sessionId: SessionId;\n    nodeId?: string;\n    state: \'available\' | \'unavailable\' | \'capacity\' | \'interval-unknown\';\n    throughSeq?: number;\n    interval?: {\n        from: number;\n        to: number;\n    };\n}',
+  },
+  {
     name: 'DiffCallView',
     declaration: 'export interface DiffCallView {\n    card: \'diff\';\n    title: string;\n    diffs: FileDiff[];\n    locations?: FileLocation[];\n}',
   },
@@ -3670,6 +4147,42 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
   },
   {
+    name: 'HealthAgent',
+    declaration: 'export interface HealthAgent {\n    id: WorkbenchAgentId;\n    name: string;\n    revision: number;\n    archived: boolean;\n}',
+  },
+  {
+    name: 'HealthCheckRequest',
+    declaration: 'export type HealthCheckRequest = {\n    kind: \'global\';\n} | {\n    kind: \'agent\';\n    id: WorkbenchAgentId;\n    expectedRevision: number;\n    workspaceId: WorkspaceId;\n};',
+  },
+  {
+    name: 'HealthCode',
+    declaration: 'export type HealthCode = \'provider-registered\' | \'provider-unconfigured\' | \'catalog-readable\' | \'catalog-failed\' | \'catalog-not-checked\' | \'runtime-command-present\' | \'runtime-command-missing\' | \'credential-configured\' | \'credential-missing\' | \'credential-undeclared\' | \'credential-owner-missing\' | \'credential-read-failed\' | \'workspace-ready\' | \'workspace-unavailable\' | \'agent-ready\' | \'agent-archived\' | \'runtime-ready\' | \'runtime-unavailable\' | \'model-route-ready\' | \'model-route-unavailable\' | \'model-route-unchecked\' | \'skills-ready\' | \'skills-unavailable\' | \'skills-unchecked\' | \'mcp-not-checked\' | \'source-unavailable\';',
+  },
+  {
+    name: 'HealthItem',
+    declaration: 'export interface HealthItem {\n    key: string;\n    kind: \'provider\' | \'catalog\' | \'credential\' | \'executor\' | \'workspace\' | \'runtime\' | \'model\' | \'skills\' | \'mcp\';\n    label: string;\n    state: HealthState;\n    code: HealthCode;\n    repair: \'agents\' | \'runtimes\' | \'models\' | \'settings\' | \'workspace\';\n    count?: number;\n    source?: string;\n}',
+  },
+  {
+    name: 'HealthProbeId',
+    declaration: 'export type HealthProbeId = Branded<\'HealthProbeId\'>;',
+  },
+  {
+    name: 'HealthProbeRecord',
+    declaration: 'export type HealthProbeRecord = HealthProbeRequest & {\n    startedAt: number;\n    checkedAt?: number;\n    cleanup?: \'closed\' | \'failed\';\n} & ({\n    status: \'running\';\n} | {\n    status: \'connected\' | \'failed\' | \'timed-out\' | \'cancelled\';\n    checkedAt: number;\n    cleanup: \'closed\' | \'failed\';\n});',
+  },
+  {
+    name: 'HealthProbeRequest',
+    declaration: 'export interface HealthProbeRequest {\n    id: HealthProbeId;\n    agentId: WorkbenchAgentId;\n    expectedRevision: number;\n    workspaceId: WorkspaceId;\n    serverName: string;\n}',
+  },
+  {
+    name: 'HealthReport',
+    declaration: 'export interface HealthReport {\n    checkedAt: number;\n    items: HealthItem[];\n    selection?: {\n        id: WorkbenchAgentId;\n        revision: number;\n        workspaceId: WorkspaceId;\n    };\n}',
+  },
+  {
+    name: 'HealthState',
+    declaration: 'export type HealthState = \'ready\' | \'missing\' | \'failed\' | \'not-checked\' | \'unknown\';',
+  },
+  {
     name: 'ImageAttachmentLimits',
     declaration: 'export interface ImageAttachmentLimits {\n    maxImageBytes: number;\n    maxImagesPerMessage: number;\n    maxMessageImageBytes: number;\n    maxImagePixels: number;\n    maxImageDimension: number;\n    mediaTypes: readonly ImageMediaType[];\n}',
   },
@@ -3796,6 +4309,62 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'KnobState',
     declaration: 'export interface KnobState {\n    preset: string | null;\n    sandbox: SandboxMode | null;\n    approval: ApprovalPolicy | null;\n}',
+  },
+  {
+    name: 'KnowledgeAttempt',
+    declaration: 'export type KnowledgeAttempt = {\n    state: \'ready\';\n    completedAt: number;\n    version: number;\n} | {\n    state: \'failed\';\n    completedAt: number;\n    message: string;\n};',
+  },
+  {
+    name: 'KnowledgeCitation',
+    declaration: 'export interface KnowledgeCitation {\n    sourceId: KnowledgeSourceId;\n    version: number;\n    textSha256: string;\n    startLine: number;\n    endLine: number;\n}',
+  },
+  {
+    name: 'KnowledgeExcerpt',
+    declaration: 'export interface KnowledgeExcerpt {\n    citation: KnowledgeCitation;\n    path: string;\n    text: string;\n    current: KnowledgeFreshness;\n}',
+  },
+  {
+    name: 'KnowledgeFreshness',
+    declaration: 'export interface KnowledgeFreshness {\n    sourceId: KnowledgeSourceId;\n    state: \'matching\' | \'different\';\n    textSha256: string;\n    observedAt: number;\n}',
+  },
+  {
+    name: 'KnowledgeIndexId',
+    declaration: 'export type KnowledgeIndexId = Branded<\'KnowledgeIndexId\'>;',
+  },
+  {
+    name: 'KnowledgeIndexRequest',
+    declaration: 'export interface KnowledgeIndexRequest {\n    id: KnowledgeSourceId;\n    expectedRevision: number;\n    requestId: KnowledgeIndexId;\n}',
+  },
+  {
+    name: 'KnowledgeIndexResult',
+    declaration: 'export interface KnowledgeIndexResult {\n    source: KnowledgeSource;\n    attempt: KnowledgeAttempt;\n}',
+  },
+  {
+    name: 'KnowledgeOptions',
+    declaration: 'export interface KnowledgeOptions {\n    maxSources: number;\n    maxVersions: number;\n    maxFileBytes: number;\n    maxQueryBytes: number;\n    maxHits: number;\n}',
+  },
+  {
+    name: 'KnowledgeRegistration',
+    declaration: 'export interface KnowledgeRegistration {\n    id: KnowledgeSourceId;\n    workspaceId: WorkspaceId;\n    path: string;\n}',
+  },
+  {
+    name: 'KnowledgeSearch',
+    declaration: 'export interface KnowledgeSearch {\n    workspaceId: WorkspaceId;\n    text: string;\n    limit: number;\n}',
+  },
+  {
+    name: 'KnowledgeSearchResult',
+    declaration: 'export interface KnowledgeSearchResult {\n    hits: {\n        citation: KnowledgeCitation;\n        path: string;\n        text: string;\n    }[];\n    more: boolean;\n    current: KnowledgeFreshness[];\n    excluded: {\n        sourceId: KnowledgeSourceId;\n        message: string;\n    }[];\n    observedAt: number;\n}',
+  },
+  {
+    name: 'KnowledgeSource',
+    declaration: 'export interface KnowledgeSource {\n    id: KnowledgeSourceId;\n    workspaceId: WorkspaceId;\n    workspacePath: string;\n    path: string;\n    enabled: boolean;\n    revision: number;\n    versions: KnowledgeVersion[];\n    lastAttempt?: KnowledgeAttempt;\n}',
+  },
+  {
+    name: 'KnowledgeSourceId',
+    declaration: 'export type KnowledgeSourceId = Branded<\'KnowledgeSourceId\'>;',
+  },
+  {
+    name: 'KnowledgeVersion',
+    declaration: 'export interface KnowledgeVersion {\n    version: number;\n    capturedAt: number;\n    textSha256: string;\n    bytes: number;\n    lines: number;\n}',
   },
   {
     name: 'KvFacet',
@@ -4130,6 +4699,54 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface RedactedSecret {\n    path: string[];\n    set: boolean;\n}',
   },
   {
+    name: 'RemoteCallRequest',
+    declaration: 'export interface RemoteCallRequest {\n    peer: RemotePeerId;\n    expected: {\n        hostId: RemoteHostId;\n        principalId: RemotePrincipalId;\n    };\n    operation: RemoteOperation;\n}',
+  },
+  {
+    name: 'RemoteCatalog',
+    declaration: 'export interface RemoteCatalog {\n    credentialOwner: \'remote-host\';\n    controls: {\n        stop: boolean;\n        workflowDecisions: boolean;\n    };\n    workspaces: {\n        id: WorkspaceId;\n        title: string;\n        path: string;\n        agents: {\n            id: Extract<RemoteTarget, {\n                kind: \'agent\';\n            }>[\'id\'];\n            name: string;\n            revision: number;\n            runtime: string;\n            skills: string[];\n            mcpServerNames: string[];\n            archived: boolean;\n        }[];\n        workflows: {\n            id: WorkflowId;\n            name: string;\n            archived: boolean;\n            versions: {\n                id: WorkflowVersionId;\n                number: number;\n                inputs: {\n                    name: string;\n                    description: string;\n                }[];\n            }[];\n        }[];\n    }[];\n}',
+  },
+  {
+    name: 'RemoteHostId',
+    declaration: 'export type RemoteHostId = Branded<\'RemoteHostId\'>;',
+  },
+  {
+    name: 'RemoteOperation',
+    declaration: 'export type RemoteOperation = {\n    kind: \'catalog\';\n} | {\n    kind: \'list\';\n    workspaceId?: WorkspaceId;\n} | {\n    kind: \'submit\';\n    id: RemoteSubmissionId;\n    target: RemoteTarget;\n} | {\n    kind: \'inspect\';\n    id: RemoteSubmissionId;\n} | {\n    kind: \'recover\';\n    id: RemoteSubmissionId;\n    expectedAttempt: number;\n} | {\n    kind: \'stop\';\n    id: RemoteSubmissionId;\n} | {\n    kind: \'decide\';\n    id: RemoteSubmissionId;\n    attemptId: WorkflowAttemptId;\n    approve: boolean;\n};',
+  },
+  {
+    name: 'RemotePeer',
+    declaration: 'export interface RemotePeer {\n    id: RemotePeerId;\n    name: string;\n    origin: string;\n    hostId: RemoteHostId;\n    principalId: RemotePrincipalId;\n    authorization: {\n        reference: CredentialRef;\n        configured: boolean;\n        owner: \'local-host\';\n    };\n    executionCredentialOwner: \'remote-host\';\n}',
+  },
+  {
+    name: 'RemotePeerId',
+    declaration: 'export type RemotePeerId = Branded<\'RemotePeerId\'>;',
+  },
+  {
+    name: 'RemotePrincipalId',
+    declaration: 'export type RemotePrincipalId = Branded<\'RemotePrincipalId\'>;',
+  },
+  {
+    name: 'RemoteSubmission',
+    declaration: 'export interface RemoteSubmission {\n    id: RemoteSubmissionId;\n    hostId: RemoteHostId;\n    principalId: RemotePrincipalId;\n    createdAt: number;\n    attempts: number;\n    target: RemoteTarget;\n    admission: {\n        state: \'unconfirmed\';\n    } | {\n        state: \'admitted\';\n        ref: WorkReference;\n    };\n}',
+  },
+  {
+    name: 'RemoteSubmissionId',
+    declaration: 'export type RemoteSubmissionId = Branded<\'RemoteSubmissionId\'>;',
+  },
+  {
+    name: 'RemoteSubmissionSummary',
+    declaration: 'export type RemoteSubmissionSummary = Omit<RemoteSubmission, \'target\'> & {\n    target: Pick<RemoteTarget, \'kind\' | \'id\' | \'workspaceId\'>;\n};',
+  },
+  {
+    name: 'RemoteTarget',
+    declaration: 'export type RemoteTarget = ({\n    kind: \'agent\';\n} & Pick<Extract<AgentCommand, {\n    kind: \'submit-task\';\n}>, \'id\' | \'workspaceId\' | \'expectedRevision\' | \'brief\'>) | ({\n    kind: \'workflow\';\n    workspaceId: WorkspaceId;\n} & Pick<Extract<WorkflowCommand, {\n    kind: \'start\';\n}>, \'id\' | \'versionId\' | \'inputs\'>);',
+  },
+  {
+    name: 'RemoteWorkResult',
+    declaration: 'export type RemoteWorkResult = {\n    kind: \'catalog\';\n    catalog: RemoteCatalog;\n    observedAt: number;\n} | {\n    kind: \'list\';\n    items: RemoteSubmissionSummary[];\n    observedAt: number;\n} | {\n    kind: \'submission\';\n    submission: RemoteSubmissionSummary;\n} | {\n    kind: \'inspection\';\n    submission: RemoteSubmission;\n    observedAt: number;\n    source?: WorkSource;\n    delivery?: {\n        outputs: {\n            name: string;\n            text: string;\n        }[];\n        evidence: \'recorded-response\' | \'recorded-workflow-output\';\n    };\n    decisions?: {\n        attemptId: WorkflowAttemptId;\n        title: string;\n        instruction: string;\n        inputs: Extract<RemoteTarget, {\n            kind: \'workflow\';\n        }>[\'inputs\'];\n    }[];\n    decisionsUnavailable?: true;\n    unavailable?: true;\n} | {\n    kind: \'controlled\';\n    id: RemoteSubmissionId;\n};',
+  },
+  {
     name: 'ReplayEnvelope',
     declaration: 'export interface ReplayEnvelope {\n    response: unknown;\n    blocks?: readonly unknown[];\n}',
   },
@@ -4204,6 +4821,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ResumeAgentOptions',
     declaration: 'export interface ResumeAgentOptions {\n    readonly resumeSessionId: SessionId;\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
+  },
+  {
+    name: 'ReviewDecisionId',
+    declaration: 'export type ReviewDecisionId = Branded<\'ReviewDecisionId\'>;',
   },
   {
     name: 'RpcError',
@@ -4858,6 +5479,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
   },
   {
+    name: 'TaskBrief',
+    declaration: 'export interface TaskBrief {\n    version: 1;\n    goal: string;\n    background: string;\n    deliverables: string[];\n    acceptanceCriteria: string[];\n    constraints: string;\n    template?: {\n        id: Branded<\'WorkTemplateId\'>;\n        version: number;\n    };\n}',
+  },
+  {
+    name: 'TaskPreflight',
+    declaration: 'export interface TaskPreflight {\n    checkedAt: number;\n    agentRevision: number;\n    issues: {\n        code: \'archived\' | \'workspace\' | \'runtime\' | \'model\' | \'skills\';\n        message: string;\n    }[];\n    mcp: {\n        name: string;\n        status: \'not-checked\';\n    }[];\n    prompt?: string;\n}',
+  },
+  {
+    name: 'TaskRequestId',
+    declaration: 'export type TaskRequestId = Branded<\'TaskRequestId\'>;',
+  },
+  {
     name: 'TeamId',
     declaration: 'export type TeamId = Branded<\'TeamId\'>;',
   },
@@ -4892,6 +5525,46 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TeamWaitResult',
     declaration: 'export interface TeamWaitResult {\n    readonly timedOut: boolean;\n}',
+  },
+  {
+    name: 'TemplateContent',
+    declaration: 'export type TemplateContent = {\n    kind: \'task\';\n    brief: TaskBrief;\n} | {\n    kind: \'workflow\';\n    workflowId: WorkflowId;\n    versionId: WorkflowVersionId;\n    definition: WorkflowDefinition;\n};',
+  },
+  {
+    name: 'TemplateCopyRequest',
+    declaration: 'export interface TemplateCopyRequest {\n    id: WorkTemplateId;\n    version: number;\n    workspaceId: WorkspaceId;\n    name: string;\n    requestId: WorkflowRequestId;\n}',
+  },
+  {
+    name: 'TemplateExample',
+    declaration: 'export interface TemplateExample {\n    id: \'code-review\' | \'documents\' | \'data-report\';\n    brief: TaskBrief;\n}',
+  },
+  {
+    name: 'TemplateMutation',
+    declaration: 'export type TemplateMutation = {\n    kind: \'save-task\';\n    id?: WorkTemplateId;\n    expectedRevision: number;\n    requestId: TemplateRequestId;\n    name: string;\n    brief: TaskBrief;\n} | {\n    kind: \'save-workflow\';\n    id?: WorkTemplateId;\n    expectedRevision: number;\n    requestId: TemplateRequestId;\n    name: string;\n    workflowId: WorkflowId;\n    versionId: WorkflowVersionId;\n} | {\n    kind: \'archive\';\n    id: WorkTemplateId;\n    expectedRevision: number;\n    requestId: TemplateRequestId;\n    archived: boolean;\n};',
+  },
+  {
+    name: 'TemplateReceipt',
+    declaration: 'export interface TemplateReceipt {\n    id: WorkTemplateId;\n    revision: number;\n    version: number;\n}',
+  },
+  {
+    name: 'TemplateRecord',
+    declaration: 'export interface TemplateRecord {\n    id: WorkTemplateId;\n    revision: number;\n    archived: boolean;\n    versions: TemplateVersion[];\n}',
+  },
+  {
+    name: 'TemplateRequestId',
+    declaration: 'export type TemplateRequestId = Branded<\'TemplateRequestId\'>;',
+  },
+  {
+    name: 'TemplateSummary',
+    declaration: 'export interface TemplateSummary {\n    id: WorkTemplateId;\n    revision: number;\n    archived: boolean;\n    name: string;\n    kind: TemplateContent[\'kind\'];\n    version: number;\n}',
+  },
+  {
+    name: 'TemplateVersion',
+    declaration: 'export interface TemplateVersion {\n    version: number;\n    createdAt: number;\n    name: string;\n    content: TemplateContent;\n}',
+  },
+  {
+    name: 'TemplateWorkflowSource',
+    declaration: 'export interface TemplateWorkflowSource {\n    id: WorkflowId;\n    name: string;\n    versions: {\n        id: WorkflowVersionId;\n        number: number;\n    }[];\n}',
   },
   {
     name: 'TerminalBackend',
@@ -4992,6 +5665,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TokenUsage',
     declaration: 'export interface TokenUsage {\n    inputTokens: number;\n    outputTokens: number;\n    cacheReadTokens?: number;\n    cacheWriteTokens?: number;\n    reasoningTokens?: number;\n}',
+  },
+  {
+    name: 'TokenUsageProjection',
+    declaration: 'export interface TokenUsageProjection {\n    uncachedInputTokens: number;\n    outputTokens: number;\n    cacheReadTokens: number;\n    cacheWriteTokens: number;\n}',
   },
   {
     name: 'ToolCallKind',
@@ -5100,6 +5777,70 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'ToolSchema',
     declaration: 'export interface ToolSchema {\n    name: string;\n    description: string;\n    parameters: Record<string, unknown>;\n}',
+  },
+  {
+    name: 'TriggerAdmission',
+    declaration: 'export type TriggerAdmission = {\n    state: \'pending\';\n    lastAttemptAt?: number;\n} | {\n    state: \'unconfirmed\';\n    lastAttemptAt: number;\n} | {\n    state: \'admitted\';\n    ref: WorkReference;\n    acceptedAt: number;\n    observation?: TriggerObservation;\n    unavailableAt?: number;\n} | {\n    state: \'settled\';\n    ref: WorkReference;\n    acceptedAt: number;\n    observation: {\n        status: TriggerTerminalStatus;\n        observedAt: number;\n    };\n};',
+  },
+  {
+    name: 'TriggerCommand',
+    declaration: 'export type TriggerCommand = {\n    kind: \'create\';\n    id: WorkTriggerId;\n    definition: TriggerDefinition;\n    enabled: boolean;\n} | {\n    kind: \'set-enabled\';\n    id: WorkTriggerId;\n    expectedRevision: number;\n    enabled: boolean;\n} | {\n    kind: \'recover\';\n    id: WorkTriggerId;\n    occurrenceId: TriggerOccurrenceId;\n    expectedAttempt: number;\n} | {\n    kind: \'acknowledge\';\n    id: WorkTriggerId;\n    noticeId: TriggerNoticeId;\n};',
+  },
+  {
+    name: 'TriggerDefinition',
+    declaration: 'export interface TriggerDefinition {\n    name: string;\n    rule: TriggerRule;\n    target: TriggerTarget;\n}',
+  },
+  {
+    name: 'TriggerDirectory',
+    declaration: 'export interface TriggerDirectory {\n    items: TriggerSummary[];\n    observedAt: number;\n    failures: {\n        id: WorkTriggerId;\n        observedAt: number;\n        code: \'worker-step-failed\';\n    }[];\n}',
+  },
+  {
+    name: 'TriggerNotice',
+    declaration: 'export type TriggerNotice = {\n    id: TriggerNoticeId;\n    createdAt: number;\n    readAt?: number;\n} & ({\n    kind: \'admission-unconfirmed\';\n} | {\n    kind: \'settled\';\n    status: TriggerTerminalStatus;\n});',
+  },
+  {
+    name: 'TriggerNoticeId',
+    declaration: 'export type TriggerNoticeId = Branded<\'TriggerNoticeId\'>;',
+  },
+  {
+    name: 'TriggerObservation',
+    declaration: 'export interface TriggerObservation {\n    status: WorkSource[\'status\'];\n    observedAt: number;\n}',
+  },
+  {
+    name: 'TriggerOccurrence',
+    declaration: 'export interface TriggerOccurrence {\n    id: TriggerOccurrenceId;\n    dueAt: number;\n    claimedAt: number;\n    skippedIntervals: number;\n    attempts: number;\n    admission: TriggerAdmission;\n    notices: TriggerNotice[];\n}',
+  },
+  {
+    name: 'TriggerOccurrenceId',
+    declaration: 'export type TriggerOccurrenceId = Branded<\'TriggerOccurrenceId\'>;',
+  },
+  {
+    name: 'TriggerOptions',
+    declaration: 'export interface TriggerOptions {\n    minIntervalMs: number;\n    pollIntervalMs: number;\n    maxOccurrences: number;\n}',
+  },
+  {
+    name: 'TriggerQuery',
+    declaration: 'export interface TriggerQuery {\n    text: string;\n    workspaceId?: WorkspaceId;\n    enabled?: boolean;\n}',
+  },
+  {
+    name: 'TriggerReceipt',
+    declaration: 'export interface TriggerReceipt {\n    id: WorkTriggerId;\n    revision: number;\n}',
+  },
+  {
+    name: 'TriggerRule',
+    declaration: 'export type TriggerRule = {\n    kind: \'at\';\n    at: number;\n} | {\n    kind: \'every\';\n    firstAt: number;\n    intervalMs: number;\n} | {\n    kind: \'on-settled\';\n    source: WorkReference;\n};',
+  },
+  {
+    name: 'TriggerSummary',
+    declaration: 'export interface TriggerSummary {\n    id: WorkTriggerId;\n    revision: number;\n    name: string;\n    workspaceId: WorkspaceId;\n    target: TriggerTarget[\'kind\'];\n    enabled: boolean;\n    status: \'paused\' | \'armed\' | \'consumed\' | \'capacity\';\n    nextAt?: number;\n    latest?: Omit<TriggerOccurrence, \'notices\'>;\n    unread: number;\n}',
+  },
+  {
+    name: 'TriggerTarget',
+    declaration: 'export type TriggerTarget = {\n    kind: \'agent\';\n    id: WorkbenchAgentId;\n    workspaceId: WorkspaceId;\n    expectedRevision: number;\n    brief: TaskBrief;\n} | {\n    kind: \'workflow\';\n    id: WorkflowId;\n    workspaceId: WorkspaceId;\n    versionId: WorkflowVersionId;\n    inputs: Record<string, JsonValue>;\n};',
+  },
+  {
+    name: 'TriggerTerminalStatus',
+    declaration: 'export type TriggerTerminalStatus = Extract<WorkSource[\'status\'], \'completed\' | \'succeeded\' | \'failed\' | \'cancelled\' | \'interrupted\'>;',
   },
   {
     name: 'TurnEndCancelCause',
@@ -5266,12 +6007,40 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WebUpgradeRoute {\n    path: string;\n    handler: (req: IncomingMessage, socket: Duplex, head: Buffer) => void | Promise<void>;\n}',
   },
   {
+    name: 'WorkArtifactId',
+    declaration: 'export type WorkArtifactId = Branded<\'WorkArtifactId\'>;',
+  },
+  {
     name: 'WorkbenchAgent',
     declaration: 'export interface WorkbenchAgent extends AgentDefinition {\n    id: WorkbenchAgentId;\n    revision: number;\n    archived: boolean;\n    createdAt: number;\n    updatedAt: number;\n}',
   },
   {
     name: 'WorkbenchAgentId',
     declaration: 'export type WorkbenchAgentId = Branded<\'WorkbenchAgentId\'>;',
+  },
+  {
+    name: 'WorkCommand',
+    declaration: 'export type WorkCommand = {\n    kind: \'retry-agent\';\n    ref: Extract<WorkReference, {\n        kind: \'agent\';\n    }>;\n    expectedRevision: number;\n    requestId: TaskRequestId;\n} | {\n    kind: \'retry-workflow\';\n    ref: Extract<WorkReference, {\n        kind: \'workflow\';\n    }>;\n    requestId: WorkflowRequestId;\n} | {\n    kind: \'review\';\n    ref: WorkReference;\n    version: DeliveryVersion;\n    decisionId: ReviewDecisionId;\n    expectedRevision: number;\n    decision: \'accepted\' | \'changes-requested\';\n    reason: string;\n} | {\n    kind: \'revise-agent\';\n    ref: {\n        kind: \'agent\';\n        id: AgentRunId;\n    };\n    reviewRevision: number;\n    requestId: TaskRequestId;\n    agentRevision: number;\n    brief: TaskBrief;\n} | {\n    kind: \'revise-workflow\';\n    ref: {\n        kind: \'workflow\';\n        id: WorkflowRunId;\n    };\n    reviewRevision: number;\n    requestId: WorkflowRequestId;\n} | {\n    kind: \'decide-workflow\';\n    ref: {\n        kind: \'workflow\';\n        id: WorkflowRunId;\n    };\n    attemptId: WorkflowAttemptId;\n    approve: boolean;\n};',
+  },
+  {
+    name: 'WorkCursor',
+    declaration: 'export interface WorkCursor {\n    query: string;\n    agent?: AgentRunPosition;\n    workflow?: WorkflowRunPosition;\n}',
+  },
+  {
+    name: 'WorkDetail',
+    declaration: 'export interface WorkDetail {\n    ref: WorkReference;\n    sessionId: SessionId;\n    name: string;\n    workspaceId: WorkspaceId;\n    status: AgentRunSummary[\'status\'] | WorkflowRunSummary[\'status\'];\n    brief?: TaskBrief;\n    revisionOf?: WorkReference;\n    agentId?: WorkbenchAgentId;\n    configuration?: AgentRunSummary[\'configuration\'];\n    delivery?: DeliverySnapshot;\n    deliveryError?: string;\n    review?: DeliveryReview;\n    priorReviews?: DeliveryReview[];\n    waitingAttemptId?: WorkflowAttemptId;\n    error?: string;\n}',
+  },
+  {
+    name: 'WorkDiagnosis',
+    declaration: 'export interface WorkDiagnosis {\n    ref: WorkReference;\n    observedAt: number;\n    status: WorkDetail[\'status\'];\n    sources: DiagnosticSource[];\n    findings: DiagnosticFinding[];\n    retry: WorkRetryPreview;\n}',
+  },
+  {
+    name: 'WorkDurationSamples',
+    declaration: 'export interface WorkDurationSamples {\n    count: number;\n    totalMs: number;\n}',
+  },
+  {
+    name: 'WorkExecutor',
+    declaration: 'export interface WorkExecutor {\n    id: WorkbenchAgentId;\n    name: string;\n    revision: number;\n    archived: boolean;\n    runtime: string;\n    instructions: string;\n    skills: string[];\n    model?: {\n        provider: string;\n        model: string;\n        reasoningEffort?: string | undefined;\n    };\n    mcpServerNames: string[];\n}',
   },
   {
     name: 'WorkflowAgentEndInfo',
@@ -5290,8 +6059,12 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type WorkflowAttemptId = Branded<\'WorkflowAttemptId\'>;',
   },
   {
+    name: 'WorkflowCatalogEntry',
+    declaration: 'export type WorkflowCatalogEntry = Pick<WorkflowDocument, \'id\' | \'workspaceId\' | \'name\' | \'archived\'>;',
+  },
+  {
     name: 'WorkflowCommand',
-    declaration: 'export type WorkflowCommand = {\n    kind: \'create\';\n    workspaceId: WorkspaceId;\n    name: string;\n    description: string;\n} | {\n    kind: \'save\';\n    id: WorkflowId;\n    expectedRevision: number;\n    name: string;\n    definition: WorkflowDefinition;\n} | {\n    kind: \'publish\';\n    id: WorkflowId;\n    expectedRevision: number;\n} | {\n    kind: \'archive\';\n    id: WorkflowId;\n    expectedRevision: number;\n    archived: boolean;\n} | {\n    kind: \'generate\';\n    id: WorkflowId;\n    expectedRevision: number;\n    description: string;\n} | {\n    kind: \'start\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n    inputs: Record<string, JsonValue>;\n    rerunOf?: WorkflowRunId;\n} | {\n    kind: \'verify\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n} | {\n    kind: \'cancel\';\n    runId: WorkflowRunId;\n} | {\n    kind: \'decide\';\n    runId: WorkflowRunId;\n    attemptId: WorkflowAttemptId;\n    approve: boolean;\n};',
+    declaration: 'export type WorkflowCommand = {\n    kind: \'create\';\n    workspaceId: WorkspaceId;\n    name: string;\n    description: string;\n} | {\n    kind: \'copy\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n    workspaceId: WorkspaceId;\n    name: string;\n    requestId: WorkflowRequestId;\n    template?: {\n        id: Branded<\'WorkTemplateId\'>;\n        version: number;\n    };\n} | {\n    kind: \'save\';\n    id: WorkflowId;\n    expectedRevision: number;\n    name: string;\n    definition: WorkflowDefinition;\n} | {\n    kind: \'publish\';\n    id: WorkflowId;\n    expectedRevision: number;\n} | {\n    kind: \'archive\';\n    id: WorkflowId;\n    expectedRevision: number;\n    archived: boolean;\n} | {\n    kind: \'generate\';\n    id: WorkflowId;\n    expectedRevision: number;\n    description: string;\n} | {\n    kind: \'start\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n    inputs: Record<string, JsonValue>;\n    rerunOf?: WorkflowRunId;\n    requestId?: WorkflowRequestId;\n    feedback?: string;\n} | {\n    kind: \'verify\';\n    id: WorkflowId;\n    versionId: WorkflowVersionId;\n} | {\n    kind: \'retry\';\n    runId: WorkflowRunId;\n    requestId: WorkflowRequestId;\n} | {\n    kind: \'cancel\';\n    runId: WorkflowRunId;\n} | {\n    kind: \'decide\';\n    runId: WorkflowRunId;\n    attemptId: WorkflowAttemptId;\n    approve: boolean;\n};',
   },
   {
     name: 'WorkflowComposition',
@@ -5303,7 +6076,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'WorkflowDocument',
-    declaration: 'export interface WorkflowDocument {\n    id: WorkflowId;\n    workspaceId: WorkspaceId;\n    name: string;\n    revision: number;\n    createdAt: number;\n    updatedAt: number;\n    archived: boolean;\n    draft: WorkflowDefinition;\n    versions: WorkflowVersion[];\n}',
+    declaration: 'export interface WorkflowDocument {\n    id: WorkflowId;\n    copiedFrom?: {\n        id: WorkflowId;\n        versionId: WorkflowVersionId;\n        template?: {\n            id: Branded<\'WorkTemplateId\'>;\n            version: number;\n        };\n    };\n    copyRequest?: {\n        id: WorkflowRequestId;\n        name: string;\n    };\n    workspaceId: WorkspaceId;\n    name: string;\n    revision: number;\n    createdAt: number;\n    updatedAt: number;\n    archived: boolean;\n    draft: WorkflowDefinition;\n    versions: WorkflowVersion[];\n}',
   },
   {
     name: 'WorkflowId',
@@ -5334,12 +6107,36 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WorkflowReceipt {\n    workflowId: WorkflowId;\n    revision?: number;\n    runIds?: WorkflowRunId[];\n    operationId?: WorkflowOperationId;\n}',
   },
   {
+    name: 'WorkflowRequestId',
+    declaration: 'export type WorkflowRequestId = Branded<\'WorkflowRequestId\'>;',
+  },
+  {
     name: 'WorkflowResultInfo',
     declaration: 'export interface WorkflowResultInfo {\n    stopReason: WorkflowStopReason;\n    error?: string;\n    agentsStarted: number;\n}',
   },
   {
     name: 'WorkflowRunInfo',
     declaration: 'export interface WorkflowRunInfo {\n    id: WorkflowRunId;\n    meta: WorkflowMeta;\n}',
+  },
+  {
+    name: 'WorkflowRunPage',
+    declaration: 'export interface WorkflowRunPage {\n    revision: WorkflowRunRevision;\n    items: WorkflowRunSummary[];\n    next?: WorkflowRunPosition;\n}',
+  },
+  {
+    name: 'WorkflowRunPosition',
+    declaration: 'export interface WorkflowRunPosition {\n    revision: WorkflowRunRevision;\n    attention: boolean;\n    updatedAt: number;\n    id: WorkflowRunId;\n}',
+  },
+  {
+    name: 'WorkflowRunQuery',
+    declaration: 'export interface WorkflowRunQuery {\n    limit: number;\n    workspaceId?: WorkspaceId;\n    workflowId?: WorkflowId;\n    createdFrom?: number;\n    createdBefore?: number;\n    before?: WorkflowRunPosition;\n    statuses?: WorkflowRunStatus[];\n}',
+  },
+  {
+    name: 'WorkflowRunRevision',
+    declaration: 'export type WorkflowRunRevision = Branded<\'WorkflowRunRevision\'>;',
+  },
+  {
+    name: 'WorkflowRunSummary',
+    declaration: 'export type WorkflowRunSummary = Pick<WorkflowRun, \'id\' | \'workflowId\' | \'workspaceId\' | \'sessionId\' | \'mode\' | \'status\' | \'createdAt\' | \'updatedAt\' | \'error\'> & {\n    workflowName: string;\n    startedAt?: number;\n    endedAt?: number;\n    waitingAttemptId?: WorkflowAttemptId;\n};',
   },
   {
     name: 'WorkflowStartRequest',
@@ -5368,6 +6165,74 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowWorkbenchSnapshot',
     declaration: 'export interface WorkflowWorkbenchSnapshot {\n    failure?: string;\n    workflows: WorkflowDocument[];\n    runs: WorkflowRun[];\n    operations: WorkflowOperation[];\n    presets: string[];\n    latestRuns: Pick<WorkflowRun, \'id\' | \'workflowId\' | \'status\' | \'mode\' | \'createdAt\' | \'updatedAt\'>[];\n}',
+  },
+  {
+    name: 'WorkItem',
+    declaration: 'export type WorkItem = ({\n    kind: \'agent\';\n    run: AgentRunSummary;\n} | {\n    kind: \'workflow\';\n    run: WorkflowRunSummary;\n}) & {\n    needsAttention: boolean;\n    review?: Omit<DeliveryReview, \'delivery\'>;\n};',
+  },
+  {
+    name: 'WorkPage',
+    declaration: 'export interface WorkPage {\n    items: WorkItem[];\n    observedAt: number;\n    failures: {\n        source: \'agent\' | \'workflow\';\n        message: string;\n    }[];\n    next?: WorkCursor;\n}',
+  },
+  {
+    name: 'WorkQuery',
+    declaration: 'export interface WorkQuery {\n    limit: number;\n    workspaceId?: WorkspaceId;\n    source?: \'agent\' | \'workflow\';\n    state?: \'active\' | \'finished\' | \'waiting\';\n    cursor?: WorkCursor;\n    attentionSessionIds?: SessionId[];\n}',
+  },
+  {
+    name: 'WorkReceipt',
+    declaration: 'export interface WorkReceipt {\n    ref: WorkReference;\n    reviewRevision?: number;\n}',
+  },
+  {
+    name: 'WorkReference',
+    declaration: 'export type WorkReference = {\n    kind: \'agent\';\n    id: AgentRunId;\n} | {\n    kind: \'workflow\';\n    id: WorkflowRunId;\n};',
+  },
+  {
+    name: 'WorkRetryPreview',
+    declaration: 'export type WorkRetryPreview = {\n    kind: \'agent\';\n    agentId: WorkbenchAgentId;\n    task: string;\n    purpose?: \'design\';\n    configuration?: NonNullable<AgentRunSummary[\'configuration\']>;\n} | {\n    kind: \'workflow\';\n    workflowId: WorkflowId;\n    versionId: WorkflowVersionId;\n    version: number;\n    mode: WorkflowRun[\'mode\'];\n    inputs: Record<string, JsonValue>;\n    execution: WorkflowRun[\'execution\'];\n    assertion?: WorkflowRun[\'assertion\'];\n    feedback?: string;\n};',
+  },
+  {
+    name: 'WorkSource',
+    declaration: 'export interface WorkSource {\n    ref: WorkReference;\n    name: string;\n    workspaceId: WorkspaceId;\n    sessionId: SessionId;\n    status: WorkDetail[\'status\'];\n}',
+  },
+  {
+    name: 'WorkStatisticsChoices',
+    declaration: 'export interface WorkStatisticsChoices {\n    executors: {\n        ref: WorkStatisticsExecutor;\n        name: string;\n        archived: boolean;\n        workspaceId?: WorkspaceId;\n    }[];\n    failures: {\n        source: \'agent\' | \'workflow\';\n        message: string;\n    }[];\n}',
+  },
+  {
+    name: 'WorkStatisticsCounts',
+    declaration: 'export interface WorkStatisticsCounts {\n    runs: number;\n    queued: number;\n    active: number;\n    waiting: number;\n    settled: number;\n    succeeded: number;\n    failed: number;\n    cancelled: number;\n    interrupted: number;\n    taskRuns: number;\n    designRuns: number;\n    executionRuns: number;\n    verificationRuns: number;\n    elapsed: WorkDurationSamples;\n    queue: WorkDurationSamples;\n    tokens: WorkUsageCoverage;\n}',
+  },
+  {
+    name: 'WorkStatisticsExecutor',
+    declaration: 'export type WorkStatisticsExecutor = {\n    kind: \'agent\';\n    id: WorkbenchAgentId;\n} | {\n    kind: \'workflow\';\n    id: WorkflowId;\n};',
+  },
+  {
+    name: 'WorkStatisticsGroup',
+    declaration: 'export interface WorkStatisticsGroup {\n    key: string;\n    label: string;\n    counts: WorkStatisticsCounts;\n    source?: \'agent\' | \'workflow\';\n}',
+  },
+  {
+    name: 'WorkStatisticsQuery',
+    declaration: 'export interface WorkStatisticsQuery {\n    from: number;\n    to: number;\n    timeZone: string;\n    workspaceId?: WorkspaceId;\n    source?: \'agent\' | \'workflow\';\n    executor?: WorkStatisticsExecutor;\n    usage: \'skip\' | \'recorded\';\n    attentionSessionIds?: SessionId[];\n}',
+  },
+  {
+    name: 'WorkStatisticsReport',
+    declaration: 'export interface WorkStatisticsReport {\n    query: WorkStatisticsQuery;\n    observedAt: number;\n    usageSessions: {\n        attempted: number;\n        limit: number;\n    };\n    sources: {\n        source: \'agent\' | \'workflow\';\n        state: \'available\' | \'excluded\' | \'unavailable\';\n        message?: string;\n        runs: number;\n    }[];\n    counts: WorkStatisticsCounts;\n    days: WorkStatisticsGroup[];\n    workspaces: WorkStatisticsGroup[];\n    executors: WorkStatisticsGroup[];\n}',
+  },
+  {
+    name: 'WorkTemplateId',
+    declaration: 'export type WorkTemplateId = Branded<\'WorkTemplateId\'>;',
+  },
+  {
+    name: 'WorkTrigger',
+    declaration: 'export interface WorkTrigger {\n    id: WorkTriggerId;\n    revision: number;\n    definition: TriggerDefinition;\n    enabled: boolean;\n    createdAt: number;\n    updatedAt: number;\n    nextAt?: number;\n    occurrences: TriggerOccurrence[];\n}',
+  },
+  {
+    name: 'WorkTriggerId',
+    declaration: 'export type WorkTriggerId = Branded<\'WorkTriggerId\'>;',
+  },
+  {
+    name: 'WorkUsageCoverage',
+    declaration: 'export interface WorkUsageCoverage {\n    usage: TokenUsageProjection;\n    requests: number;\n    reportedSteps: number;\n    checkedRuns: number;\n    unavailableRuns: number;\n    uncheckedRuns: number;\n}',
   },
 ]
 

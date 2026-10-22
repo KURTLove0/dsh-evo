@@ -5,6 +5,31 @@
     - img
     - text: 关闭
   - heading "统计" [level=2]
-  - paragraph: 本机全部持久会话的用量汇总。
+  - paragraph: 运行范围统计与全时段会话用量采用独立口径。
+  - region "运行统计":
+    - paragraph: WORK / METRICS
+    - heading "运行统计" [level=2]
+    - button "刷新执行者选项"
+    - paragraph: 按所选范围内的提交时间统计，各执行来源独立读取。
+    - form "运行统计筛选":
+      - text: 提交开始日期
+      - textbox "提交开始日期": {{date}}
+      - text: 提交结束日期
+      - textbox "提交结束日期": {{date}}
+      - text: 工作区
+      - combobox "工作区":
+        - option "全部" [selected]
+      - text: 执行来源
+      - combobox "执行来源":
+        - option "全部" [selected]
+        - option "智能体"
+        - option "工作流"
+      - text: 执行者
+      - combobox "执行者":
+        - option "全部" [selected]
+      - button "读取运行统计"
+    - button "读取已记录的用量证据"
+    - text: 在配置上限内读取原始日志，不会执行任务。
+    - paragraph: 选择筛选条件后，读取运行统计。
   - text: 会话数 2 1 个已开始对话 Token 用量 42.3K 输入 41.5K · 输出 800 · 缓存读 40K 费用 — 暂无计费数据源，暂无法统计费用。
   - button "刷新统计"

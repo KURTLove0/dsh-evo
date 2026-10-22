@@ -42,6 +42,19 @@ interface TokenSurfaceNode {
 
 表层顺序具有权威性；替换节点的持久 seq 可能高于位置排在其后的节点。该快照不可变，不会随底层回放折叠推进而增长。
 
+## `ReportedTokenUsage`
+
+```ts type-equiv
+/** Provider observations for a caller-selected interval of one durable log, without billing completeness claims. */
+interface ReportedTokenUsage {
+  usage: TokenUsageProjection
+  requests: number
+  reportedSteps: number
+}
+```
+
+`measureReportedUsage(events)` 在调用方选定的单个会话区间内复用规范 Token 用量替换。`requests` 统计已记录请求头，`reportedSteps` 统计报告用量的步骤。零样本表示缺少证据，不是零消耗；归属与日志可用性由调用方负责。
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>

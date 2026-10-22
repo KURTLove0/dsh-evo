@@ -1,5 +1,5 @@
 
-/* Floating capsule input (figma Input_Bottom 75:8208): card floats above the
+/* Floating composer card (figma Input_Bottom 75:8208): card floats above the
    viewport bottom inside the centered message column; textarea on top, action
    row below, primary action controls bottom-right. Input width rides the
    column (--dsh-composer-card-max-width = chat content + 32px, 16px per side,
@@ -49,13 +49,11 @@
   width: 100%;
   max-width: var(--dsh-composer-card-max-width);
   padding-top: 10px;
-  /* Input stroke: black/0.10 light, white/0.06 dark (figma darkmode note says
-     the input border is one notch weaker than buttons) — exactly the
-     l2-darkmode-thin pair. Fill: the input surface token (elevated in dark). */
+  /* The composer uses the elevated scrollbar pair for its capped draft area. */
   border: 1px solid var(--dsw-alias-border-l2-darkmode-thin);
-  border-radius: 22px;
+  border-radius: var(--dsw-radius-composer);
   background: var(--dsw-specific-input-major);
-  box-shadow: var(--dsw-shadow-lv2);
+  box-shadow: var(--dsw-shadow-composer);
   font-size: 16px;
   line-height: 24px;
   /* Elevated surface in dark, same as the menus: the draft scrollport inside
@@ -67,12 +65,24 @@
   --dsh-scrollbar-thumb-hover: var(--dsw-alias-scrollbar-hover-l2);
 }
 
+.card:focus-within:not(.cardWorkspaceTrigger) {
+  border-color: var(--dsw-alias-state-business-primary);
+  box-shadow: var(--dsw-shadow-focus), var(--dsw-shadow-composer);
+}
+
+.add:focus-visible,
+.select:focus-visible,
+.primary:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
 /* No-workspace trigger state: dashed l4 stroke marks the card as a pick-a-
    workspace affordance rather than a live composer; hover answers in the
    business blue to invite the click. Native `dashed` has a fixed browser
    pattern, so the stroke is an ::after overlay: theme-token background masked
    by an SVG dash ring (stroke-width 2 centered on the box edge = 1px visible
-   inside), which keeps the 22px radius and both themes. */
+   inside), which follows the shared composer radius in both themes. */
 .cardWorkspaceTrigger {
   border-color: transparent;
   cursor: pointer;
@@ -82,17 +92,17 @@
   content: '';
   position: absolute;
   inset: -1px;
-  border-radius: 22px;
+  border-radius: var(--dsw-radius-composer);
   background: var(--dsw-alias-border-l4);
   transition: background-color 100ms ease;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' rx='22' ry='22' stroke='black' stroke-width='2' stroke-dasharray='4 4'/%3E%3C/svg%3E");
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' rx='22' ry='22' stroke='black' stroke-width='2' stroke-dasharray='4 4'/%3E%3C/svg%3E");
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' rx='14' ry='14' stroke='black' stroke-width='2' stroke-dasharray='4 4'/%3E%3C/svg%3E");
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' rx='14' ry='14' stroke='black' stroke-width='2' stroke-dasharray='4 4'/%3E%3C/svg%3E");
   pointer-events: none;
 }
 
 /* Disabled toolbar controls neither receive nor swallow clicks in the trigger
    state: pointer events fall through to the card's own click handler, making
-   the full capsule one pick target. */
+   the full card one pick target. */
 .cardWorkspaceTrigger :disabled {
   pointer-events: none;
 }
@@ -197,7 +207,6 @@
   background: transparent;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  /* Business blue, not brand-primary: that token resolves to ink in this sheet. */
   caret-color: var(--dsw-alias-state-business-primary);
 }
 
@@ -321,13 +330,14 @@
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--dsw-radius-control);
   background: var(--dsw-specific-selector);
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
 }
 
-.add:hover:not(:disabled) {
+.add:hover:not(:disabled),
+.add:active:not(:disabled) {
   background: var(--dsw-alias-interactive-bg-hover-solid);
 }
 
@@ -368,9 +378,7 @@
   cursor: default;
 }
 
-/* Primary send (figma IconButton 34:10465): 34px circle, #3964FE light /
-   #679EFE dark — the info-fill pair (500→400), NOT button-primary (ink);
-   white glyph; empty text = 0.4 opacity. */
+/* Send uses the info fill and theme foreground as a contrast pair. */
 .primary {
   display: grid;
   place-items: center;
@@ -378,26 +386,38 @@
   width: 34px;
   height: 34px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--dsw-radius-control);
   background: var(--dsw-alias-button-info-fill);
-  /* Static white, not the foreground token: the arrow stays white on the blue
-     fill in both themes (design 34:10465). */
-  color: #fff;
+  color: var(--dsw-alias-label-primary-foreground);
   cursor: pointer;
-  transition: background-color 100ms ease;
+  transition: background-color var(--ds-transition-duration-fast) var(--ds-ease-in-out);
   /* Opts out of the row's 2px downward shift (.row top pad): the send circle
      keeps its original seat while the smaller chips sit lower. Transform, not
      margin, so flex centering math is untouched. */
   transform: translateY(-2px);
 }
 
-.primary:hover:not(:disabled) {
+.primary:hover:not(:disabled),
+.primary:active:not(:disabled) {
   background: var(--dsw-alias-button-info-hover);
 }
 
 .primary:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+@media (pointer: coarse) {
+  .add,
+  .select,
+  .primary {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary { transition: none; }
 }
 
 .retry {

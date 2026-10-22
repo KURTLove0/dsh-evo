@@ -34,7 +34,11 @@
       "default": "./lib/types/client.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./types": {
+      "types": "./lib/types/types.d.ts",
+      "default": "./lib/types/types.js"
+    }
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "workspace:^"

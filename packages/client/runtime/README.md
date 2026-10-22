@@ -6,11 +6,20 @@ Client cordis boot and React-free object services: SlotRegistry wraps SlotCore a
 
 `AgentDirectoryManager` owns the independent collaborator directory and selected task history. It coalesces notifications, drops stale selection responses, retains committed command receipts when a later refresh fails, and stops publication on disposal.
 
+`WorkCenterManager` owns bounded run pages, paged workflow attention, executor choices, selected delivery evidence, and preflight results. It serializes refresh with continuation reads, discards stale queries and selections, resets pagination when the canonical connection-observed pending-session set changes, invalidates pending previews when inputs change, and exposes explicit source failures. Browser drafts remain in the page's declared viewing store.
+
+`TemplateManager` owns the bounded private template directory, published workflow choices, examples, and selected immutable history. It coalesces invalidations, rejects stale selection results, publishes successful reads independently of other source failures, and preserves acknowledged mutation receipts if a refresh fails. Template labels and version controls remain in the page view store.
+
 For each prompt that can reach a local root or continuable child Agent, the runtime samples the browser's current `Intl.DateTimeFormat().resolvedOptions().timeZone` and attaches it to that one Session or subagent prompt RPC. It is neither cached nor included in Session creation or fork state, so travel and concurrent tabs keep message-local provenance. A browser that cannot provide a non-empty zone fails the prompt locally instead of silently substituting deployment state.
 
 Settings owners share the React-free `SettingsScopeSpec`, `SettingsScope`, and snapshot types defined here. ui-settings owns `ctx.settingsScope.bind(spec)`, its Host transport, schema validation, and lifecycle; see [its package contract](../ui-settings/README.md).
 
 The React-free `WorkflowManager` owns the independent workflow directory and selected run history. Its application port uses generated Remote methods; notifications and reconnect coalesce full refreshes, while selection changes prevent an older response from publishing another workflow's history.
+
+
+`TriggerManager` owns independent trigger directory, selected detail, and original-target preparation reads. It drops stale replies, preserves last-known failures, coalesces identical in-flight commands, and refreshes authoritative state after uncertain controls without automatically resubmitting them.
+
+`RemoteWorkManager` owns authority-qualified peer, catalog, retained-history and original-submission reads. Selection and connection changes retire old generations; peer reassignment clears observations from the previous Host/principal. Commands coalesce exact in-flight input and keep pinned authority; reconnect only reads. The [remote execution UI](../ui-work-remote/README.md) owns drafts and uncertain operation retention.
 
 ## Slot declaration injection
 
@@ -26,7 +35,7 @@ Workspace and Session lists have independent monotone `pending` → `ready` base
 
 `WorkspaceRuntime.delete(workspaceId)` removes the registration from the client projection after the successful unary response; the matching `host/workspace-removed` frame is idempotent and synchronizes other tabs. Session state and the current Session selection are independent, so accounted Sessions immediately project under Ungrouped after their Workspace disappears.
 
-`WorkspaceListState.archivedSessionIds` mirrors the Host's registry-global archive set (a `readonly SessionId[]` in Host order, replaced only when membership changes; consumers needing O(1) lookups build a transient Set). It is full-snapshot state: the `workspace.list` baseline, the `archiveSession` unary echo, and the `host/archived-sessions-changed` frame each install the complete set. `WorkspaceRuntime.archiveSession(sessionId)` archives over the wire; the projection sweep clears the current selection into the New Session view state whenever it lands in the archive set — one rule covering the local echo, another tab's frame, and a reconnect baseline restoring a selection archived while this client was away. A set installed while a `workspace.list` request is in flight also supersedes that stale baseline's set. Grouping surfaces hide members everywhere while the session rows stay in the list store.
+`WorkspaceListState.archivedSessionIds` mirrors the Host's registry-global archive set (a `readonly SessionId[]` in Host order, replaced only when membership changes; consumers needing O(1) lookups build a transient Set). It is full-snapshot state: the `workspace.list` baseline, the archive/restore unary echoes, and the `host/archived-sessions-changed` frame each install the complete set. `WorkspaceRuntime.archiveSession(sessionId)` and `restoreSession(sessionId)` serialize local membership mutations over the wire; a newer Host observation supersedes an older acknowledgment. Restoration changes neither selection nor accounting. `refresh()` re-reads workspace/archive observations; the projection sweep clears the current selection into the New Session view state whenever it lands in the archive set — one rule covering the local echo, another tab's frame, and a reconnect baseline restoring a selection archived while this client was away. A set installed while a `workspace.list` request is in flight also supersedes that stale baseline's set. Grouping surfaces hide members everywhere while the session rows stay in the list store.
 
 SlotRegistry gives the renderer separate bare observables for `useSessions` and `useWorkspaces`; ui-renderer creates the hooks. Workspace business state does not enter `SessionListState` or an entry store.
 
@@ -83,6 +92,18 @@ A `turn/end` whose reason is `max-tokens` projects one `turn-max-tokens` node at
 ## Session model selection
 
 Each resident `Session` owns a `modelSelection` snapshot containing the current `ModelSelection`, provider-grouped directory, provider-local failures, and the `idle`/`loading`/`ready`/`selecting`/`error` state. History establishes or refreshes the current selection, opening a selector refreshes the directory, and selection failures preserve the last selection and usable groups. Directory and selection operations share a monotonically increasing generation so an older response cannot overwrite a newer selection. A reconnect rebuild restores the selection reported by the Host without replacing unchanged selection substructure.
+
+## Capability observations
+
+`HealthManager` retains configuration reports and explicit probe identities independently of page mounts. Configuration invalidation discards stale reads. Admission refusal clears pending intent; transport failure retains it for read-only recovery. Completion events take precedence over older running acknowledgments. Reconnect reads retained ids without resubmitting work; missing host records remain unknown. Per-probe failures do not overwrite independent observations.
+
+`WorkCenterManager.diagnose` explicitly reads selected execution evidence, suppresses concurrent requests, and discards late responses after selection, refresh, or disposal. Source refresh marks a retained report stale without automatically reading it; a failed read preserves the last known report and exposes its error.
+
+`WorkStatisticsManager` owns explicitly read execution cohorts and safe filter choices. Source, attention-set, filter, and reconnect changes mark results stale without inspecting logs again. Separate read generations discard superseded responses and stop publication on disposal; failures retain the report with its original submitted filters. Choices and report failures remain independent.
+
+`ArtifactManager` independently owns metadata pages, immutable previews, explicit current-file observations, and pinned single-flight registrations. Metadata refresh never inspects files; invalidation retains observations as stale. Superseded reads cannot replace a newer target, and disposing the manager prevents queued unsent writes.
+
+`KnowledgeManager` owns workspace-qualified source metadata, explicit literal searches/citation reads, and one retained uncertain command. Generations discard superseded replies; workspace, connection, and grant changes clear retrieved text. Reconnect refreshes only metadata. Exact command input survives page remounts; successful acknowledgment remains distinct from a later metadata failure. The [knowledge page](../ui-work-knowledge/README.md) owns controlled drafts and clipboard feedback.
 
 ## Model Experience
 

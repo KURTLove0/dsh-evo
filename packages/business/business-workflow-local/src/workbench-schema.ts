@@ -30,6 +30,9 @@ const documentSchema = z
   .object({
     id,
     workspaceId: id,
+    copiedFrom: z.object({ id, versionId: id,
+      template: z.object({ id, version: z.number().int().positive() }).strict().optional() }).strict().optional(),
+    copyRequest: z.object({ id, name: text }).strict().optional(),
     name: text,
     revision: z.number().int().positive(),
     createdAt: z.number(),
@@ -52,6 +55,9 @@ export const runSchema = z
     batchId: id.optional(),
     caseName: text.optional(),
     rerunOf: id.optional(),
+    requestId: id.optional(),
+    retryRequest: id.optional(),
+    feedback: text.optional(),
     execution: z.object({ provider: text, model: text, reasoningEffort: text.optional(), subagentProvider: text }).strict(),
     inputs: z.record(z.string(), z.json()),
     status: z.enum(['queued', 'running', 'waiting', 'stopping', 'succeeded', 'failed', 'cancelled', 'interrupted']),
@@ -123,10 +129,10 @@ export interface RunIndex {
   pending?: WorkflowRun
 }
 
-/** Format version 1 rejects any unrecognized on-disk record format. */
+/** Durable workflow definitions, audit references, and generation operations. */
 export const workbenchDomain = defineDomain({
   name: 'business_workflows',
-  version: 1,
+  version: 3,
   tables: {
     workflows: domainTable<WorkflowId, WorkflowDocument>(documentSchema),
     runs: domainTable<WorkflowRunId, RunIndex>(

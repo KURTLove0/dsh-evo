@@ -64,6 +64,8 @@ import * as ToolTeam from '@deepseek-ai/dsh-experimental-tool-agent-team'
 import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
 import * as ToolSubagent from '@deepseek-ai/dsh-tool-subagent'
 import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
+import * as KnowledgeTools from '@deepseek-ai/dsh-work-knowledge/tools'
+import type { WorkKnowledge } from '@deepseek-ai/dsh-work-knowledge'
 import VmWorkflowEngine from '@deepseek-ai/dsh-workflow-worker-thread'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
@@ -625,6 +627,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
     note:
       'web_search and web_fetch keep provider selection behind ctx.web so model-visible schemas stay stable across backend swaps.',
   },
+  {
+    pkg: '@deepseek-ai/dsh-work-knowledge',
+    dir: 'work-knowledge',
+    source: 'packages/business/work-knowledge/src/tools.ts',
+    requires: ['ctx.tools', 'ctx.workKnowledge', 'ctx.workspaceRegistry', 'an executing Agent with a registered workspace directory'],
+    writes: ['tool/call', 'tool/result'],
+    async mount(ctx) {
+      // Schema harvesting never executes a query; these markers reject accidental content access.
+      const unavailable = () => Promise.reject(new Error('gen-tool-catalog: knowledge access is unavailable during schema harvest'))
+      ctx.provide('workKnowledge', { search: unavailable, read: unavailable } as unknown as WorkKnowledge)
+      ctx.provide('workspaceRegistry', { resolveByPath: unavailable } as unknown as Context['workspaceRegistry'])
+      await ctx.plugin(KnowledgeTools, { maxOutputBytes: 1048576 })
+    },
+    note: 'Optional tools entry; explicit file grants and current filesystem readability are enforced by the provider. No automatic corpus injection or semantic ranking.',
+  },
 ]
 
 /** One package's contribution to the catalog: its schemas plus attribution. */
@@ -767,7 +784,7 @@ export function render(catalog: ToolCatalog): string {
     '',
     'This file is GENERATED and verified fresh by `pnpm run verify-tool-catalog` (part of `doc-sync`) — do not edit it by hand. Unlike the cordis catalog (a pure source-AST pass), this generator BOOTS each tool plugin on a real context and reads `ctx.tools.schemas()`, because a tool schema is not statically knowable (runtime-spread enums, concatenated descriptions, config-driven names, raw-JSON-Schema MCP tools). A completeness guard globs `packages/*/tool-*` and fails if any package is missing from the generator\'s boot manifest, so a new tool cannot be silently undocumented. See [the tool-schema-catalog Agent Note](../.agents/notes/implemented/process/2026-07-02-tool-schema-catalog.md).',
     '',
-    'Scope: shipped product tools under `packages/*/tool-*`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The registered tool NAME can be a load-time config (e.g. `tool-subagent`\'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog\'s packages-only scope.',
+    'Scope: shipped product tools under `packages/*/tool-*` and explicitly listed secondary tool entries such as `work-knowledge/tools`, each booted with its DEFAULT config, except where a Config field is REQUIRED with no default — there the generator must choose, and the per-package note records which branch this page shows. The registered tool NAME can be a load-time config (e.g. `tool-subagent`\'s `toolName`), so a deployment may expose a package under a different or additional name — a per-package note records those shipped aliases where they exist. The `examples/` demo tools (e.g. `echo`) are excluded, matching the cordis catalog\'s packages-only scope.',
     '',
     '## Tool Package Map',
     '',

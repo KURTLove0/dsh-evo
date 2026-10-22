@@ -1,0 +1,23 @@
+{
+  "name": "UI once",
+  "enabled": true,
+  "rule": "at",
+  "fixedTarget": {
+    "version": 1,
+    "goal": "Review original UI input",
+    "background": "Fixed background",
+    "deliverables": [
+      "Report"
+    ],
+    "acceptanceCriteria": [
+      "Include evidence"
+    ],
+    "constraints": "Preserve inputs"
+  },
+  "occurrences": 1,
+  "attempts": 2,
+  "phase": "settled",
+  "noticesRead": true,
+  "nativeRuns": 2,
+  "modelRequests": 2
+}

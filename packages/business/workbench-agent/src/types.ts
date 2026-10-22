@@ -34,6 +34,65 @@ export interface AgentCapabilities {
 export type WorkbenchAgentId = Branded<'WorkbenchAgentId'>
 /** One submitted task and its whole-agent execution interval. */
 export type AgentRunId = Branded<'AgentRunId'>
+/** Idempotent structured-task submission identity. */
+export type TaskRequestId = Branded<'TaskRequestId'>
+
+/** Versioned user-visible task content, captured with the submitted run. */
+export interface TaskBrief {
+  version: 1
+  goal: string
+  background: string
+  deliverables: string[]
+  acceptanceCriteria: string[]
+  constraints: string
+  /** Saved content copied into this brief; edits do not change its source version. */
+  template?: { id: Branded<'WorkTemplateId'>; version: number }
+}
+/** Readiness facts observed without creating a task or connecting MCP servers. */
+export interface TaskPreflight {
+  checkedAt: number
+  agentRevision: number
+  issues: { code: 'archived' | 'workspace' | 'runtime' | 'model' | 'skills'; message: string }[]
+  mcp: { name: string; status: 'not-checked' }[]
+  prompt?: string
+}
+/** Opaque committed run-directory generation; invalid after any execution mutation or host restart. */
+export type AgentRunRevision = Branded<'AgentRunRevision'>
+/** Attention-first position, then descending committed execution update and id. */
+export interface AgentRunPosition {
+  revision: AgentRunRevision
+  attention: boolean
+  updatedAt: number
+  id: AgentRunId
+}
+/** Bounded history request across identities, without captured credentials. */
+export interface AgentRunQuery {
+  limit: number
+  workspaceId?: WorkspaceId
+  agentId?: WorkbenchAgentId
+  /** Submission time bounds: inclusive start and exclusive end. */
+  createdFrom?: number
+  createdBefore?: number
+  before?: AgentRunPosition
+  statuses?: AgentRun['status'][]
+  /** Sessions with a pending interaction observed by the querying connection. */
+  attentionSessionIds?: SessionId[]
+  /** Restrict to running tasks with one of the supplied pending sessions. */
+  attentionOnly?: boolean
+}
+/** Run data safe for the work directory; captured MCP configuration is excluded. */
+export type AgentRunSummary = Omit<AgentRun, 'definition' | 'candidate'> & {
+  agentName: string
+  /** Latest known execution mutation: creation, start, or settlement. */
+  updatedAt: number
+  configuration?: Pick<AgentDefinition, 'instructions' | 'runtime' | 'model' | 'skills'> & { revision: number; mcpServerNames: string[] }
+}
+/** A bounded page ordered by attention, execution update, and id. */
+export interface AgentRunPage {
+  revision: AgentRunRevision
+  items: AgentRunSummary[]
+  next?: AgentRunPosition
+}
 
 /** User-editable configuration; descriptions are display-only. */
 export interface AgentDefinition {
@@ -68,10 +127,16 @@ export interface AgentRun {
   createdAt: number
   startedAt?: number
   endedAt?: number
+  /** Last durable event owned by this execution interval. */
+  settledSeq?: number
   error?: string
   purpose?: 'design'
   candidate?: AgentDefinition
   retryOf?: AgentRunId
+  /** One explicit full retry; retained independently of browser acknowledgments. */
+  retryRequest?: { id: TaskRequestId; agentRevision: number }
+  submission?: { id: TaskRequestId; agentRevision: number; brief: TaskBrief }
+  revisionOf?: AgentRunId
 }
 /** Complete directory and selected execution history. */
 export interface AgentDirectory {
@@ -89,8 +154,9 @@ export type AgentCommand =
   | { kind: 'copy'; id: WorkbenchAgentId; name: string }
   | { kind: 'archive'; id: WorkbenchAgentId; revision: number; archived: boolean }
   | { kind: 'run'; id: WorkbenchAgentId; workspaceId: WorkspaceId; prompt: string }
+  | { kind: 'submit-task'; id: WorkbenchAgentId; workspaceId: WorkspaceId; requestId: TaskRequestId; expectedRevision: number; brief: TaskBrief; revisionOf?: AgentRunId }
   | { kind: 'design'; id: WorkbenchAgentId; workspaceId: WorkspaceId; prompt: string }
-  | { kind: 'retry'; runId: AgentRunId }
+  | { kind: 'retry'; runId: AgentRunId; requestId: TaskRequestId; expectedRevision: number }
   | { kind: 'stop'; runId: AgentRunId }
 /** Returned only after the requested mutation is durable. */
 export interface AgentReceipt {

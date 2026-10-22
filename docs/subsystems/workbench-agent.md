@@ -6,6 +6,10 @@ Independent collaborator identities and execution history are owned by [dsh-work
 
 `WorkbenchAgents.snapshot()` reads the directory, workload, runtime availability, concurrency limits, and selected history. `command()` creates, revision-checks saves, copies, archives, restores, submits tasks, designs configuration candidates, stops, and retries. Run records retain their identity and captured configuration across later edits. The native provider owns persistence, scheduling, transcript sessions, and teardown.
 
+Structured `TaskBrief` stores goal, background, file declarations, acceptance criteria, and constraints with the run. `TaskPreflight` returns dependency issues, an executor revision, unchecked MCP names, and optional exact prompt preview. `TaskRequestId` makes structured submission idempotent. `AgentRunQuery` and `AgentRunPage` provide bounded sanitized summaries; `AgentRunPosition` orders attention before descending execution updates, while `AgentRunRevision` rejects continuations after committed run changes or host restart. Summary `updatedAt` derives from creation, start, and settlement. `AgentRunSummary` excludes captured definitions and candidates, with optional sanitized inspection configuration. Runs retain optional submission, revision origin, and durable settlement sequence. See [Work Center](work-center.md) for delivery inspection and independent acceptance.
+
+`AgentRunQuery` filters `agentId` and inclusive `createdFrom` / exclusive `createdBefore` submission times before pagination; these are independent of execution update ordering.
+
 ## WorkbenchAgentId
 
 Stable branded collaborator identity, independent of preset ids.
@@ -40,7 +44,7 @@ Task text, owning identity, workspace and session ids, timestamps, status, optio
 
 ## AgentCommand
 
-Create and save accept a definition; copy supplies a new name; archive and save require revisions; run and design supply a workspace and prompt; stop and retry name an existing run.
+Create and save accept a definition; copy supplies a new name; archive and save require revisions; run and design supply a workspace and prompt; stop names an existing run; retry additionally requires a caller-owned `TaskRequestId` and confirmed current `expectedRevision`. `AgentRun.retryRequest` durably associates the request with its captured configuration revision.
 
 ## AgentReceipt
 
@@ -91,6 +95,27 @@ abstract runtimes(): Promise<AgentRuntime[]>
  * @returns user-invocable skill summaries without creating an agent or session.
  */
 abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
+
+/**
+ * Read a bounded cross-identity history page, excluding captured credentials.
+ * @param request - generation-scoped attention/update cursor, optional workspace, and explicit page limit.
+ * @returns detached run summaries and continuation position.
+ */
+abstract queryRuns(request: AgentRunQuery): Promise<AgentRunPage>
+
+/**
+ * Read one committed run without captured credentials.
+ * @param id - original execution identity.
+ * @returns detached run summary; unknown identities reject.
+ */
+abstract inspectRun(id: AgentRunId): Promise<AgentRunSummary>
+
+/**
+ * Check current task dependencies without executing work or probing MCP.
+ * @param request - selected identity and workspace.
+ * @returns timestamped issues, captured revision, and unchecked MCP names.
+ */
+abstract preflight(request: { id: WorkbenchAgentId; workspaceId: WorkspaceId; brief?: TaskBrief }): Promise<TaskPreflight>
 ```
 
 Types: [WorkspaceId](workspace.md)

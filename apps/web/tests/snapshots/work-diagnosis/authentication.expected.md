@@ -1,0 +1,45 @@
+- region "Result and failure diagnosis":
+  - heading "Result and failure diagnosis" [level=2]
+  - paragraph: Categories follow recorded codes and end reasons. An observed tool or model error does not by itself explain the final outcome.
+  - button "Read diagnostic evidence"
+  - button "Open capability checks"
+  - button "Open model settings"
+  - button "Open runtime settings"
+  - paragraph:
+    - text: "Observed at:"
+    - time: {{timestamp}}
+    - text: · Failed
+  - heading "Evidence sources" [level=3]
+  - list:
+    - listitem:
+      - strong: {{uuid}}
+      - text: · Run record · Read
+      - button "Open source conversation"
+    - listitem:
+      - strong: {{uuid}}
+      - text: · Original session · Read · Through event sequence 17
+      - button "Open source conversation"
+  - list:
+    - listitem:
+      - heading "Cause unconfirmed · Run record" [level=3]
+      - paragraph: Terminal execution record
+      - paragraph: {{uuid}}
+      - group: Read original recorded text
+    - listitem:
+      - heading "Authentication failure · Session turn" [level=3]
+      - paragraph: Terminal execution record
+      - paragraph: {{uuid}} · AUTH
+      - paragraph:
+        - text: "turn/end · #17 ·"
+        - time: {{timestamp}}
+      - paragraph: HTTP 401
+      - group: Read original recorded text
+  - group:
+    - text: Inspect full retry configuration
+    - paragraph: Inspect an authentication failure
+    - paragraph: This is a task execution.
+    - heading "Configuration captured by the original run" [level=3]
+    - text: "{ \"runtime\": \"diagnostic-test\", \"skills\": [], \"instructions\": \"Follow the requested task.\", \"revision\": 1, \"mcpServerNames\": [] }"
+    - heading "Configuration for this new task" [level=3]
+    - text: "{ \"id\": \"{{uuid}}\", \"name\": \"Diagnostic reviewer\", \"revision\": 1, \"archived\": false, \"runtime\": \"diagnostic-test\", \"instructions\": \"Follow the requested task.\", \"skills\": [], \"mcpServerNames\": [] }"
+  - button "Prepare full retry"

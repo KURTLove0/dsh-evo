@@ -1,0 +1,106 @@
+- region "Run statistics":
+  - paragraph: WORK / METRICS
+  - heading "Run statistics" [level=2]
+  - button "Refresh executor choices"
+  - paragraph: Counts use submission time in the selected range. Each execution source is observed independently.
+  - form "Run statistics filters":
+    - text: Submitted from
+    - textbox "Submitted from": {{date}}
+    - text: Submitted through
+    - textbox "Submitted through": {{date}}
+    - text: Workspace
+    - combobox "Workspace":
+      - option "All" [selected]
+      - option "other"
+      - option "{{workspace}}"
+    - text: Execution source
+    - combobox "Execution source":
+      - option "All" [selected]
+      - option "Agent"
+      - option "Workflow"
+    - text: Executor
+    - combobox "Executor":
+      - option "All" [selected]
+      - option "Agent · Metrics reviewer"
+      - option "Agent · Metrics writer"
+      - option "Workflow · Metrics verification"
+      - option "Workflow · Metrics approval"
+    - button "Read run statistics"
+  - button "Read recorded token evidence"
+  - text: Reads original logs within configured limits. This does not execute work.
+  - paragraph:
+    - text: "Observed at:"
+    - time: {{timestamp}}
+    - text: · UTC
+  - paragraph: "Submitted range: {{timestamp}} ≤ Submission time < {{timestamp}}"
+  - paragraph: "Submitted scope: All · All"
+  - list:
+    - listitem: Agent · Read complete selected cohort · 4
+    - listitem: Workflow · Read complete selected cohort · 2
+  - text: Known runs
+  - strong: "6"
+  - text: "Queued: 0 · Active: 1 Waiting for a person"
+  - strong: "1"
+  - text: A subset of active runs; agent attention comes from this connection. Successful / settled
+  - strong: 100%
+  - text: 5 / 5 · Execution status only; assertions and human acceptance are separate Average elapsed time
+  - strong: {{duration}}
+  - text: 5 recorded duration sample(s) Reported tokens
+  - strong: "287"
+  - text: 5 step(s) with reported usage
+  - paragraph: Elapsed time includes queueing and human waiting, from submission to settlement. Missing timestamps are not zero.
+  - paragraph: "Runs with all known intervals read: 6 / 6 · Unavailable or unknown intervals: 0 · Not fully checked: 0"
+  - paragraph: "Original sessions attempted / read limit: 5 / 100"
+  - paragraph: Tokens come from owned agent logs and direct workflow child logs. Reports can omit requests or nested delegation; these are observations, not billing totals.
+  - paragraph: "Work types: Tasks 3 · Configuration design 1 · Workflow execution 1 · Acceptance verification 1"
+  - paragraph: "Failed: 0 · Cancelled: 0 · Interrupted: 0"
+  - text: Group by
+  - combobox "Group by":
+    - option "Executor" [selected]
+    - option "Workspace"
+    - option "Submission date"
+  - region "Runs by executor":
+    - table "Runs by executor":
+      - caption: Runs by executor
+      - rowgroup:
+        - row "Dimension Known runs Waiting for a person Successful / settled Average elapsed time Average queue time Reported tokens":
+          - columnheader "Dimension"
+          - columnheader "Known runs"
+          - columnheader "Waiting for a person"
+          - columnheader "Successful / settled"
+          - columnheader "Average elapsed time"
+          - columnheader "Average queue time"
+          - columnheader "Reported tokens"
+      - rowgroup:
+        - row "Workflow · Metrics approval 1 1 0 / 0 — {{duration}} —":
+          - rowheader "Workflow · Metrics approval"
+          - cell "1"
+          - cell "1"
+          - cell "0 / 0"
+          - cell "—"
+          - cell "{{duration}}"
+          - cell "—"
+        - row "Agent · Metrics reviewer 2 0 2 / 2 {{duration}} {{duration}} 52":
+          - rowheader "Agent · Metrics reviewer"
+          - cell "2"
+          - cell "0"
+          - cell "2 / 2"
+          - cell "{{duration}}"
+          - cell "{{duration}}"
+          - cell "52"
+        - row "Workflow · Metrics verification 1 0 1 / 1 {{duration}} {{duration}} 18":
+          - rowheader "Workflow · Metrics verification"
+          - cell "1"
+          - cell "0"
+          - cell "1 / 1"
+          - cell "{{duration}}"
+          - cell "{{duration}}"
+          - cell "18"
+        - row "Agent · Metrics writer 2 0 2 / 2 {{duration}} {{duration}} 217":
+          - rowheader "Agent · Metrics writer"
+          - cell "2"
+          - cell "0"
+          - cell "2 / 2"
+          - cell "{{duration}}"
+          - cell "{{duration}}"
+          - cell "217"

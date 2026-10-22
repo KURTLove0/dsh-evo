@@ -42,6 +42,19 @@ interface TokenSurfaceNode {
 
 Surface order is authoritative; replacement nodes can have higher durable seqs than later positional nodes. The snapshot is immutable and does not grow when the underlying replay fold advances.
 
+## `ReportedTokenUsage`
+
+```ts type-equiv
+/** Provider observations for a caller-selected interval of one durable log, without billing completeness claims. */
+interface ReportedTokenUsage {
+  usage: TokenUsageProjection
+  requests: number
+  reportedSteps: number
+}
+```
+
+`measureReportedUsage(events)` reuses canonical token-usage replacement over one caller-selected session interval. `requests` counts recorded request headers; `reportedSteps` counts steps with a usage sample. Zero samples indicate missing evidence, not zero consumption. Attribution and log availability remain with the caller.
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>

@@ -1,0 +1,31 @@
+- region "Connection probes started by this app":
+  - heading "Connection probes started by this app" [level=2]
+  - paragraph: Probe records do not survive host restart. Closing this page does not cancel an admitted probe.
+  - button "Refresh existing probe results"
+  - list:
+    - listitem:
+      - strong: ok · Health reviewer
+      - text: Connection responded
+      - paragraph: {{workspace}} · v1
+      - paragraph:
+        - text: "Started at:"
+        - time: {{timestamp}}
+      - paragraph:
+        - text: "Checked at:"
+        - time: {{timestamp}}
+      - paragraph: "Total probe time (including cleanup): {{duration}}"
+      - paragraph: Temporary connection closed
+      - button "Read probe result"
+    - listitem:
+      - strong: reject · Health reviewer
+      - text: Failed
+      - paragraph: {{workspace}} · v1
+      - paragraph:
+        - text: "Started at:"
+        - time: {{timestamp}}
+      - paragraph:
+        - text: "Checked at:"
+        - time: {{timestamp}}
+      - paragraph: "Total probe time (including cleanup): {{duration}}"
+      - paragraph: Temporary connection closed
+      - button "Read probe result"

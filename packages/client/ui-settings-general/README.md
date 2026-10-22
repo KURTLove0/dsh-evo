@@ -12,6 +12,8 @@ A loopback browser on other panels loads the provider's `hasDocument` capability
 
 The Host half registers `ui-onboarding` in the user-settings seam. The welcome step contributed by `ui-settings-models` reads and writes its `welcomeNoticeVersion` through the existing public settings boundary; the shell itself remains policy-free.
 
+`ctx.settingsPanel.open(section)` opens a currently registered settings section through the shell’s existing pending-request store. Unknown section ids reject. The service belongs to the shell fiber and disappears when it unloads; feature pages can offer precise repair navigation without duplicating a settings panel.
+
 ## Model Experience
 
 None, as the plugin renders browser settings UI; nothing here reaches a model request.

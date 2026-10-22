@@ -250,7 +250,7 @@ Source: [`packages/core/session/src/types.ts:277`](../packages/core/session/src/
 'business-workflow/checkpoint': WorkflowRun
 ```
 
-Source: [`packages/business/business-workflow/src/workbench-types.ts:225`](../packages/business/business-workflow/src/workbench-types.ts)
+Source: [`packages/business/business-workflow/src/workbench-types.ts:274`](../packages/business/business-workflow/src/workbench-types.ts)
 
 ### `command/*`
 

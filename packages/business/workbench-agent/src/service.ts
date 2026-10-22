@@ -1,7 +1,7 @@
 /** Replaceable management and execution service for workbench agents. */
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { WorkspaceId } from '@deepseek-ai/dsh-workspace/types'
-import type { AgentCapabilities, AgentCommand, AgentDirectory, AgentReceipt, AgentRuntime, WorkbenchAgentId } from './types.ts'
+import type { AgentCapabilities, AgentCommand, AgentDirectory, AgentReceipt, AgentRuntime, AgentRunId, AgentRunSummary, AgentRunQuery, AgentRunPage, TaskBrief, TaskPreflight, WorkbenchAgentId } from './types.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -36,4 +36,22 @@ export abstract class WorkbenchAgents extends Service {
    * @returns user-invocable skill summaries without creating an agent or session.
    */
   abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
+  /**
+   * Read a bounded cross-identity history page, excluding captured credentials.
+   * @param request - generation-scoped attention/update cursor, optional workspace, and explicit page limit.
+   * @returns detached run summaries and continuation position.
+   */
+  abstract queryRuns(request: AgentRunQuery): Promise<AgentRunPage>
+  /**
+   * Read one committed run without captured credentials.
+   * @param id - original execution identity.
+   * @returns detached run summary; unknown identities reject.
+   */
+  abstract inspectRun(id: AgentRunId): Promise<AgentRunSummary>
+  /**
+   * Check current task dependencies without executing work or probing MCP.
+   * @param request - selected identity and workspace.
+   * @returns timestamped issues, captured revision, and unchecked MCP names.
+   */
+  abstract preflight(request: { id: WorkbenchAgentId; workspaceId: WorkspaceId; brief?: TaskBrief }): Promise<TaskPreflight>
 }

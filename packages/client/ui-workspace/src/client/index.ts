@@ -1,13 +1,4 @@
-/**
- * Workspace plugin, browser half. Two registrations: WorkspaceBrowser fills
- * the sidebar shell's `sidebar.workspaces` hole (the whole browsing region),
- * and WorkspacePicker fills the conversation hero's picker hole
- * (`conversation.hero.workspace` — both hero forms). Both read real Host
- * Workspaces through the global useWorkspaces hook, and each declares its
- * own `single` directory-flow child hole for the composed picker package's
- * client half (see the contract module doc). Export discipline:
- * packages/client/AGENTS.md.
- */
+/** Workspace browsing, directory picking, and archived-session recovery registrations. */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { HostObservable } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
@@ -18,6 +9,8 @@ import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from './contra
 import { createWorkspaceViewStore } from './stores.ts'
 import { WorkspaceBrowser } from './WorkspaceBrowser.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
+import { ArchivePage, ArchiveNavigation, type ArchiveInjected } from './ArchivePage.tsx'
+import { createArchiveViewStore } from './archive.ts'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 
 export type {
@@ -105,6 +98,14 @@ export function apply(ctx: ClientContext): void {
     createWorkspace: input => ctx.workspaces.create(input),
     hooks: { directoryFlow: browserFlowSource, hostDescription },
   })
+  ctx.slots.inject('shell.page', () => ctx.slots.register({ name: 'shell.page', key: 'session-archive', locale: NS,
+    store: createArchiveViewStore(), inject: (): ArchiveInjected => ({ hooks: { hostDescription },
+      restore: id => ctx.workspaces.restoreSession(id),
+      refresh: () => ctx.workspaces.refresh(), limit: ctx.sessions.searchResultLimit }),
+  }, ArchivePage))
+  ctx.slots.inject('sidebar.session.action', () => ctx.slots.register({ name: 'sidebar.session.action', id: 'session-archive', order: 20, locale: NS,
+    inject: () => ({ open: () => { ctx.layout.openPage('session-archive') } }),
+  }, ArchiveNavigation))
   const pickerInjected = (): WorkspacePickerInjected => ({
     createWorkspace: input => ctx.workspaces.create(input),
     hooks: { directoryFlow: pickerFlowSource },

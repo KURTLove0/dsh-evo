@@ -670,3 +670,17 @@ describe('stubbed settings scope', () => {
     expect(host.listenerCount()).toBe(0)
   })
 })
+
+
+it('models archive restoration without selecting a session and supports restore/refresh stubs', async () => {
+  const runtime = await SlotTestRuntime.create(), ws = runtime.workspaces
+  await ws.archiveSession('archive-test' as SessionId)
+  await ws.restoreSession('archive-test' as SessionId)
+  expect(ws.list.getSnapshot().archivedSessionIds).toEqual([])
+  await ws.refresh()
+  const restore = vi.fn(async () => {}), refresh = vi.fn(async () => {})
+  ws.stub('restoreSession', restore); ws.stub('refresh', refresh)
+  await ws.restoreSession('archive-test' as SessionId); await ws.refresh()
+  expect(restore).toHaveBeenCalledWith('archive-test'); expect(refresh).toHaveBeenCalledOnce()
+  await runtime.dispose()
+})

@@ -42,6 +42,19 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  * blocks. A package moves on or off this list with its context behavior.
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
+  'packages/client/ui-work-knowledge': { kind: 'none', reason: 'Manages file grants and explicit inert reads/copies without submitting prompts or registering model tools.' },
+  'packages/business/work-remote': { kind: 'indirect', reason: 'Authenticated transport delegates fixed input to native remote execution owners, which log model requests.' },
+  'packages/business/work-triggers': { kind: 'indirect', reason: 'Explicit fixed targets are admitted through native agent and workflow owners, which log their model input.' },
+  'packages/business/work-artifacts': { kind: 'none', reason: 'Explicit file captures and observations preserve bytes without model input or execution.' },
+  'packages/client/ui-work-remote': { kind: 'indirect', reason: 'The UI fixes remote task input; native execution owners log admitted input.' },
+  'packages/client/ui-work-triggers': { kind: 'indirect', reason: 'The UI explicitly authorizes fixed task content; native execution owners log admitted input.' },
+  'packages/client/ui-work-artifacts': { kind: 'none', reason: 'Displays retained files and submits explicit captures without changing session input.' },
+  'packages/business/capability-health': { kind: 'none', reason: 'Reads configuration and metadata, and only initializes/pings temporary MCP connections without model input or tool registration.' },
+  'packages/client/ui-capability-health': { kind: 'none', reason: 'Displays host observations and opens existing settings without submitting model input.' },
+  'packages/business/work-templates': { kind: 'indirect', reason: 'Task content is explicitly applied to checked agent submissions; workflow copies remain unexecuted drafts.' },
+  'packages/client/ui-work-templates': { kind: 'indirect', reason: 'The UI saves content or creates editable copies; execution owners log subsequently submitted content.' },
+  'packages/business/work-center': { kind: 'indirect', reason: 'Explicit revision commands delegate logged task input to the agent and workflow execution owners.' },
+  'packages/client/ui-work-center': { kind: 'indirect', reason: 'The browser submits task briefs and decisions to host owners; those owners construct and log model input.' },
   'packages/attachment/attachment': { kind: 'indirect', reason: 'The storage seam delegates model request rendering to provider adapters.' },
   'packages/attachment/attachment-local': { kind: 'indirect', reason: 'The local backend delegates model request rendering to provider adapters.' },
   'packages/shell/shell': { kind: 'indirect', reason: 'The service interface delegates all model rendering to dsh-tool-bash.' },

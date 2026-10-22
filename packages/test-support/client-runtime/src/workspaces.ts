@@ -212,4 +212,21 @@ export class TestWorkspaces implements IWorkspaces {
       draft.archivedSessionIds = [...draft.archivedSessionIds, sessionId]
     })
   }
+  /**
+   * Restore an archived session without changing selection (recorded).
+   * @param sessionId - session to restore.
+   */
+  async restoreSession(sessionId: SessionId): Promise<void> {
+    this.calls.push({ method: 'restoreSession', args: [sessionId] })
+    const stub = this.stubs.get('restoreSession')
+    if (stub !== undefined) { await (stub(sessionId) as Promise<void>); return }
+    await this.update((draft) => { draft.archivedSessionIds = draft.archivedSessionIds.filter(id => id !== sessionId) })
+  }
+
+  /** Refresh workspace observations (recorded; default no-op). */
+  async refresh(): Promise<void> {
+    this.calls.push({ method: 'refresh', args: [] })
+    await (this.stubs.get('refresh')?.() as Promise<void> | undefined)
+  }
+
 }

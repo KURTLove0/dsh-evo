@@ -80,6 +80,10 @@ MCP 客户端桥接插件：连接外部 [Model Context Protocol](https://modelc
 
 独立 agent（智能体）作用域可复用服务名称；无作用域的连接共用应用根。[业务 agent 组装决策](../../../.agents/notes/implemented/feature/2026-10-20-business-agent-composition.zh.md)持有逐次执行的连接归属约定。
 
+## 临时连接探测
+
+`probeMcp(config, options)` 初始化并 ping 临时连接，不列举、注册或调用工具。`McpProbeOptions` 提供正数的初始化／ping 及 SDK 关闭后的关闭事件等待时限，并支持可选取消。`McpProbeOutcome` 独立保留连接与清理结果、开始和完成时间，不返回原始服务错误文本。stdio 探测抑制 stderr，并使用正常清理后的环境。取消、初始化失败和最终清理共用幂等 SDK 关闭操作；成功清理必须观察到传输关闭事件。清理未确认时，调用方必须拒绝重叠重试。探测不影响模型历史或在线工具注册。
+
 ## 模型体验
 
 ### 已发现的 MCP 工具

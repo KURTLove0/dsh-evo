@@ -6,6 +6,23 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'archive.title': '归档会话',
+  'archive.refresh': '刷新归档列表',
+  'archive.intro': '恢复后，会话回到原工作空间和顺序。会话记录会保留，恢复不会执行任务或自动打开会话。',
+  'archive.search': '搜索归档标题或标识',
+  'archive.workspace': '工作空间',
+  'archive.all': '全部工作空间',
+  'archive.disconnected': '连接已断开，当前为上次已知归档列表。重连后才能恢复。',
+  'archive.unready': '正在等待会话及工作空间基线；读取失败时请刷新或重新连接。',
+  'archive.restored': '会话已恢复，可在原工作空间或未分组中查看。',
+  'archive.count': '匹配的归档会话：{n}',
+  'archive.empty': '暂无归档会话。',
+  'archive.unknown': '会话元数据不可用',
+  'archive.missing': '无法确认会话日志是否可用；恢复时由 Host 再次检查。',
+  'archive.restore': '恢复会话',
+  'archive.restoring': '正在恢复…',
+  'archive.restoreLabel': '恢复“{name}”',
+
   'group.ungrouped': '未分组',
   'session.new': '新会话',
   'section.workspaces': '工作区',
@@ -75,6 +92,23 @@ export type WorkspaceKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
+  'archive.title': 'Archived sessions',
+  'archive.refresh': 'Refresh archive',
+  'archive.intro': 'Restoring preserves session logs and the original workspace order. It does not execute work or open the session.',
+  'archive.search': 'Search archived titles or IDs',
+  'archive.workspace': 'Workspace',
+  'archive.all': 'All workspaces',
+  'archive.disconnected': 'Disconnected. Showing the last known archive; reconnect before restoring.',
+  'archive.unready': 'Waiting for session and workspace baselines. Refresh or reconnect after a failed read.',
+  'archive.restored': 'Session restored. Find it in its original workspace or Ungrouped.',
+  'archive.count': 'Matching archived sessions: {n}',
+  'archive.empty': 'No archived sessions.',
+  'archive.unknown': 'Session metadata unavailable',
+  'archive.missing': 'Log availability is unconfirmed; the Host checks the session again when restoring.',
+  'archive.restore': 'Restore session',
+  'archive.restoring': 'Restoring…',
+  'archive.restoreLabel': 'Restore “{name}”',
+
   'group.ungrouped': 'Ungrouped',
   'session.new': 'New Session',
   'section.workspaces': 'Workspaces',

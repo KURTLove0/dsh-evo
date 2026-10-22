@@ -8,6 +8,8 @@ English | [中文](2026-07-19-web-styling-system.zh.md)
 
 > Division of labor: this RFC fixes the framework and constraints (rarely changes); [docs/web-styling.md](../../../../docs/web-styling.md) is the living spec (authoritative token values, the coding-rule checklist, the deviation record — it evolves with the implementation). Token changes and new rules go there; only changes to the framework itself come back here (overturning it requires a new RFC).
 
+The [cyber workbench theme](../feature/2026-10-20-cyber-workbench-theme.md) owns the application visual baseline; this note retains the styling framework and component constraints.
+
 ## Problem
 
 The GUI has no designer supply; styles are written by an agent and reviewed. Without a machine-checkable token system and coding rules, colors/radii/motion drift as literals across components, and dark mode grows into conditional branches scattered inside components.

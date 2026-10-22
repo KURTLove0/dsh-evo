@@ -1,0 +1,15 @@
+{
+  "phase": "admitted",
+  "attempts": 2,
+  "remoteNativeRuns": 1,
+  "localNativeRuns": 0,
+  "modelRequests": 2,
+  "output": [
+    {
+      "name": "Assistant response",
+      "text": "Remote report recorded."
+    }
+  ],
+  "remoteFile": "Created by the remote native executor",
+  "privateRecoveryFieldsExposed": false
+}

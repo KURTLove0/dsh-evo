@@ -1,0 +1,7 @@
+- heading "Human review" [level=3]
+- paragraph: Accepted
+- paragraph: Saving feedback does not execute work, merge code, or publish outputs.
+- text: Review feedback (required for changes)
+- textbox "Review feedback (required for changes)"
+- button "Accept delivery"
+- button "Save requested changes" [disabled]

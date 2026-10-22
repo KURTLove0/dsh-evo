@@ -895,6 +895,37 @@ describe('registry-global session archive', () => {
     expect(result.registry.archivedSessionIds).toEqual(['gone', 'kept'])
   })
 
+  it('restores known sessions durably without changing accounting, order, or logs', async () => {
+    const dir = await makeDir('restore-home')
+    const first = await harness({ sessions: [header('first', dir, 100), header('second', dir, 200)] })
+    const workspace = first.registry.list()[0]!
+    const order = [...workspace.sessionIds]
+    await Promise.all([first.registry.archiveSession(SessionId('first')), first.registry.archiveSession(SessionId('second'))])
+    await first.registry.restoreSession(SessionId('first'))
+    expect(first.registry.archivedSessionIds).toEqual(['second'])
+    expect(workspace.sessionIds).toEqual(order)
+    const changes = first.changes.length
+    await first.registry.restoreSession(SessionId('first'))
+    expect(first.changes).toHaveLength(changes)
+    expect(first.load).not.toHaveBeenCalled(); expect(first.inspect).not.toHaveBeenCalled()
+    await first.fiber.dispose()
+    const restarted = await harness({ pool: first.pool, sessions: [header('first', dir, 100), header('second', dir, 200)] })
+    expect(restarted.registry.archivedSessionIds).toEqual(['second'])
+    expect(restarted.registry.list()[0]?.sessionIds).toEqual(order)
+    await Promise.all([restarted.registry.restoreSession(SessionId('second')), restarted.registry.archiveSession(SessionId('first'))])
+    expect(restarted.registry.archivedSessionIds).toEqual(['first'])
+  })
+
+  it('rejects unknown restoration and propagates storage lookup failures without writing', async () => {
+    const result = await harness()
+    const before = result.changes.length
+    await expect(result.registry.restoreSession(SessionId('unknown'))).rejects.toThrow("cannot restore session 'unknown'")
+    result.list.mockRejectedValueOnce(new Error('storage lookup failed'))
+    await expect(result.registry.restoreSession(SessionId('unknown'))).rejects.toThrow('storage lookup failed')
+    expect(result.changes).toHaveLength(before)
+    expect(result.registry.archivedSessionIds).toEqual([])
+  })
+
   it('accepts unaccounted and live sessions but rejects unknown ids without writing', async () => {
     const dir = await makeDir('archive-strays')
     const live = await makeDir('archive-live')

@@ -119,6 +119,24 @@ describe('ui-settings-general apply', () => {
     })
   })
 
+  it('opens a registered section through the shell service and releases navigation with the shell', async () => {
+    const b = await bench()
+    try {
+      b.slots.register({ name: 'root', children: { 'sidebar.settings': { kind: 'single', scope: 'root' },
+        'sidebar.config': { kind: 'single', scope: 'root' } } } as never, () => null)
+      const fiber = b.ctx.plugin({ inject: [...inject], apply }); await fiber.await()
+      const entry = b.slots.entries('sidebar.settings')[0]!
+      const face = (entry.inject as unknown as () => import('../src/client/shell-contract.ts').SettingsRootInjected)()
+      b.ctx.settingsPanel.open('general')
+      expect(face.hooks.panelRequests.getSnapshot()).toBe('general')
+      face.consumePanelRequest()
+      expect(face.hooks.panelRequests.getSnapshot()).toBeNull()
+      expect(() => { b.ctx.settingsPanel.open('unknown') }).toThrow('unavailable')
+      await fiber.dispose()
+      expect(b.ctx.get('settingsPanel')).toBeUndefined()
+    } finally { await b.ctx.fiber.dispose() }
+  })
+
   it('registers the zh/en settings dictionaries and frees the seats on teardown', async () => {
     const b = await bench()
     declare(b.slots)

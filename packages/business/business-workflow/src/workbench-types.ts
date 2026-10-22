@@ -11,6 +11,8 @@ export type WorkflowId = Branded<'WorkflowId'>
 export type WorkflowVersionId = Branded<'WorkflowVersionId'>
 /** One complete execution, including verification executions. */
 export type WorkflowRunId = Branded<'WorkflowRunId'>
+/** Idempotent explicit workflow submission identity. */
+export type WorkflowRequestId = Branded<'WorkflowRequestId'>
 /** Verification batch groups independent case executions of one publication. */
 export type WorkflowBatchId = Branded<'WorkflowBatchId'>
 /** One execution of one node. */
@@ -50,6 +52,10 @@ export interface WorkflowVersion {
 export interface WorkflowDocument {
   /** Stable workflow identity. */
   id: WorkflowId
+  /** Immutable publication and template version used to create this independent draft. */
+  copiedFrom?: { id: WorkflowId; versionId: WorkflowVersionId; template?: { id: Branded<'WorkTemplateId'>; version: number } }
+  /** Idempotent copy creation request. */
+  copyRequest?: { id: WorkflowRequestId; name: string }
   /** Owning workspace. */
   workspaceId: WorkspaceId
   /** Display name. */
@@ -70,6 +76,41 @@ export interface WorkflowDocument {
 /** Persisted run or attempt state. */
 export type WorkflowRunStatus =
   'queued' | 'running' | 'waiting' | 'stopping' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted'
+/** Opaque committed run-directory generation; invalid after any execution mutation or host restart. */
+export type WorkflowRunRevision = Branded<'WorkflowRunRevision'>
+/** Waiting runs first, then descending committed checkpoint time and id. */
+export interface WorkflowRunPosition {
+  revision: WorkflowRunRevision
+  attention: boolean
+  updatedAt: number
+  id: WorkflowRunId
+}
+/** Bounded cross-workflow history query. */
+export interface WorkflowRunQuery {
+  limit: number
+  workspaceId?: WorkspaceId
+  workflowId?: WorkflowId
+  /** Submission time bounds: inclusive start and exclusive end. */
+  createdFrom?: number
+  createdBefore?: number
+  before?: WorkflowRunPosition
+  statuses?: WorkflowRunStatus[]
+}
+/** Run identity and status without the graph, prompts, or node outputs. */
+export type WorkflowRunSummary = Pick<WorkflowRun, 'id' | 'workflowId' | 'workspaceId' | 'sessionId' | 'mode' | 'status' | 'createdAt' | 'updatedAt' | 'error'> & {
+  workflowName: string
+  /** First recorded node start, absent until any node starts. */
+  startedAt?: number
+  /** Terminal checkpoint time; elapsed time includes queueing and human waiting. */
+  endedAt?: number
+  waitingAttemptId?: WorkflowAttemptId
+}
+/** Bounded committed history page. */
+export interface WorkflowRunPage {
+  revision: WorkflowRunRevision
+  items: WorkflowRunSummary[]
+  next?: WorkflowRunPosition
+}
 /** One node's resolved inputs, actual configuration, and output. */
 export interface WorkflowAttempt {
   /** Execution identity required for human decisions. */
@@ -130,6 +171,10 @@ export interface WorkflowRun {
   caseName?: string
   /** Original run when explicitly rerunning. */
   rerunOf?: WorkflowRunId
+  requestId?: WorkflowRequestId
+  /** Identity of an explicit complete retry, including single-case verification retries. */
+  retryRequest?: WorkflowRequestId
+  feedback?: string
   /** Model route fixed when the run is reserved. */
   execution: { provider: string; model: string; reasoningEffort?: ReasoningEffortId; subagentProvider: string }
   /** Exact submitted inputs. */
@@ -193,6 +238,7 @@ export interface WorkflowWorkbenchSnapshot {
 /** Management commands shared by tools and the remote consumer. */
 export type WorkflowCommand =
   | { kind: 'create'; workspaceId: WorkspaceId; name: string; description: string }
+  | { kind: 'copy'; id: WorkflowId; versionId: WorkflowVersionId; workspaceId: WorkspaceId; name: string; requestId: WorkflowRequestId; template?: { id: Branded<'WorkTemplateId'>; version: number } }
   | { kind: 'save'; id: WorkflowId; expectedRevision: number; name: string; definition: WorkflowDefinition }
   | { kind: 'publish'; id: WorkflowId; expectedRevision: number }
   | { kind: 'archive'; id: WorkflowId; expectedRevision: number; archived: boolean }
@@ -203,8 +249,11 @@ export type WorkflowCommand =
     versionId: WorkflowVersionId
     inputs: Record<string, JsonValue>
     rerunOf?: WorkflowRunId
+    requestId?: WorkflowRequestId
+    feedback?: string
   }
   | { kind: 'verify'; id: WorkflowId; versionId: WorkflowVersionId }
+  | { kind: 'retry'; runId: WorkflowRunId; requestId: WorkflowRequestId }
   | { kind: 'cancel'; runId: WorkflowRunId }
   | { kind: 'decide'; runId: WorkflowRunId; attemptId: WorkflowAttemptId; approve: boolean }
 /** Commands return the selected record identities; clients then fetch committed state. */
@@ -236,3 +285,6 @@ declare module '@deepseek-ai/cordis' {
     'business-workflow/changed'(workflowId: WorkflowId): void
   }
 }
+
+/** Lightweight workflow identities for filters without publications or execution history. */
+export type WorkflowCatalogEntry = Pick<WorkflowDocument, 'id' | 'workspaceId' | 'name' | 'archived'>

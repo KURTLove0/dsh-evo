@@ -13,7 +13,12 @@
     "src/types.ts"
   ],
   "references": [
-    { "path": "../../business/workbench-agent" },
+    {
+      "path": "../../business/workbench-agent"
+    },
+    {
+      "path": "../../business/work-center"
+    },
     {
       "path": "../../../vendor/cordis"
     },
@@ -55,6 +60,24 @@
     },
     {
       "path": "../../business/business-workflow"
+    },
+    {
+      "path": "../../business/work-templates"
+    },
+    {
+      "path": "../../business/capability-health"
+    },
+    {
+      "path": "../../business/work-artifacts"
+    },
+    {
+      "path": "../../business/work-triggers"
+    },
+    {
+      "path": "../../business/work-remote"
+    },
+    {
+      "path": "../../business/work-knowledge"
     }
   ]
 }

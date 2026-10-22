@@ -43,6 +43,14 @@ One page per subsystem of the DeepSeek Harness: what it is, the data structures 
 | [spill.md](spill.md) | the spill storage seam: `SaveTextSpill`, `SpillOwner`/`SpillSource`, `SpillRef`, the branded `SpillLocator` |
 | [workflow.md](workflow.md) | the workflow seam: `WorkflowStartRequest`, `WorkflowMeta`, `WorkflowRun`/`Result`, the `workflow/*` event payloads, `WorkflowError` fatality |
 | [business-workflow.md](business-workflow.md) | the business-workflow seam: the clarify/compose/verify stage machine, `RequirementSubmission`, `WorkflowComposition`, `VerificationReport`, the `business-workflow/*` events |
+| [work-center.md](work-center.md) | bounded cross-executor work pages, task intake, delivery evidence, and independent human assessments |
+| [mcp-client.md](mcp-client.md) | MCP tool bridging and temporary connection probes. |
+| [capability-health.md](capability-health.md) | Configuration observations and explicit temporary MCP probes. |
+| [work-templates.md](work-templates.md) | Private versioned task and workflow templates. |
+| [work-remote.md](work-remote.md) | Authenticated native remote execution, authority-qualified identities, and durable submission recovery |
+| [work-triggers.md](work-triggers.md) | durable time and execution-settlement triggers, idempotent native admissions, and retained in-app notices |
+| [work-knowledge.md](work-knowledge.md) | explicit text grants, immutable versions, literal retrieval, and line citations |
+| [work-artifacts.md](work-artifacts.md) | explicit immutable file snapshots, execution and accepted-review provenance, and timestamped current-file observations |
 | [workbench-agent.md](workbench-agent.md) | independent workbench collaborators: identity, configuration, execution queue, AI design candidates, and history |
 | [jobs.md](jobs.md) | the background-job runtime: branded `JobId`s, the producer contract, consumer views, and `ctx.jobs` service behavior |
 | [permission-presets.md](permission-presets.md) | the permission-preset layer: `PresetSpec`/`PresetOption`, the derived `custom` state, the log-only `permission/preset` event |

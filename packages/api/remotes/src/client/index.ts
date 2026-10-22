@@ -1,6 +1,13 @@
 /** Platform-neutral assembly of generated Host Remote contributions. */
 
 import type { Context } from '@deepseek-ai/cordis'
+import capabilityHealthRemote from '@deepseek-ai/dsh-capability-health/remote'
+import workTriggerRemote from '@deepseek-ai/dsh-work-triggers/remote'
+import workRemote from '@deepseek-ai/dsh-work-remote/remote'
+import workKnowledgeRemote from '@deepseek-ai/dsh-work-knowledge/remote'
+import workArtifactRemote from '@deepseek-ai/dsh-work-artifacts/remote'
+import workTemplateRemote from '@deepseek-ai/dsh-work-templates/remote'
+import workCenterRemote from '@deepseek-ai/dsh-work-center/remote'
 import workbenchAgentRemote from '@deepseek-ai/dsh-workbench-agent/remote'
 import workflowRemote from '@deepseek-ai/dsh-business-workflow-local/remote'
 import commandsRemote from '@deepseek-ai/dsh-commands/remote'
@@ -116,7 +123,9 @@ export async function apply(ctx: Context): Promise<() => Promise<void>> {
   const disposers: Array<() => Promise<void>> = []
   try {
     for (const contribution of [
-      workbenchAgentRemote, workflowRemote, commandsRemote, goalsRemote, dynamicRemote, fileReferencesRemote,
+      capabilityHealthRemote, workCenterRemote, workTemplateRemote, workArtifactRemote, workKnowledgeRemote, workTriggerRemote, workRemote,
+      workbenchAgentRemote, workflowRemote, commandsRemote, goalsRemote,
+      dynamicRemote, fileReferencesRemote,
       pluginInventoryRemote, messageFeedbackRemote, sessionReferencesRemote,
     ]) {
       disposers.push(await ctx.remote.$mount(contribution))
@@ -137,3 +146,24 @@ export type * from '@deepseek-ai/dsh-business-workflow/workbench-types'
 
 export type {} from '@deepseek-ai/dsh-workbench-agent/remote'
 export type * from '@deepseek-ai/dsh-workbench-agent/types'
+
+export type {} from '@deepseek-ai/dsh-work-center/remote'
+export type * from '@deepseek-ai/dsh-work-center/types'
+
+export type {} from '@deepseek-ai/dsh-work-templates/remote'
+export type * from '@deepseek-ai/dsh-work-templates/types'
+
+export type {} from '@deepseek-ai/dsh-capability-health/remote'
+export type * from '@deepseek-ai/dsh-capability-health/types'
+
+export type {} from '@deepseek-ai/dsh-work-artifacts/remote'
+export type * from '@deepseek-ai/dsh-work-artifacts/types'
+
+export type {} from '@deepseek-ai/dsh-work-triggers/remote'
+export type * from '@deepseek-ai/dsh-work-triggers/types'
+
+export type {} from '@deepseek-ai/dsh-work-remote/remote'
+export type * from '@deepseek-ai/dsh-work-remote/types'
+
+export type {} from '@deepseek-ai/dsh-work-knowledge/remote'
+export type * from '@deepseek-ai/dsh-work-knowledge/types'

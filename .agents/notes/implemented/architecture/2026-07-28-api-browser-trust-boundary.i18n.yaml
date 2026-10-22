@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-07-28-api-browser-trust-boundary.md
-2026-07-28-api-browser-trust-boundary.md: f4d14201d052299bb6063553e962a5d7c74fdb4b
-2026-07-28-api-browser-trust-boundary.zh.md: 8c8e414e5f76b2ef2090ddc99916defa196da352
+2026-07-28-api-browser-trust-boundary.md: 911af92fa899706c1dea485f1f2bca37d78ae667
+2026-07-28-api-browser-trust-boundary.zh.md: e7478e6f18c1ee2653fc2b6da441179f92dde6ac

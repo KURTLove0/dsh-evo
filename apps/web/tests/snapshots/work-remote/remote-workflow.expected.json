@@ -1,0 +1,11 @@
+{
+  "remoteStatus": "succeeded",
+  "mode": "execution",
+  "inputs": {
+    "report": "Remote original input"
+  },
+  "nativeApproval": true,
+  "publicationPinned": true,
+  "localNativeRuns": 0,
+  "textOnlyDelivery": "recorded-workflow-output"
+}

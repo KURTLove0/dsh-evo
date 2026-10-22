@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-22",
+  "scope": "Existing cyber workbench extension: project knowledge",
+  "framework": "React 18 with dynamic Cordis client plugins",
+  "styling": "CSS Modules, existing ui-theme semantic tokens",
+  "styleGuide": "docs/web-styling.md",
+  "bodyFontToken": "--dsw-font-family",
+  "codeFontToken": "--ds-font-family-code",
+  "palette": "Inherit cyan actions, semantic states and existing light/dark surfaces",
+  "layout": "Source grant register beside immutable versions, literal results and exact line citations; stacked on narrow screens",
+  "navigation": "Preserve the application sidebar and page slots",
+  "motion": "Preserve existing motion and reduced-motion policy; no new animation library",
+  "responsiveWidths": [
+    320,
+    375,
+    414,
+    768
+  ],
+  "preserved": [
+    "fonts",
+    "semantic palette",
+    "routes",
+    "component ownership",
+    "global navigation"
+  ]
+}

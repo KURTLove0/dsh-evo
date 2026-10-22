@@ -22,4 +22,8 @@
 
 ## 变更系统
 
+界面参照 [Apple HIG 可访问性指南](https://developer.apple.com/design/human-interface-guidelines/accessibility)，建立清晰的阅读层级与操作反馈。对话内容使用纯色背景；会话选中态具有独立底色和字重；agent（智能体）卡片通过字号与间距区分名称和描述。共享按钮提供键盘焦点与按下反馈。在粗精度指针下，共享按钮、对话输入区的附件/发送/选择控件、侧栏图标/新建会话按钮，以及智能体导航/筛选按钮的最小操作区域为 44px；共享输入框与智能体搜索框的最小高度为 44px。桌面控件保留紧凑尺寸。
+
 在所属 `ui-theme` 样式表中添加或修改共享 token，然后在功能包中使用其语义别名。公共样式约定发生变化时，更新所属包的参考文档。视觉行为遵循[测试策略](testing.zh.md)；[样式系统 Agent Note](../.agents/notes/implemented/process/2026-07-19-web-styling-system.zh.md) 记录框架依据。
+
+赛博科技风格采用青色操作强调、紧凑面板圆角与等宽元数据。静态网格仅出现在空会话画布中；活跃对话保持纯色背景。共享色板、焦点光晕、品牌图案底板、阴影与圆角 token 归 `ui-theme` 所有。[赛博主题决策](../.agents/notes/implemented/feature/2026-10-20-cyber-workbench-theme.zh.md)记录视觉范围与验证要求。

@@ -1,0 +1,42 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../runtime-diagnostics/invariants"
+    },
+    {
+      "path": "../work-center"
+    },
+    {
+      "path": "../../storage/storage-domain"
+    },
+    {
+      "path": "../../workspace/workspace"
+    },
+    {
+      "path": "../../typert/protocol"
+    },
+    {
+      "path": "../../util/brand"
+    },
+    {
+      "path": "../workbench-agent"
+    },
+    {
+      "path": "../business-workflow"
+    }
+  ]
+}

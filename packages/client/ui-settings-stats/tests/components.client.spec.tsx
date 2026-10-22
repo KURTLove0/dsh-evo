@@ -55,6 +55,7 @@ async function mountSection(items?: Parameters<typeof scriptedFace>[0]) {
   const controller = new StatsSettingsStore(face)
   await controller.load()
   const view = render(<StatsSection
+    renderSlot={() => null}
     controller={controller}
     useSnapshot={bindSnapshotSelector(controller.store)}
     t={t}
@@ -103,6 +104,7 @@ describe('StatsSection', () => {
     const controller = new StatsSettingsStore(face)
     await controller.load()
     render(<StatsSection
+      renderSlot={() => null}
       controller={controller}
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}
@@ -124,6 +126,7 @@ describe('StatsSection', () => {
     const controller = new StatsSettingsStore(face)
     await controller.load()
     render(<StatsSection
+      renderSlot={() => null}
       controller={controller}
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}
@@ -139,6 +142,7 @@ describe('StatsSection', () => {
     const face = scriptedFace()
     const controller = new StatsSettingsStore(face)
     render(<StatsSection
+      renderSlot={() => null}
       controller={controller}
       useSnapshot={bindSnapshotSelector(controller.store)}
       t={t}

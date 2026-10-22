@@ -12,6 +12,8 @@
 
 宿主端在用户设置 seam 中注册 `ui-onboarding`。`ui-settings-models` 提供的欢迎步骤通过既有公开 settings 边界读写其中的 `welcomeNoticeVersion`；外壳本身仍不持有产品策略。
 
+`ctx.settingsPanel.open(section)` 通过外壳既有待处理请求 store 打开当前已注册的设置分区。未知分区标识会拒绝。该服务属于外壳 fiber，卸载时随之移除；功能页面可以提供准确修复导航，无需复制设置面板。
+
 ## 模型体验
 
 无。该插件渲染浏览器设置 UI；这里没有任何内容进入模型请求。

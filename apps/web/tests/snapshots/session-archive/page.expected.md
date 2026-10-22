@@ -1,0 +1,30 @@
+- region "Archived sessions":
+  - paragraph: WORK / ARCHIVE
+  - heading "Archived sessions" [level=1]
+  - button "Refresh archive"
+  - paragraph: Restoring preserves session logs and the original workspace order. It does not execute work or open the session.
+  - status
+  - text: Search archived titles or IDs
+  - searchbox "Search archived titles or IDs"
+  - text: Workspace
+  - combobox "Workspace":
+    - option "All workspaces" [selected]
+    - option "Ungrouped"
+    - option "Archive project"
+  - paragraph: "Matching archived sessions: 3"
+  - list:
+    - listitem:
+      - heading "Archived report 3" [level=2]
+      - paragraph: Ungrouped
+      - code: archive-ungrouped
+      - button "Restore “Archived report 3”": Restore session
+    - listitem:
+      - heading "Archived report 2" [level=2]
+      - paragraph: Archive project
+      - code: archive-second
+      - button "Restore “Archived report 2”": Restore session
+    - listitem:
+      - heading "Archived report 1" [level=2]
+      - paragraph: Archive project
+      - code: archive-first
+      - button "Restore “Archived report 1”": Restore session

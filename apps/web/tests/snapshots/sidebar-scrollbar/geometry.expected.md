@@ -9,8 +9,8 @@
 - scrollbar-width: auto
 - scrollbar-color: auto
 - ::-webkit-scrollbar-thumb:hover declarations: var(--dsh-scrollbar-thumb-hover)
-- --dsh-scrollbar-thumb, pointer over the list: rgb(229, 229, 229)
-- --dsh-scrollbar-thumb-hover, pointer over the list: rgb(212, 212, 212)
+- --dsh-scrollbar-thumb, pointer over the list: rgb(163, 189, 203)
+- --dsh-scrollbar-thumb-hover, pointer over the list: rgb(112, 151, 172)
 - list overflows: true
 - reserved band: 8px
 - scrollbar inset from the sidebar edge: 2px
@@ -28,8 +28,8 @@
 - scrollbar-width: auto
 - scrollbar-color: auto
 - ::-webkit-scrollbar-thumb:hover declarations: var(--dsh-scrollbar-thumb-hover)
-- --dsh-scrollbar-thumb, pointer over the list: rgb(84, 85, 87)
-- --dsh-scrollbar-thumb-hover, pointer over the list: rgb(101, 103, 107)
+- --dsh-scrollbar-thumb, pointer over the list: rgb(48, 80, 98)
+- --dsh-scrollbar-thumb-hover, pointer over the list: rgb(75, 119, 136)
 - list overflows: true
 - reserved band: 8px
 - scrollbar inset from the sidebar edge: 2px

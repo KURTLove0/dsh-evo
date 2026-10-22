@@ -1155,3 +1155,21 @@ describe('FixtureApiClient (protocol-level fake carrier)', () => {
     if (raced === 'idle') await hostIterator.return?.(undefined)
   })
 })
+
+
+it('restores fixture archive membership through both direct and client method dispatch', async () => {
+  const api = createFixtureApi()
+  const created = await api.sessions.create(req({}))
+  if (!created.result.ok) throw new Error('Fixture session creation failed')
+  const sessionId = created.result.value.sessionId
+  await api.workspace.archiveSession(req({ sessionId }))
+  expect((await api.workspace.restoreSession(req({ sessionId }))).result).toEqual({ ok: true, value: { archivedSessionIds: [] } })
+  expect((await api.workspace.restoreSession(req({ sessionId }))).result.ok).toBe(true)
+  expect((await api.workspace.restoreSession(req({ sessionId: sid('missing-restoration') }))).result.ok).toBe(false)
+  const client = new FixtureApiClient()
+  const made = await client.sessions.create({})
+  if (!made.result.ok) throw new Error('Fixture client session creation failed')
+  await client.workspace.archiveSession({ sessionId: made.result.value.sessionId })
+  const restored = await client.workspace.restoreSession({ sessionId: made.result.value.sessionId })
+  expect(restored.result).toEqual({ ok: true, value: { archivedSessionIds: [] } })
+})

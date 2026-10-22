@@ -1,0 +1,11 @@
+{
+  "page": "Remote execution",
+  "fixedAuthority": true,
+  "explicitResubmissions": 1,
+  "remoteAgentRuns": 2,
+  "modelRequests": 4,
+  "remoteFile": "Remote browser delivery",
+  "workflowStatus": "succeeded",
+  "approvalInputs": "Browser original input",
+  "localNativeRuns": 0
+}

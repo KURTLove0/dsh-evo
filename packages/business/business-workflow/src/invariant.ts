@@ -4,6 +4,7 @@ import type {} from './workbench-types.ts'
 import type {} from '@deepseek-ai/dsh-session'
 import type { Context } from '@deepseek-ai/cordis'
 import type { InvariantFailure, InvariantInstaller } from '@deepseek-ai/dsh-invariants'
+import type { WorkflowRun } from './workbench-types.ts'
 import type { BusinessWorkflowInfo, BusinessWorkflowStage, VerificationSummary } from './types.ts'
 
 const PACKAGE_NAME = '@deepseek-ai/dsh-business-workflow'
@@ -47,7 +48,14 @@ function assertStage(stage: string, fail: InvariantFailure): void {
 /** Install stage-transition and verification-consistency checks over the seam's events. */
 const install: InvariantInstaller = (ctx, fail) => {
   const stages = new Map<string, string>()
-  const runs = new Map<string, { sessionId: string; versionId: string; seq: number }>()
+  const runs = new Map<WorkflowRun['id'], {
+    sessionId: WorkflowRun['sessionId']
+    versionId: WorkflowRun['version']['id']
+    seq: number
+    requestId: WorkflowRun['requestId']
+    retryRequest: WorkflowRun['retryRequest']
+    rerunOf: WorkflowRun['rerunOf']
+  }>()
   ctx.on(
     'session/event',
     (session, event) => {
@@ -61,6 +69,11 @@ const install: InvariantInstaller = (ctx, fail) => {
       ) {
         fail('workflow checkpoint changes its audit, publication, or sequence')
       }
+      if (run.retryRequest !== undefined && (run.rerunOf === undefined || run.rerunOf === run.id || run.requestId !== undefined))
+        fail('workflow retry identity lacks a distinct source or conflicts with ordinary submission identity')
+      if (prior !== undefined && (prior.retryRequest !== run.retryRequest ||
+        prior.rerunOf !== run.rerunOf || prior.requestId !== run.requestId))
+        fail('workflow checkpoint changes its retry or submission identity')
       const nodeIds = new Set(run.version.definition.nodes.map(node => node.id))
       if (
         run.attempts.length !== nodeIds.size ||
@@ -76,7 +89,8 @@ const install: InvariantInstaller = (ctx, fail) => {
       ) {
         fail('successful workflow checkpoint lacks completed nodes or final outputs')
       }
-      runs.set(run.id, { sessionId: session.id, versionId: run.version.id, seq: run.seq })
+      runs.set(run.id, { sessionId: session.id, versionId: run.version.id, seq: run.seq,
+        requestId: run.requestId, retryRequest: run.retryRequest, rerunOf: run.rerunOf })
     },
     { global: true },
   )

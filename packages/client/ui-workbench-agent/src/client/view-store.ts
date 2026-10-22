@@ -1,6 +1,6 @@
 /** Remount-surviving viewing state and unsaved drafts; records belong to the directory manager. */
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-runtime/client'
-import type { AgentDefinition, AgentRun, WorkbenchAgentId } from '@deepseek-ai/dsh-api-remotes/client'
+import type { AgentDefinition, AgentRun, AgentCommand, WorkbenchAgentId } from '@deepseek-ai/dsh-api-remotes/client'
 
 /** An edit preserves the revision it started from, including across refreshes. */
 export type AgentDraft = { definition: AgentDefinition } & (
@@ -21,8 +21,13 @@ interface ViewState {
   runKind: 'all' | 'task' | 'design'
   runQuery: string
   runStatus: 'all' | AgentRun['status']
+  retry: { request: Extract<AgentCommand, { kind: 'retry' }>; open: boolean; submitted: boolean } | null
 }
 type ViewActions = {
+  retry: (state: ViewState, request: Extract<AgentCommand, { kind: 'retry' }>) => void
+  retryOpen: (state: ViewState, open: boolean) => void
+  retrySubmitted: (state: ViewState) => void
+  retryClear: (state: ViewState, id?: string) => void
   detail: (state: ViewState, open: boolean) => void
   search: (state: ViewState, query: string) => void
   filter: (state: ViewState, filter: ViewState['filter']) => void
@@ -41,8 +46,15 @@ type ViewActions = {
  */
 export function createAgentViewStore(): EngineStoreHandle<ViewState, ViewActions> {
   return defineStore({
-    init: (): ViewState => ({ query: '', filter: 'active', sort: 'name', detailOpen: false, draft: null, originalDefinition: null, tab: 'overview', composers: {}, runKind: 'all', runQuery: '', runStatus: 'all' }),
+    init: (): ViewState => ({ query: '', filter: 'active', sort: 'name', detailOpen: false, draft: null, originalDefinition: null, tab: 'overview', composers: {}, runKind: 'all', runQuery: '', runStatus: 'all', retry: null }),
     actions: {
+      retry: (state: ViewState, request: Extract<AgentCommand, { kind: 'retry' }>) => {
+        state.retry ??= { request, open: true, submitted: false }
+        state.retry.open = true
+      },
+      retryOpen: (state: ViewState, open: boolean) => { if (state.retry !== null) state.retry.open = open },
+      retrySubmitted: (state: ViewState) => { if (state.retry !== null) state.retry.submitted = true },
+      retryClear: (state: ViewState, id?: string) => { if (id === undefined || state.retry?.request.requestId === id) state.retry = null },
       detail: (state: ViewState, open: boolean) => { state.detailOpen = open },
       search: (state: ViewState, query: string) => { state.query = query },
       filter: (state: ViewState, filter: ViewState['filter']) => { state.filter = filter },

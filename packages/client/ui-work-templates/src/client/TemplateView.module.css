@@ -1,0 +1,34 @@
+/* Private templates share the workbench's semantic cyber palette. */
+.page { height: 100%; min-width: 0; overflow: auto; box-sizing: border-box; padding: 30px; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-base); font: 13px/1.7 var(--dsw-font-family); container-type: inline-size; }
+.page h1 { font-size: 30px; margin: 4px 0; }
+.page h2 { font-size: 17px; }
+.eyebrow { font: 10px monospace; letter-spacing: .2em; color: var(--dsw-alias-state-business-primary); }
+.columns { display: grid; grid-template-columns: minmax(230px, .65fr) minmax(0, 1.35fr); gap: 20px; align-items: start; }
+.panel, .widget { min-width: 0; margin: 20px 0; padding: 20px; border: 1px solid var(--dsw-alias-border-l2); border-top-color: var(--dsw-alias-state-business-primary); border-radius: var(--dsw-radius-panel); background: var(--dsw-alias-bg-layer-1); }
+.widget { font: inherit; }
+.widget summary { cursor: pointer; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.page label, .widget label { display: grid; min-width: 0; gap: 6px; margin: 10px 0; }
+.page :is(input, select), .widget :is(input, select) { font: inherit; min-width: 0; width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-panel); color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-base); }
+.page pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 400px; overflow: auto; padding: 12px; background: var(--dsw-alias-bg-base); }
+.list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.list button { display: grid; width: 100%; min-width: 0; gap: 6px; text-align: left; padding: 14px; font: inherit; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-panel); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); cursor: pointer; overflow-wrap: anywhere; }
+.list span { color: var(--dsw-alias-label-secondary); }
+.list button[aria-pressed="true"] { border-color: var(--dsw-alias-state-business-primary); background: var(--dsw-alias-interactive-bg-hover); }
+.nav { width: 100%; min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--dsw-radius-panel); color: var(--dsw-alias-label-primary); background: transparent; font: inherit; cursor: pointer; }
+.nav svg { color: var(--dsw-alias-state-business-primary); flex: none; }
+.nav:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.error { color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
+.page :is(input, select, button, summary):focus-visible, .widget :is(input, select, button, summary):focus-visible, .nav:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; }
+@container (max-width: 850px) { .columns { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .page { padding: 20px 12px; } .fields { grid-template-columns: minmax(0, 1fr); } .panel, .widget { padding: 14px; } }
+@media (pointer: coarse) { .page :is(input, select, button, summary), .widget :is(input, select, button, summary), .nav { min-height: 44px; } .page :is(input, select), .widget :is(input, select) { font-size: 16px; } }
+.page button, .widget button { max-width: 100%; height: auto; min-height: 36px; white-space: normal; overflow-wrap: anywhere; }
+@media (pointer: coarse) { .page button, .widget button { min-height: 44px; } }
+
+.overview { min-width: 0; margin: 18px 0; overflow-wrap: anywhere; }
+.overview h4 { margin: 14px 0 4px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.overview p { margin: 4px 0; white-space: pre-wrap; }
+.overview ul, .overview ol { padding-left: 20px; }
+.overview summary { cursor: pointer; padding: 10px 0; color: var(--dsw-alias-label-secondary); }

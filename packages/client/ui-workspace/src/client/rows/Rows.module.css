@@ -8,7 +8,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  border-radius: 8px;
+  border-radius: var(--dsw-radius-control);
   padding: 0 8px;
   cursor: pointer;
   user-select: none;
@@ -21,7 +21,9 @@
 }
 
 .sessionRow.selected {
-  background: var(--dsw-alias-interactive-bg-hover);
+  box-shadow: inset 2px 0 var(--dsw-alias-state-business-primary);
+  background: var(--dsw-specific-sidebar-nav-item-active-accent);
+  font-weight: 500;
 }
 
 .searchResultRow {
@@ -32,7 +34,7 @@
   min-height: 48px;
   box-sizing: border-box;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--dsw-radius-control);
   padding: 4px 8px;
   background: transparent;
   cursor: pointer;
@@ -45,7 +47,14 @@
 }
 
 .searchResultRow.selected {
-  background: var(--dsw-alias-interactive-bg-hover);
+  box-shadow: inset 2px 0 var(--dsw-alias-state-business-primary);
+  background: var(--dsw-specific-sidebar-nav-item-active-accent);
+  font-weight: 500;
+}
+
+.searchResultRow:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: -2px;
 }
 
 .searchResultHeading {

@@ -14,9 +14,9 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type { Domain } from '@deepseek-ai/dsh-storage-domain'
 import * as McpClient from '@deepseek-ai/dsh-mcp-client'
 import { WorkbenchAgents } from './service.ts'
-import { agentDomain, definitionSchema } from './schema.ts'
+import { agentDomain, definitionSchema, taskBriefSchema } from './schema.ts'
 import { WorkbenchAgentGateway } from './gateway.ts'
-import type { AgentCapabilities, AgentCommand, AgentDefinition, AgentDirectory, AgentReceipt, AgentRun, AgentRunId, AgentRuntime, WorkbenchAgent, WorkbenchAgentId } from './types.ts'
+import type { AgentCapabilities, AgentCommand, AgentDefinition, AgentDirectory, AgentReceipt, AgentRun, AgentRunId, AgentRunSummary, AgentRuntime, AgentRunQuery, AgentRunPage, AgentRunRevision, TaskBrief, TaskPreflight, WorkbenchAgent, WorkbenchAgentId } from './types.ts'
 
 export type * from './types.ts'
 export { WorkbenchAgents } from './service.ts'
@@ -38,6 +38,8 @@ export interface Config {
   defaultConcurrency: number
   /** Timeout for tools exposed by identity-owned MCP connections, in milliseconds. */
   mcpToolCallTimeoutMs: number
+  /** Maximum run summaries returned by one directory query. */
+  maxRunPageSize: number
 }
 
 /** Required native execution capabilities. */
@@ -51,6 +53,7 @@ export const Config: z<Config> = z.object({
   maxRecordBytes: z.number().step(1).min(1024).default(1_048_576),
   defaultConcurrency: z.number().step(1).min(1).default(6),
   mcpToolCallTimeoutMs: z.number().step(1).min(1).default(60_000),
+  maxRunPageSize: z.number().step(1).min(1).default(100),
 })
 
 interface ActiveRun {
@@ -59,6 +62,11 @@ interface ActiveRun {
 }
 const unfinished = (run: AgentRun) => run.status === 'queued' || run.status === 'running'
 const message = (error: unknown) => error instanceof Error ? error.message : String(error)
+const taskPrompt = (brief: TaskBrief): string => [
+  `Goal:\n${brief.goal}`, `Background:\n${brief.background}`,
+  `Expected deliverables:\n${brief.deliverables.join('\n')}`,
+  `Acceptance criteria:\n${brief.acceptanceCriteria.join('\n')}`, `Constraints:\n${brief.constraints}`,
+].join('\n\n')
 
 /** Native provider with serialized commits and independent per-task session ownership. */
 export class NativeWorkbenchAgents extends WorkbenchAgents {
@@ -69,6 +77,7 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
   private readonly active = new Map<AgentRunId, ActiveRun>()
   private closing = false
   private failure: Error | undefined
+  private runDirectoryRevision = randomUUID() as AgentRunRevision
   private readonly owner: Context
 
   constructor(ctx: Context, private readonly config: Config) { super(ctx); this.owner = ctx }
@@ -108,6 +117,87 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
         runtime: { id: 'harness' as const, available: !this.closing && this.failure === undefined },
       })
     })
+  }
+
+  queryRuns(request: AgentRunQuery): Promise<AgentRunPage> {
+    if (this.closing) return Promise.reject(new Error('Agent runtime is unloading.'))
+    return this.queue(() => {
+      if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > this.config.maxRunPageSize)
+        throw new Error(`Run page limit must be an integer from 1 to ${this.config.maxRunPageSize}.`)
+      if (request.before !== undefined && request.before.revision !== this.runDirectoryRevision)
+        throw new Error('Run directory changed. Refresh before continuing.')
+      if ((request.createdFrom !== undefined && !Number.isFinite(request.createdFrom)) ||
+        (request.createdBefore !== undefined && !Number.isFinite(request.createdBefore)) ||
+        (request.createdFrom !== undefined && request.createdBefore !== undefined && request.createdFrom >= request.createdBefore))
+        throw new Error('Run creation bounds must be finite and increasing.')
+      const pending = new Set(request.attentionSessionIds)
+      const attention = (run: AgentRun) => run.status === 'running' && pending.has(run.sessionId)
+      const updatedAt = (run: AgentRun) => Math.max(run.createdAt, run.startedAt ?? run.createdAt, run.endedAt ?? run.createdAt)
+      const rows = [...this.domain.table('runs').entries()].map(([, run]) => run)
+        .filter(run => request.workspaceId === undefined || run.workspaceId === request.workspaceId)
+        .filter(run => request.agentId === undefined || run.agentId === request.agentId)
+        .filter(run => request.createdFrom === undefined || run.createdAt >= request.createdFrom)
+        .filter(run => request.createdBefore === undefined || run.createdAt < request.createdBefore)
+        .filter(run => request.statuses === undefined || request.statuses.includes(run.status))
+        .filter(run => request.attentionOnly !== true || attention(run))
+        .filter(run => request.before === undefined || Number(attention(run)) < Number(request.before.attention) ||
+          (attention(run) === request.before.attention && (updatedAt(run) < request.before.updatedAt ||
+            (updatedAt(run) === request.before.updatedAt && run.id < request.before.id))))
+        .sort((a, b) => Number(attention(b)) - Number(attention(a)) || updatedAt(b) - updatedAt(a) || (a.id < b.id ? 1 : a.id > b.id ? -1 :
+          /* v8 ignore next -- Persisted run IDs are unique within this array. */ 0))
+      const items = rows.slice(0, request.limit).map(({ definition, candidate: _candidate, ...run }) => ({
+        ...run, updatedAt: updatedAt(run), agentName: definition?.name ?? this.agent(run.agentId).name,
+      }))
+      const last = items.at(-1)
+      return structuredClone({ items, revision: this.runDirectoryRevision,
+        ...(rows.length <= request.limit || last === undefined ? {} : { next: { id: last.id, updatedAt: last.updatedAt,
+          attention: attention(last), revision: this.runDirectoryRevision } }) })
+    })
+  }
+
+  inspectRun(id: AgentRunId): Promise<AgentRunSummary> {
+    if (this.closing) return Promise.reject(new Error('Agent runtime is unloading.'))
+    return this.queue(() => {
+      const { definition, candidate: _candidate, ...run } = this.run(id)
+      return structuredClone({ ...run, updatedAt: Math.max(run.createdAt, run.startedAt ?? run.createdAt, run.endedAt ?? run.createdAt),
+        agentName: definition?.name ?? this.agent(run.agentId).name,
+        ...(definition === undefined ? {} : { configuration: { revision: definition.revision, runtime: definition.runtime,
+          instructions: definition.instructions, skills: definition.skills,
+          mcpServerNames: definition.mcpServers.map(server => server.name),
+          ...(definition.model === undefined ? {} : { model: definition.model }) } }) })
+    })
+  }
+
+  preflight(request: { id: WorkbenchAgentId; workspaceId: AgentRun['workspaceId']; brief?: TaskBrief }): Promise<TaskPreflight> {
+    if (this.closing) return Promise.reject(new Error('Agent runtime is unloading.'))
+    return this.queue(async () => {
+      const result = await this.checkReadiness(this.agent(request.id), request.workspaceId)
+      return request.brief === undefined ? result : { ...result, prompt: taskPrompt(taskBriefSchema.parse(request.brief)) }
+    })
+  }
+
+  private async checkReadiness(agent: WorkbenchAgent, workspaceId: AgentRun['workspaceId']): Promise<TaskPreflight> {
+    const result: TaskPreflight = { checkedAt: Date.now(), agentRevision: agent.revision, issues: [],
+      mcp: agent.mcpServers.map(server => ({ name: server.name, status: 'not-checked' })) }
+    if (agent.archived) result.issues.push({ code: 'archived', message: 'Restore this agent before assigning a task.' })
+    const workspace = this.owner.workspaceRegistry.get(workspaceId)
+    const available = workspace !== undefined && await workspace.status() === 'ok'
+    if (!available) result.issues.push({ code: 'workspace', message: 'Choose an available workspace directory.' })
+    try {
+      const runtime = this.localRuntime(agent.runtime)
+      if (agent.model !== undefined && agent.model.provider !== runtime.provider)
+        result.issues.push({ code: 'model', message: 'Choose a model from the selected runtime.' })
+      if (agent.model === undefined && runtime.defaultModel === undefined)
+        result.issues.push({ code: 'model', message: 'Select an explicit model; this runtime has no native default.' })
+    } catch (error) { result.issues.push({ code: 'runtime', message: message(error) }) }
+    if (available) {
+      try {
+        const catalog = await this.capabilities(workspaceId)
+        const missing = agent.skills.filter(name => !catalog.skills.some(skill => skill.name === name))
+        if (missing.length > 0) result.issues.push({ code: 'skills', message: `Make these skills available or remove them: ${missing.join(', ')}.` })
+      } catch (error) { result.issues.push({ code: 'skills', message: message(error) }) }
+    }
+    return result
   }
 
   command(command: AgentCommand): Promise<AgentReceipt> {
@@ -228,10 +318,28 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
       }
       case 'design': return this.submit(command.id, command.workspaceId, command.prompt, undefined, 'design')
       case 'run': return this.submit(command.id, command.workspaceId, command.prompt)
+      case 'submit-task': return this.submitTask(command)
       case 'retry': {
+        if (command.requestId === '') throw new Error('Retry request ID must be nonempty.')
+        const repeated = [...this.domain.table('runs').entries()].map(([, run]) => run)
+          .find(run => run.retryRequest?.id === command.requestId || run.submission?.id === command.requestId)
+        if (repeated !== undefined) {
+          if (repeated.retryOf !== command.runId || repeated.retryRequest?.id !== command.requestId ||
+            repeated.retryRequest.agentRevision !== command.expectedRevision)
+            throw new Error('This request ID already belongs to another task submission or retry.')
+          return { agentId: repeated.agentId, runId: repeated.id }
+        }
         const prior = this.run(command.runId)
         if (prior.status !== 'failed' && prior.status !== 'cancelled' && prior.status !== 'interrupted') throw new Error('Only failed or stopped runs can be retried.')
-        return this.submit(prior.agentId, prior.workspaceId, prior.prompt, prior.id, prior.purpose)
+        const current = this.agent(prior.agentId)
+        this.revision(current, command.expectedRevision)
+        if (prior.submission !== undefined) return this.submitTask({ kind: 'submit-task', id: prior.agentId, workspaceId: prior.workspaceId,
+          expectedRevision: command.expectedRevision, requestId: command.requestId, brief: prior.submission.brief,
+          ...(prior.revisionOf === undefined ? {} : { revisionOf: prior.revisionOf }) }, prior.id)
+        const readiness = await this.checkReadiness(current, prior.workspaceId)
+        if (readiness.issues.length > 0) throw new Error(readiness.issues.map(issue => issue.message).join('\n'))
+        return this.submit(prior.agentId, prior.workspaceId, prior.prompt, prior.id, prior.purpose,
+          { id: command.requestId, agentRevision: command.expectedRevision })
       }
       case 'stop': {
         const run = this.run(command.runId)
@@ -243,7 +351,41 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
     }
   }
 
-  private async submit(id: WorkbenchAgentId, workspaceId: AgentRun['workspaceId'], prompt: string, retryOf?: AgentRunId, purpose?: 'design'): Promise<AgentReceipt> {
+  private async submitTask(command: Extract<AgentCommand, { kind: 'submit-task' }>, retryOf?: AgentRunId): Promise<AgentReceipt> {
+    const brief: TaskBrief = taskBriefSchema.parse(command.brief)
+    const prior = [...this.domain.table('runs').entries()].map(([, run]) => run)
+      .find(run => run.submission?.id === command.requestId || run.retryRequest?.id === command.requestId)
+    if (prior !== undefined) {
+      if (prior.agentId !== command.id || prior.workspaceId !== command.workspaceId || prior.revisionOf !== command.revisionOf ||
+        prior.retryOf !== retryOf || prior.submission?.agentRevision !== command.expectedRevision ||
+        JSON.stringify(prior.submission.brief) !== JSON.stringify(brief))
+        throw new Error('This task request ID already belongs to a different submission.')
+      return { agentId: prior.agentId, runId: prior.id }
+    }
+    const agent = this.agent(command.id)
+    this.revision(agent, command.expectedRevision)
+    const readiness = await this.checkReadiness(agent, command.workspaceId)
+    if (readiness.issues.length > 0) throw new Error(readiness.issues.map(issue => issue.message).join('\n'))
+    if (command.revisionOf !== undefined) {
+      const original = this.run(command.revisionOf)
+      if (original.agentId !== command.id || original.workspaceId !== command.workspaceId || unfinished(original))
+        throw new Error('Revision tasks must reference a settled run of this agent and workspace.')
+    }
+    if (command.requestId === '') throw new Error('Task request ID must be nonempty.')
+    if (this.domain.table('runs').size >= this.config.maxRuns) throw new Error('Run history capacity reached.')
+    const prompt = taskPrompt(brief)
+    const run: AgentRun = {
+      id: randomUUID() as AgentRunId, agentId: agent.id, workspaceId: command.workspaceId,
+      sessionId: SessionId(randomUUID()), prompt, definition: structuredClone(agent), status: 'queued', createdAt: Date.now(),
+      submission: { id: command.requestId, agentRevision: agent.revision, brief },
+      ...(retryOf === undefined ? {} : { retryOf, retryRequest: { id: command.requestId, agentRevision: command.expectedRevision } }),
+      ...(command.revisionOf === undefined ? {} : { revisionOf: command.revisionOf }),
+    }
+    await this.putRun(run)
+    return { agentId: agent.id, runId: run.id }
+  }
+
+  private async submit(id: WorkbenchAgentId, workspaceId: AgentRun['workspaceId'], prompt: string, retryOf?: AgentRunId, purpose?: 'design', retryRequest?: AgentRun['retryRequest']): Promise<AgentReceipt> {
     if (this.agent(id).archived) throw new Error('Archived agents cannot receive work.')
     if (prompt.trim() === '') throw new Error('Describe the task to run.')
     const workspace = this.owner.workspaceRegistry.get(workspaceId)
@@ -251,6 +393,7 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
     if (this.domain.table('runs').size >= this.config.maxRuns) throw new Error('Run history capacity reached.')
     const run: AgentRun = {
       id: randomUUID() as AgentRunId, agentId: id, workspaceId, sessionId: SessionId(randomUUID()), prompt,
+      ...(retryRequest === undefined ? {} : { retryRequest, definition: structuredClone(this.agent(id)) }),
       status: 'queued', createdAt: Date.now(), ...(purpose === undefined ? {} : { purpose }), ...(retryOf === undefined ? {} : { retryOf }),
     }
     await this.putRun(run)
@@ -259,8 +402,8 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
 
   private async stop(run: AgentRun): Promise<void> {
     if (!unfinished(run)) return
-    try { await this.putRun({ ...run, status: 'cancelled', endedAt: Date.now() }) }
-    finally { this.active.get(run.id)?.controller.abort() }
+    this.active.get(run.id)?.controller.abort()
+    await this.putRun({ ...run, status: 'cancelled', endedAt: Date.now() })
   }
 
   private size(record: unknown): void {
@@ -270,13 +413,14 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
   private async putRun(run: AgentRun): Promise<void> {
     this.size(run)
     await this.domain.table('runs').put(run.id, run)
+    this.runDirectoryRevision = randomUUID() as AgentRunRevision
     this.notify(run.agentId)
   }
 
   private notify(id: WorkbenchAgentId): void {
     for (const listener of this.owner.events.dispatch('emit', ['workbench-agent/changed', id])) {
       try {
-        void Promise.resolve(listener('workbench-agent/changed', id)).catch((error: unknown) => { this.owner.logger.warn('Agent directory listener failed: %s', message(error)) })
+        void Promise.resolve(listener(id)).catch((error: unknown) => { this.owner.logger.warn('Agent directory listener failed: %s', message(error)) })
       } catch (error) { this.owner.logger.warn('Agent directory listener failed: %s', message(error)) }
     }
   }
@@ -313,7 +457,7 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
       const run = await this.queue(async () => {
         const current = this.run(id)
         if (current.status !== 'queued' || signal.aborted) return undefined
-        const next = { ...current, definition: structuredClone(this.agent(current.agentId)), status: 'running' as const, startedAt: Date.now() }
+        const next = { ...current, definition: current.definition ?? structuredClone(this.agent(current.agentId)), status: 'running' as const, startedAt: Date.now() }
         await this.putRun(next)
         return next
       })
@@ -386,7 +530,7 @@ export class NativeWorkbenchAgents extends WorkbenchAgents {
       await this.queue(async () => {
         const current = this.run(id)
         if (current.status !== 'running') return
-        await this.putRun({ ...current, ...(candidate === undefined ? {} : { candidate }), status: aborted ? 'cancelled' : failure === undefined ? 'completed' : 'failed', endedAt: Date.now(), ...(failure === undefined ? {} : { error: failure }) })
+        await this.putRun({ ...current, settledSeq: end.seq, ...(candidate === undefined ? {} : { candidate }), status: aborted ? 'cancelled' : failure === undefined ? 'completed' : 'failed', endedAt: Date.now(), ...(failure ===undefined ? {} : { error: failure }) })
       })
     } catch (error) {
       await this.queue(async () => {

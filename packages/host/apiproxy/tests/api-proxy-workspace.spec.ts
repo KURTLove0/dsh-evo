@@ -654,4 +654,29 @@ describe('Host Workspace increments', () => {
     })
     abort.abort()
   })
+  it('restores through the workspace API, broadcasts committed membership, and preserves the session', async () => {
+    const { api, root } = await harness()
+    const workspace = expectOk(await api.workspace.create(request({ path: stageDir(root, 'restore-home') }))).workspace
+    const sessionId = SessionId('session-to-restore')
+    expectOk(await api.sessions.create(request({ workspaceId: workspace.workspaceId, sessionId })))
+    expectOk(await api.workspace.archiveSession(request({ sessionId })))
+    const abort = new AbortController()
+    const stream = api.events.host(request({}), abort.signal)[Symbol.asyncIterator]()
+    const changed = nextHostFrame(stream)
+    expect(expectOk(await api.workspace.restoreSession(request({ sessionId }))).archivedSessionIds).toEqual([])
+    expect(await changed).toMatchObject({ payload: { type: 'host/archived-sessions-changed', archivedSessionIds: [] } })
+    expect(expectOk(await api.workspace.list(request({}))).items[0]?.sessionIds).toEqual([sessionId])
+    expect(expectOk(await api.sessions.list(request({}))).items.map(item => item.sessionId)).toContain(sessionId)
+    expect(expectOk(await api.workspace.restoreSession(request({ sessionId }))).archivedSessionIds).toEqual([])
+    expect((await api.workspace.restoreSession(request({ sessionId: SessionId('ghost') }))).result)
+      .toMatchObject({ ok: false, error: { code: 'session-not-found' } })
+    abort.abort()
+  })
+
+  it('propagates restore durability failures without reporting a missing session', async () => {
+    const { api, ctx } = await harness()
+    vi.spyOn(ctx.workspaceRegistry, 'restoreSession').mockRejectedValueOnce(new Error('Restore storage failed'))
+    await expect(api.workspace.restoreSession(request({ sessionId: SessionId('known') }))).rejects.toThrow('Restore storage failed')
+  })
+
 })

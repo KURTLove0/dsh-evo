@@ -4,6 +4,10 @@ English | [中文](README.zh.md)
 
 Pure React atoms (zero cordis): StateDot, DisclosureRow, ic_ds_* icons, Button/Pill/Menu/Modal/Input, the Toast transient banner, the OnboardingSurface first-run takeover (body-portaled mask + opaque stage that holds `#root` inert for exactly its own lifetime), the markdown family (MessageText/MarkdownText/JsonBlock), the read-only JsonTree inspector, the `useAnchoredMaxHeight` hook that clamps a bottom-anchored overlay to the viewport space above its anchor (re-measured on resize, scroll, and a caller-supplied dependency), the `useAnchoredPosition` hook that holds a fixed-position floating panel under its anchor (measure, offset, clamp inside the viewport margin, re-placed on capture-phase scroll, window resize, and the panel's own size changes), TerminalBlock, DiffBlock, ReadBlock, SearchBlock, and WebBlock.
 
+## Form controls
+
+`Button` provides a visible keyboard focus ring, pressed feedback, and reduced-motion-aware color transitions. `Input` uses a 36px wrapper with a focus outline and readable placeholder text. For coarse pointers, both have a 44px minimum height; buttons also have a 44px minimum width, and input text grows to 16px.
+
 ## Application logo
 
 `BrandLogo` renders `/icon.png` as a square image with a default size of 24 pixels. The web application serves the repository's `icon.png` at that URL. The image is decorative; its host supplies the accessible label.
@@ -39,6 +43,8 @@ Pure React atoms (zero cordis): StateDot, DisclosureRow, ic_ds_* icons, Button/P
 ## Web retrieval
 
 `WebBlock` renders a completed web retrieval, one component for both kinds of the `web` render intent (discriminated by `kind`). A `search` shows an optional provider answer (through `MarkdownText`) above an ordered citation list: each source is a safe external link labelled by its title, or its hostname, falling back to the raw URL when the URL does not parse or has no hostname (a `file:`/`data:` URL) so a label is never blank; its snippet and publication date render below it. Only http(s) URLs become anchors (`target`/`rel` set) — the http(s) subset of the allowlist `MarkdownText` applies to untrusted links (it also permits `mailto:`, excluded here); any other URL renders as plain text. The whole list renders in one fixed-height scroll container (`max-height: 320px`, `overflow-y: auto`), so a list taller than that scrolls vertically in place instead of growing the card; `<li value>` pins each source's citation number, contiguous from 1, rather than leaving it to the `<ol>`'s implicit count. When a search legitimately returns no answer and no sources, the card shows an explicit empty-state note rather than a blank `<ol>` (the chat row does not surface the raw result content). A `fetch` shows a compact summary: the linked final URL and its HTTP status. Both mark a capped retrieval. Rationale: [the web result card note](../../../.agents/notes/implemented/feature/2026-07-30-web-result-card-frontend.md) and [the source scroll note](../../../.agents/notes/implemented/feature/2026-08-03-web-search-source-scroll.md).
+
+Shared buttons and inputs use the theme’s compact control radius. Decorative application artwork sits on a light theme-owned tile in the sidebar and empty-session headline so its dark pixels stay visible in both palettes.
 
 ## Model Experience
 

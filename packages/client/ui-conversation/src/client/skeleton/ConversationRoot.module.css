@@ -26,11 +26,10 @@
 }
 
 .root[data-phase='hero'] {
-  background: radial-gradient(
-    ellipse 58% 34% at 50% 45%,
-    color-mix(in srgb, var(--dsw-alias-state-business-primary) 5%, transparent),
-    transparent 90%
-  ), var(--dsw-alias-bg-base);
+  background-image:
+    linear-gradient(var(--dsw-alias-surface-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dsw-alias-surface-grid) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 .header {
@@ -38,6 +37,7 @@
   flex: none;
   padding: 12px 28px 0 20px;
   border-bottom: 1px solid transparent;
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .header::after {
@@ -355,13 +355,22 @@
 
 .heroWorkspaceRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
+  row-gap: 6px;
   min-width: 0;
   margin-top: 4px;
   /* figma drew px 8; nudged +12 so the chip's folder glyph lines up closer to
      the card's inner controls below. */
   padding-left: 20px;
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.heroWorkspaceRow > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Hero: the composer sits inside the session scroll body; center there so

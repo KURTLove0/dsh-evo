@@ -6,6 +6,7 @@ import { apply, inject } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type { WorkspaceBrowserInjected, WorkspacePickerInjected } from '@deepseek-ai/dsh-client-ui-workspace/client'
 import { WorkspaceBrowser } from '../src/client/WorkspaceBrowser.tsx'
 import { WorkspacePicker } from '../src/client/WorkspacePicker.tsx'
+import { ArchivePage, type ArchiveInjected } from '../src/client/ArchivePage.tsx'
 
 async function bench() {
   const ctx = new Context()
@@ -167,4 +168,25 @@ describe('ui-workspace apply', () => {
     expect(b.slots.entries('conversation.hero.workspace')).toHaveLength(0)
     // expect(b.slots.entries('conversation.empty.workspace')).toHaveLength(0)
   })
+})
+
+
+it('registers archive navigation and recovery through owner declarations and removes both on unload', async () => {
+  const b = await bench()
+  const restore = vi.fn(async () => {}), refresh = vi.fn(async () => {}), openPage = vi.fn()
+  Object.assign(b.ctx.workspaces, { restoreSession: restore, refresh })
+  Object.assign(b.ctx.layout, { openPage })
+  const fiber = await b.ctx.plugin({ inject: [...inject], apply }).await()
+  b.slots.register({ name: 'root', children: { 'shell.page': { kind: 'keyed', scope: 'root' }, 'sidebar.session.action': { kind: 'list', scope: 'root' } } } as never, () => null)
+  const page = b.slots.entries('shell.page')[0]!
+  expect(page.component).toBe(ArchivePage)
+  const controls = (page.inject as unknown as () => ArchiveInjected)()
+  await controls.restore('restored' as never); await controls.refresh()
+  expect(restore).toHaveBeenCalledWith('restored'); expect(refresh).toHaveBeenCalledOnce()
+  expect(controls.limit).toBe(20)
+  const navigation = (b.slots.entries('sidebar.session.action')[0]!.inject as () => { open: () => void })()
+  navigation.open(); expect(openPage).toHaveBeenCalledWith('session-archive')
+  await fiber.dispose()
+  expect(b.slots.entries('shell.page')).toEqual([])
+  expect(b.slots.entries('sidebar.session.action')).toEqual([])
 })

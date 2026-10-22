@@ -199,6 +199,20 @@ flowchart LR
   svc_businessWorkflows["ctx.businessWorkflows<br/>Business-workflow pipeline seam"]
   pkg_business_workflow_local["business-workflow-local"]
   pkg_tool_business_workflow["tool-business-workflow"]
+  pkg_capability_health["capability-health"]
+  svc_capabilityHealth["ctx.capabilityHealth<br/>Configuration observations and temporary MCP probes"]
+  pkg_work_remote["work-remote"]
+  svc_remoteWork["ctx.remoteWork<br/>Authenticated native remote execution"]
+  pkg_work_triggers["work-triggers"]
+  svc_workTriggers["ctx.workTriggers<br/>Durable native trigger admissions"]
+  pkg_work_knowledge["work-knowledge"]
+  svc_workKnowledge["ctx.workKnowledge<br/>Explicit project knowledge"]
+  pkg_work_artifacts["work-artifacts"]
+  svc_workArtifacts["ctx.workArtifacts<br/>Explicit project-file snapshots"]
+  pkg_work_templates["work-templates"]
+  svc_workTemplates["ctx.workTemplates<br/>Private versioned work templates"]
+  pkg_work_center["work-center"]
+  svc_workCenter["ctx.workCenter<br/>Work directory and human delivery assessment"]
   pkg_workbench_agent["workbench-agent"]
   svc_workbenchAgents["ctx.workbenchAgents<br/>Independent workbench agents"]
   svc_workflowWorkbench["ctx.workflowWorkbench<br/>Workspace workflow workbench"]
@@ -228,6 +242,7 @@ flowchart LR
   pkg_business_workflow --> svc_workflowWorkbench
   pkg_business_workflow_local --> svc_businessWorkflows
   pkg_business_workflow_local --> svc_workflowWorkbench
+  pkg_capability_health --> svc_capabilityHealth
   pkg_code_runtime --> svc_codeRuntime
   pkg_code_runtime_worker --> svc_codeRuntime
   pkg_commands --> svc_commands
@@ -318,6 +333,12 @@ flowchart LR
   pkg_web_search_exa --> svc_web
   pkg_web_search_perplexity --> svc_web
   pkg_webserver --> svc_webServer
+  pkg_work_artifacts --> svc_workArtifacts
+  pkg_work_center --> svc_workCenter
+  pkg_work_knowledge --> svc_workKnowledge
+  pkg_work_remote --> svc_remoteWork
+  pkg_work_templates --> svc_workTemplates
+  pkg_work_triggers --> svc_workTriggers
   pkg_workbench_agent --> svc_workbenchAgents
   pkg_workflow --> svc_workflowEngine
   pkg_workflow_worker_thread --> svc_workflowEngine
@@ -336,6 +357,7 @@ flowchart LR
   svc_attachments --> pkg_llm_pi_ai
   svc_authorization --> pkg_llm_pi_ai
   svc_businessWorkflows --> pkg_tool_business_workflow
+  svc_capabilityHealth --> pkg_capability_health
   svc_clientModules --> pkg_hmr
   svc_codeRuntime --> pkg_tools
   svc_compaction --> pkg_compaction_basic
@@ -359,6 +381,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_remoteWork --> pkg_work_remote
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -436,6 +459,11 @@ flowchart LR
   svc_webServer --> pkg_connection
   svc_webServer --> pkg_hmr
   svc_webServer --> pkg_modules
+  svc_workArtifacts --> pkg_work_artifacts
+  svc_workCenter --> pkg_work_center
+  svc_workKnowledge --> pkg_work_knowledge
+  svc_workTemplates --> pkg_work_templates
+  svc_workTriggers --> pkg_work_triggers
   svc_workbenchAgents --> pkg_workbench_agent
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
@@ -502,6 +530,13 @@ flowchart LR
 | `ctx.clientModules` | `core` | `modules` | - | `hmr` | - | Composes the __DSH_BOOT__ entry graph from an incremental dsh.client scan, serves plugin bundles, and notifies rebuilt/graph-changed subscribers. |
 | `ctx.workflowEngine` | `seam` | [`workflow`](../packages/workflow/workflow) | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | [`tool-workflow`](../packages/workflow/tool-workflow), [`tool-ralph`](../packages/workflow/tool-ralph) | - | One engine per context, as in bash, with no named-provider registry; the general workflow and fixed Ralph consumers start runs whose agent() calls fan out through ctx.subagents. |
 | `ctx.businessWorkflows` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`tool-business-workflow`](../packages/business/tool-business-workflow) | - | One runtime per context owning the clarify/compose/verify stage machine; the model authors requirement and orchestration drafts through the tools, and the verify dry-run delegates each step to a fresh subagent through ctx.subagents. |
+| `ctx.capabilityHealth` | `seam` | [`capability-health`](../packages/business/capability-health) | [`capability-health`](../packages/business/capability-health) | [`capability-health`](../packages/business/capability-health) | - | Reads configuration without model input and owns bounded temporary initialization/ping jobs whose retained identities support recovery without resubmission. |
+| `ctx.remoteWork` | `seam` | [`work-remote`](../packages/business/work-remote) | [`work-remote`](../packages/business/work-remote) | [`work-remote`](../packages/business/work-remote) | - | Pins receiving Host and principal before authenticated native dispatch; durable request identities recover uncertain admissions without moving execution credentials. |
+| `ctx.workTriggers` | `seam` | [`work-triggers`](../packages/business/work-triggers) | [`work-triggers`](../packages/business/work-triggers) | [`work-triggers`](../packages/business/work-triggers) | - | Reserves fixed native requests and next nominal times atomically; admission uncertainty, execution outcomes, and notice read state remain independent. |
+| `ctx.workKnowledge` | `seam` | [`work-knowledge`](../packages/business/work-knowledge) | [`work-knowledge`](../packages/business/work-knowledge) | [`work-knowledge`](../packages/business/work-knowledge) | - | Revocable file grants with immutable decoded text, literal line retrieval, and logged citation tools. |
+| `ctx.workArtifacts` | `seam` | [`work-artifacts`](../packages/business/work-artifacts) | [`work-artifacts`](../packages/business/work-artifacts) | [`work-artifacts`](../packages/business/work-artifacts) | - | Retains immutable file bytes with execution and accepted-review provenance; current-file comparisons are explicit observations. |
+| `ctx.workTemplates` | `seam` | [`work-templates`](../packages/business/work-templates) | [`work-templates`](../packages/business/work-templates) | [`work-templates`](../packages/business/work-templates) | - | Retains immutable private content versions; explicit reuse creates checked task briefs or independent workflow drafts. |
+| `ctx.workCenter` | `seam` | [`work-center`](../packages/business/work-center) | [`work-center`](../packages/business/work-center) | [`work-center`](../packages/business/work-center) | - | Merges bounded execution-owner queries and atomically retains versioned human decisions with complete inspection evidence. |
 | `ctx.workbenchAgents` | `seam` | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | - | Stable collaborator identities, configuration, and run history are stored independently of plugin presets; the native provider owns queued tasks, transcript sessions, and reviewed AI configuration candidates. |
 | `ctx.workflowWorkbench` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`business-workflow-local`](../packages/business/business-workflow-local) | - | Workspace definitions and immutable publications are independent of conversation records; the provider owns session-backed runs and its Remote consumer exposes management, validation, and inspection to the browser. |
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | `lsp-local` | [`tool-lsp`](../packages/lsp/tool-lsp) | - | Provider registration and selection plus normalized query execution over exactly four operations; the seam offers no protocol escape hatch, so a backend translates into the normalized request and result. |

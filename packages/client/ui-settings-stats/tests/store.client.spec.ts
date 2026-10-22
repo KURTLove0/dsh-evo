@@ -129,3 +129,15 @@ describe('messageOf', () => {
     expect(messageOf('the host refused')).toBe('the host refused')
   })
 })
+
+it('ignores an older failed listing after a newer refresh succeeded', async () => {
+  let reject!: (error: Error) => void
+  let first = true
+  const store = new StatsSettingsStore(api(() => {
+    if (first) { first = false; return new Promise((_resolve, no) => { reject = no }) }
+    return Promise.resolve(ok({ items: [row()] }))
+  }))
+  const older = store.load(); await store.load()
+  reject(new Error('Late old failure')); await older
+  expect(store.store.getSnapshot()).toMatchObject({ status: 'ready', error: null, sessions: 1 })
+})

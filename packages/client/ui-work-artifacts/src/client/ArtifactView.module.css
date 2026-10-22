@@ -1,0 +1,34 @@
+/* Project captures use the existing cyan workbench palette and master/detail hierarchy. */
+.page { height: 100%; min-width: 0; box-sizing: border-box; overflow: auto; padding: 30px; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-base); font: 14px/1.6 var(--dsw-font-family); container-type: inline-size; }
+.heading, .actions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.page h1 { margin: 4px 0; font-size: 30px; }
+.page h2 { margin: 0 0 14px; font-size: 18px; }
+.page h3, .widget h3 { font-size: 14px; }
+.eyebrow { color: var(--dsw-alias-state-business-primary); font: 11px monospace; letter-spacing: .16em; }
+.hint { color: var(--dsw-alias-label-secondary); font-size: 12px; }
+.filters { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; margin: 24px 0; align-items: end; }
+.page label, .widget label { display: grid; gap: 6px; min-width: 0; }
+.page :is(input, select, button), .widget :is(input, select, button) { min-height: 44px; box-sizing: border-box; max-width: 100%; padding: 9px 12px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-control); color: inherit; background: var(--dsw-alias-bg-base); font: inherit; }
+.page :is(input, select), .widget :is(input, select) { min-width: 0; width: 100%; }
+.page button, .widget button { cursor: pointer; white-space: normal; overflow-wrap: anywhere; }
+.page button:hover:not(:disabled), .widget button:hover:not(:disabled) { border-color: var(--dsw-alias-state-business-primary); }
+.page button:disabled, .widget button:disabled { cursor: default; opacity: .5; }
+.columns { display: grid; grid-template-columns: minmax(230px, .7fr) minmax(0, 1.3fr); gap: 20px; align-items: start; }
+.panel, .widget, .pending { min-width: 0; box-sizing: border-box; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-panel); background: var(--dsw-alias-bg-layer-1); padding: 20px; overflow-wrap: anywhere; }
+.widget { margin-top: 20px; }
+.widget form { display: grid; gap: 12px; padding-top: 12px; }
+.pending { margin: 16px 0; border-top-color: var(--dsw-alias-state-business-primary); }
+.list { display: grid; gap: 10px; padding: 0; margin: 12px 0 20px; list-style: none; }
+.list button { display: grid; gap: 6px; width: 100%; text-align: left; }
+.list span { font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.list button[aria-pressed='true'] { border-color: var(--dsw-alias-state-business-primary); }
+.preview { max-height: 420px; max-width: 100%; overflow: auto; box-sizing: border-box; padding: 14px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-control); background: var(--dsw-alias-bg-base); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 monospace; }
+.observation { margin-top: 20px; border-top: 1px solid var(--dsw-alias-border-l2); padding-top: 12px; }
+.error { color: var(--dsw-alias-state-error-primary); overflow-wrap: anywhere; }
+.nav { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--dsw-radius-panel); background: transparent; color: var(--dsw-alias-label-primary); font: inherit; cursor: pointer; }
+.nav svg { flex: none; color: var(--dsw-alias-state-business-primary); }
+.nav:hover { border-color: var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-1); }
+.page :is(input, select, button, pre):focus-visible, .widget :is(input, select, button):focus-visible, .nav:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 3px; }
+@container (max-width: 1000px) { .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .columns { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .page { padding: 20px 12px; } .filters { grid-template-columns: minmax(0, 1fr); } .panel, .widget, .pending { padding: 14px; } }
+@media (pointer: coarse) { .page :is(input, select), .widget :is(input, select) { font-size: 16px; } }

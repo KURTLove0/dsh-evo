@@ -252,7 +252,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'business-workflow/checkpoint': WorkflowRun
 ```
 
-来源：[`packages/business/business-workflow/src/workbench-types.ts:225`](../packages/business/business-workflow/src/workbench-types.ts)
+来源：[`packages/business/business-workflow/src/workbench-types.ts:274`](../packages/business/business-workflow/src/workbench-types.ts)
 
 ### `command/*`
 

@@ -3,9 +3,6 @@
     - button "Reply with the single word" [disabled]
   - img
   - text: Standard mode
-  - button "Business workflow":
-    - text: Business workflow
-    - img
   - button "Session log":
     - text: Session log
     - img
@@ -37,8 +34,8 @@
 - button "Commands":
   - img
 - 'button "Access mode, current: Workspace Write"': Workspace Write
-- button "Select model, current DeepSeek-V4-Flash":
-  - text: DeepSeek-V4-Flash
+- button "Select model":
+  - text: Select model
   - img
 - button "8% of context used"
 - button "Send message" [disabled]

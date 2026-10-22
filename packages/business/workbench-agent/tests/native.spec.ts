@@ -99,6 +99,202 @@ async function settled(ctx: Context, id: WorkbenchAgentId) {
 }
 
 describe('independent workbench agents through the Loader', () => {
+  it('aborts startup immediately while the durable cancellation write is pending', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root)
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const id = await create(ctx)
+    const table = ctx.storageDomain.get('workbench_agents')!.table('runs')
+    const put = table.put.bind(table)
+    const entered = Promise.withResolvers<undefined>()
+    const release = Promise.withResolvers<undefined>()
+    const writes = vi.spyOn(table, 'put').mockImplementation(async (key, value) => {
+      if ((value as { status: string }).status === 'cancelled') { entered.resolve(undefined); await release.promise }
+      await put(key, value)
+    })
+    const creations = vi.spyOn(ctx.agents, 'create')
+    let stopped: Promise<unknown> | undefined
+    ctx.on('agent/created', ({ agent }) => {
+      const row = [...table.entries()].find(([, value]) => (value as { sessionId: string }).sessionId === agent.id)
+      if (row !== undefined) stopped = ctx.workbenchAgents.command({ kind: 'stop', runId: row[0] as AgentRunId })
+    })
+    try {
+      await ctx.workbenchAgents.command({ kind: 'run', id, workspaceId: workspace.id, prompt: 'Must not start after cancellation' })
+      await entered.promise
+      expect(creations.mock.calls[0]?.[0].signal?.aborted).toBe(true)
+    } finally { release.resolve(undefined); await stopped; writes.mockRestore() }
+    expect((await settled(ctx, id)).runs[0]?.status).toBe('cancelled')
+    expect(adapter.requests).toEqual([])
+  })
+
+  it('checks model defaults, persisted routes, unavailable runtimes, and skill discovery without model calls', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root)
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const changed = vi.fn(); ctx.on('workbench-agent/changed', changed)
+    const id = await create(ctx)
+    expect(changed).toHaveBeenCalledWith(id)
+    const domain = ctx.storageDomain.get('workbench_agents') as unknown as import('@deepseek-ai/dsh-storage-domain').Domain<typeof agentDomain>
+    const current = domain.table('agents').get(id)!
+    ctx.llm.registerAdapter(['no-default'], new MockAdapter([]))
+    ctx.llm.registerConfigurableProviders([{ provider: 'no-default', displayName: 'Explicit only', settingsNs: '', settingsPath: [], localCommand: process.execPath }])
+    await domain.table('agents').put(id, { ...current, runtime: 'no-default' })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues[0]?.code).toBe('model')
+    await domain.table('agents').put(id, { ...current, model: { provider: 'no-default', model: 'model' } })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues[0]?.message).toContain('selected runtime')
+    await domain.table('agents').put(id, { ...current, model: { provider: 'mock', model: 'model' } })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues).toEqual([])
+    await domain.table('agents').put(id, { ...current, runtime: 'missing' })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues[0]?.code).toBe('runtime')
+    ctx.skills.register({ name: 'report', description: 'Review reports', content: 'Read and review', source: 'test' })
+    await domain.table('agents').put(id, { ...current, skills: ['report'] })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues).toEqual([])
+    const discovery = vi.spyOn(ctx.skills, 'list').mockRejectedValueOnce(new Error('Skill catalog offline'))
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues).toEqual([{ code: 'skills', message: 'Skill catalog offline' }])
+    discovery.mockRestore()
+    expect(adapter.requests).toEqual([])
+    const service = ctx.workbenchAgents
+    await ctx.fiber.dispose()
+    await expect(service.preflight({ id, workspaceId: workspace.id })).rejects.toThrow('unloading')
+    await expect(service.queryRuns({ limit: 1 })).rejects.toThrow('unloading')
+    await expect(service.inspectRun('missing' as never)).rejects.toThrow('unloading')
+  })
+
+  it('prioritizes pending tasks, pages by committed lifecycle times, and rejects continuations after mutations and restart', async () => {
+    const root = await scratch()
+    const { ctx } = await boot(root, [])
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const id = await create(ctx)
+    const domain = ctx.storageDomain.get('workbench_agents') as unknown as import('@deepseek-ai/dsh-storage-domain').Domain<typeof agentDomain>
+    const seeds = [
+      { id: 'pending', status: 'running' as const, createdAt: 1, startedAt: 2 },
+      { id: 'recent', status: 'failed' as const, createdAt: 25 },
+      { id: 'settled-z', status: 'completed' as const, createdAt: 5, startedAt: 10, endedAt: 30 },
+      { id: 'settled-a', status: 'completed' as const, createdAt: 5, startedAt: 10, endedAt: 30 },
+      { id: 'old', status: 'failed' as const, createdAt: 1 },
+    ]
+    for (const run of seeds) await domain.table('runs').put(run.id as AgentRunId, { ...run, id: run.id as AgentRunId, agentId: id, workspaceId: workspace.id, sessionId: run.id as never, prompt: 'Stored task' })
+    const request = { limit: 1, attentionSessionIds: ['pending' as never] }
+    let page = await ctx.workbenchAgents.queryRuns(request)
+    const first = page
+    const ids = page.items.map(run => run.id)
+    while (page.next !== undefined) {
+      page = await ctx.workbenchAgents.queryRuns({ ...request, before: page.next })
+      ids.push(...page.items.map(run => run.id))
+    }
+    expect(ids).toEqual(['pending', 'settled-z', 'settled-a', 'recent', 'old'])
+    expect((await ctx.workbenchAgents.inspectRun('settled-z' as AgentRunId)).updatedAt).toBe(30)
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 1, agentId: id, createdFrom: 5, createdBefore: 25 })).items[0]?.id).toBe('settled-z')
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 10, agentId: 'absent' as never })).items).toEqual([])
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 10, createdFrom: 25 })).items.map(run => run.id)).toEqual(['recent'])
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 10, createdBefore: 5 })).items.map(run => run.id)).toEqual(['pending', 'old'])
+    for (const bounds of [{ createdFrom: NaN }, { createdBefore: Infinity }, { createdFrom: 2, createdBefore: 2 }])
+      await expect(ctx.workbenchAgents.queryRuns({ limit: 1, ...bounds })).rejects.toThrow('creation bounds')
+
+    expect((await ctx.workbenchAgents.queryRuns({ ...request, attentionOnly: true })).items.map(run => run.id)).toEqual(['pending'])
+    await ctx.workbenchAgents.command({ kind: 'stop', runId: 'pending' as AgentRunId })
+    await expect(ctx.workbenchAgents.queryRuns({ ...request, before: first.next! })).rejects.toThrow('directory changed')
+    const settled = await ctx.workbenchAgents.inspectRun('pending' as AgentRunId)
+    expect(settled.updatedAt).toBe(settled.endedAt)
+    const fresh = await ctx.workbenchAgents.queryRuns({ limit: 1 })
+    await ctx.fiber.dispose()
+    const restarted = await boot(root, [])
+    await expect(restarted.ctx.workbenchAgents.queryRuns({ limit: 1, before: fresh.next! })).rejects.toThrow('directory changed')
+  })
+
+  it('pages and inspects committed summaries and preserves structured declarations on source retries', async () => {
+    const root = await scratch()
+    const { ctx } = await boot(root, [textResponse('Retried task'), textResponse('Retried revision'), textResponse('Retried linked revision')])
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const id = await create(ctx), other = await create(ctx, 'Other')
+    const domain = ctx.storageDomain.get('workbench_agents') as unknown as import('@deepseek-ai/dsh-storage-domain').Domain<typeof agentDomain>
+    const current = domain.table('agents').get(id)!
+    const gateway = ctx.get('workbenchAgentGateway') as WorkbenchAgentGateway
+    const brief = { version: 1 as const, goal: 'Retry report', background: '', deliverables: ['report.md'], acceptanceCriteria: ['Cite sources'], constraints: '' }
+    for (const key of ['seed-z', 'seed-a', 'seed-m']) await domain.table('runs').put(key as AgentRunId, { id: key as AgentRunId, agentId: id, workspaceId: workspace.id, sessionId: key as never, prompt: 'Stored task', createdAt: 1, status: 'failed', ...(key === 'seed-m' ? { definition: { ...current, model: { provider: 'mock', model: 'mock' }, mcpServers: [businessServer()] }, submission: { id: 'stored-request' as never, agentRevision: 1, brief } } : {}) })
+    expect((await gateway.queryRuns({ limit: 3, statuses: ['failed'] })).items.map(run => run.id)).toEqual(['seed-z', 'seed-m', 'seed-a'])
+    expect((await gateway.queryRuns({ limit: 3, statuses: ['completed'] })).items).toEqual([])
+    expect((await ctx.workbenchAgents.inspectRun('seed-a' as AgentRunId)).configuration).toBeUndefined()
+    expect((await ctx.workbenchAgents.inspectRun('seed-m' as AgentRunId)).configuration).toMatchObject({ model: { provider: 'mock', model: 'mock' }, mcpServerNames: ['business'] })
+    expect((await gateway.preflight({ id, workspaceId: workspace.id, brief })).prompt).toContain('Retry report')
+    await expect(ctx.workbenchAgents.command({ kind: 'submit-task', id, workspaceId: workspace.id, expectedRevision: 1, requestId: 'first-revision' as never, brief, revisionOf: 'seed-m' as AgentRunId })).resolves.toHaveProperty('runId')
+    await settled(ctx, id)
+    await domain.table('runs').put('seed-m' as AgentRunId, { ...domain.table('runs').get('seed-m' as AgentRunId)!, agentId: other })
+    await expect(ctx.workbenchAgents.command({ kind: 'submit-task', id, workspaceId: workspace.id, expectedRevision: 1, requestId: 'wrong-owner-2' as never, brief, revisionOf: 'seed-m' as AgentRunId })).rejects.toThrow('settled run')
+    await domain.table('runs').put('seed-m' as AgentRunId, { ...domain.table('runs').get('seed-m' as AgentRunId)!, agentId: id })
+    const retried = await ctx.workbenchAgents.command({ kind: 'retry', runId: 'seed-m' as AgentRunId, expectedRevision: 1, requestId: 'retry-seed' as never })
+    await settled(ctx, id)
+    expect((await ctx.workbenchAgents.inspectRun(retried.runId!))).toMatchObject({ retryOf: 'seed-m', submission: { brief } })
+    const original = domain.table('runs').get('seed-m' as AgentRunId)!
+    await domain.table('runs').put('linked-failure' as AgentRunId, { ...original, id: 'linked-failure' as AgentRunId, revisionOf: 'seed-a' as AgentRunId, submission: { id: 'linked-request' as never, agentRevision: 1, brief } })
+    const linked = await ctx.workbenchAgents.command({ kind: 'retry', runId: 'linked-failure' as AgentRunId, expectedRevision: 1, requestId: 'retry-linked' as never })
+    await settled(ctx, id)
+    expect((await ctx.workbenchAgents.inspectRun(linked.runId!)).revisionOf).toBe('seed-a')
+    await expect(ctx.workbenchAgents.command({ kind: 'submit-task', id, workspaceId: workspace.id, expectedRevision: 1, requestId: '' as never, brief })).rejects.toThrow('nonempty')
+    const bounded = await boot(await scratch(), [], { maxRuns: 1 })
+    const boundedWorkspace = await bounded.ctx.workspaceRegistry.create(await scratch())
+    const boundedId = await create(bounded.ctx)
+    await bounded.ctx.storageDomain.get('workbench_agents')!.table('runs').put('history', { ...original, agentId: boundedId, id: 'history', workspaceId: boundedWorkspace.id })
+    await expect(bounded.ctx.workbenchAgents.command({ kind: 'submit-task', id: boundedId, workspaceId: boundedWorkspace.id, expectedRevision: 1, requestId: 'full' as never, brief })).rejects.toThrow('capacity')
+  })
+
+  it('checks structured-task dependencies before admission without running models or connecting MCP', async () => {
+    const { ctx, adapter } = await boot(await scratch())
+    const workspace = await ctx.workspaceRegistry.create(await scratch())
+    const id = (await ctx.workbenchAgents.command({ kind: 'create', definition: {
+      ...definition(), skills: ['missing-skill'], mcpServers: [businessServer()],
+    } })).agentId
+    const check = await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })
+    expect(check).toMatchObject({ agentRevision: 1, issues: [{ code: 'skills' }], mcp: [{ name: 'business', status: 'not-checked' }] })
+    expect(check.checkedAt).toBeGreaterThan(0)
+    const brief = { version: 1 as const, goal: 'Prepare the report', background: '', deliverables: ['report.md'], acceptanceCriteria: ['Cite source records'], constraints: '' }
+    await expect(ctx.workbenchAgents.command({ kind: 'submit-task', id, workspaceId: workspace.id,
+      expectedRevision: 1, requestId: 'blocked' as never, brief })).rejects.toThrow('missing-skill')
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 10 })).items).toEqual([])
+    expect(adapter.requests).toEqual([])
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: 'missing' as never })).issues.map(issue => issue.code)).toEqual(['workspace'])
+    await ctx.workbenchAgents.command({ kind: 'archive', id, revision: 1, archived: true })
+    expect((await ctx.workbenchAgents.preflight({ id, workspaceId: workspace.id })).issues[0]?.code).toBe('archived')
+  })
+
+  it('commits idempotent briefs with their executor revision, logs their contents, and pages summaries without secrets', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root, [textResponse('Report ready'), textResponse('Revision ready')])
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const id = await create(ctx)
+    const brief = { version: 1 as const, goal: 'Prepare the report', background: 'Customer records',
+      deliverables: ['report.md'], acceptanceCriteria: ['Cite source records'], constraints: 'Read only the selected workspace' }
+    const command = { kind: 'submit-task' as const, id, workspaceId: workspace.id,
+      expectedRevision: 1, requestId: 'first-brief' as never, brief }
+    const [first, repeated] = await Promise.all([ctx.workbenchAgents.command(command), ctx.workbenchAgents.command(command)])
+    expect(repeated).toEqual(first)
+    await settled(ctx, id)
+    expect(adapter.requests).toHaveLength(1)
+    const transcript = await ctx.sessionPersistence.inspect((await ctx.workbenchAgents.snapshot(id)).runs[0]!.sessionId)
+    expect(JSON.stringify(transcript.events)).toContain('Acceptance criteria:')
+    expect(JSON.stringify(transcript.events)).toContain('Cite source records')
+    await expect(ctx.workbenchAgents.command({ ...command, brief: { ...brief, goal: 'Different task' } })).rejects.toThrow('different submission')
+    await ctx.workbenchAgents.command({ kind: 'save', id, revision: 1, definition: { ...definition(), instructions: 'New instructions' } })
+    await expect(ctx.workbenchAgents.command({ ...command, requestId: 'stale' as never })).rejects.toThrow('another window')
+    const revised = await ctx.workbenchAgents.command({ ...command, requestId: 'revision' as never, expectedRevision: 2,
+      revisionOf: first.runId!, brief: { ...brief, goal: 'Correct the citations' } })
+    await settled(ctx, id)
+    const page = await ctx.workbenchAgents.queryRuns({ limit: 1, workspaceId: workspace.id })
+    expect(page.items).toHaveLength(1)
+    expect(page.items[0]).not.toHaveProperty('definition')
+    expect(page.items[0]).not.toHaveProperty('candidate')
+    expect(page.next).toBeDefined()
+    const second = await ctx.workbenchAgents.queryRuns({ limit: 1, before: page.next! })
+    expect(new Set([...page.items, ...second.items].map(run => run.id))).toEqual(new Set([first.runId, revised.runId]))
+    expect(second.next).toBeUndefined()
+    await expect(ctx.workbenchAgents.queryRuns({ limit: 101 })).rejects.toThrow('page limit')
+    expect((await ctx.workbenchAgents.queryRuns({ limit: 1, workspaceId: 'missing' as never })).items).toEqual([])
+    await ctx.fiber.dispose()
+    const restarted = await boot(root)
+    expect(await restarted.ctx.workbenchAgents.command(command)).toEqual(first)
+    expect((await restarted.ctx.workbenchAgents.queryRuns({ limit: 10 })).items).toHaveLength(2)
+  })
+
   it('binds native default and override models to the chosen local service instead of the global default', async () => {
     const { ctx, adapter: global } = await boot(await scratch())
     const local = new MockAdapter([textResponse('Local default'), textResponse('Local override')])
@@ -606,11 +802,11 @@ describe('independent workbench agents through the Loader', () => {
     const first = await ctx.workbenchAgents.command({ kind: 'run', id, workspaceId: workspace.id, prompt: 'Task' })
     await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
     await ctx.workbenchAgents.command({ kind: 'stop', runId: first.runId! })
-    const next = await ctx.workbenchAgents.command({ kind: 'retry', runId: first.runId! })
+    const next = await ctx.workbenchAgents.command({ kind: 'retry', runId: first.runId!, expectedRevision: 1, requestId: 'retry-first' as never })
     expect(next.runId).not.toBe(first.runId)
     const data = await settled(ctx, id)
     expect(data.runs.find(run => run.id === next.runId)).toMatchObject({ status: 'completed', retryOf: first.runId })
-    await expect(ctx.workbenchAgents.command({ kind: 'retry', runId: next.runId! })).rejects.toThrow('Only failed')
+    await expect(ctx.workbenchAgents.command({ kind: 'retry', runId: next.runId!, expectedRevision: 1, requestId: 'retry-completed' as never })).rejects.toThrow('Only failed')
   })
 
   it('reports missing skills as failed runs instead of silently dropping capabilities', async () => {
@@ -632,5 +828,44 @@ describe('independent workbench agents through the Loader', () => {
     await create(ctx, 'Other')
     await expect(create(ctx, 'Third')).rejects.toThrow('capacity')
     await expect(ctx.workbenchAgents.command({ kind: 'stop', runId: 'unknown' as AgentRunId })).rejects.toThrow('Unknown')
+  })
+})
+
+describe('explicit complete retry identities', () => {
+  it('replays a legacy-task retry across concurrent requests, edits, archive, and restart without duplicating execution', async () => {
+    const root = await scratch()
+    const { ctx, adapter } = await boot(root, [textResponse('First retry'), textResponse('Updated retry')])
+    const workspace = await ctx.workspaceRegistry.create(root)
+    const id = await create(ctx)
+    const table = (ctx.storageDomain.get('workbench_agents') as unknown as import('@deepseek-ai/dsh-storage-domain').Domain<typeof agentDomain>).table('runs')
+    const original = { id: 'original-retry-source' as AgentRunId, agentId: id, workspaceId: workspace.id, sessionId: 'original-session' as never,
+      prompt: 'Preserve this exact legacy task', status: 'failed' as const, createdAt: 1, error: 'Original error' }
+    await table.put(original.id, original)
+    const request = { kind: 'retry' as const, runId: original.id, expectedRevision: 1, requestId: 'retry-identity' as never }
+    const [first, repeated] = await Promise.all([ctx.workbenchAgents.command(request), ctx.workbenchAgents.command(request)])
+    expect(repeated).toEqual(first)
+    const data = await settled(ctx, id)
+    expect(data.runs.find(run => run.id === first.runId)).toMatchObject({ prompt: original.prompt, retryOf: original.id,
+      retryRequest: { id: request.requestId, agentRevision: 1 }, definition: { revision: 1 } })
+    expect(adapter.requests).toHaveLength(1)
+    await expect(ctx.workbenchAgents.command({ ...request, requestId: '' as never })).rejects.toThrow('nonempty')
+    await expect(ctx.workbenchAgents.command({ ...request, expectedRevision: 2 })).rejects.toThrow('another task submission or retry')
+    await expect(ctx.workbenchAgents.command({ ...request, runId: first.runId! })).rejects.toThrow('another task submission or retry')
+    await expect(ctx.workbenchAgents.command({ kind: 'submit-task', id, workspaceId: workspace.id, expectedRevision: 1,
+      requestId: request.requestId, brief: { version: 1, goal: 'Different operation', background: '', deliverables: [], acceptanceCriteria: [], constraints: '' } })).rejects.toThrow('different submission')
+    await ctx.workbenchAgents.command({ kind: 'save', id, revision: 1, definition: { ...definition(), instructions: 'New instructions' } })
+    expect(await ctx.workbenchAgents.command(request)).toEqual(first)
+    await expect(ctx.workbenchAgents.command({ ...request, requestId: 'stale' as never })).rejects.toThrow('another window')
+    const second = await ctx.workbenchAgents.command({ ...request, requestId: 'fresh' as never, expectedRevision: 2 })
+    await settled(ctx, id)
+    expect((await ctx.workbenchAgents.inspectRun(second.runId!)).configuration).toMatchObject({ revision: 2, instructions: 'New instructions' })
+    expect(table.get(original.id)).toEqual(original)
+    await ctx.workbenchAgents.command({ kind: 'archive', id, revision: 2, archived: true })
+    expect(await ctx.workbenchAgents.command(request)).toEqual(first)
+    await expect(ctx.workbenchAgents.command({ ...request, requestId: 'after-archive' as never, expectedRevision: 3 })).rejects.toThrow('Restore this agent')
+    await ctx.fiber.dispose()
+    const restarted = await boot(root, [])
+    expect(await restarted.ctx.workbenchAgents.command(request)).toEqual(first)
+    expect((await restarted.ctx.workbenchAgents.queryRuns({ limit: 10 })).items).toHaveLength(3)
   })
 })

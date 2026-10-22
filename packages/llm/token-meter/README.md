@@ -21,6 +21,10 @@ The fold tracks full request-header snapshots, step boundaries, surface appends 
 
 Usage accounting sums disjoint input, cache-read, cache-write, and output buckets; reasoning is not added again. Every successful call records an assistant anchor, including content-less calls. An explicit empty `sourceEventSeqs` list means a known empty provider stream, while an absent legacy list conservatively treats the durable assistant output as provider output.
 
+## Selected-interval usage
+
+`measureReportedUsage(events)` folds a caller-selected ordered interval from one validated session. It reuses the session usage projection's replacement rules and returns four disjoint buckets, recorded model-request headers, and the number of steps with a usage sample. The caller owns interval attribution and source availability. Zero reported steps means no usage evidence, not zero consumption. This helper does not estimate missing reports, inspect other sessions, or promise billing completeness. The pure `./types` entry exports its `ReportedTokenUsage` result alongside measurement and projection types.
+
 ## Session projections
 
 When the composition provides `ctx.sessionProjections`, token-meter registers three units through an optional child fiber.

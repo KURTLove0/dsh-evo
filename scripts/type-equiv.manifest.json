@@ -1989,6 +1989,21 @@
       "doc": "docs/subsystems/feedback.md",
       "symbol": "MessageFeedbackDeleteResult",
       "source": "packages/feedback/message-feedback/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp-client.md",
+      "symbol": "McpProbeOptions",
+      "source": "packages/mcp/mcp-client/src/probe.ts"
+    },
+    {
+      "doc": "docs/subsystems/mcp-client.md",
+      "symbol": "McpProbeOutcome",
+      "source": "packages/mcp/mcp-client/src/probe.ts"
+    },
+    {
+      "doc": "docs/subsystems/token-meter.md",
+      "symbol": "ReportedTokenUsage",
+      "source": "packages/llm/token-meter/src/types.ts"
     }
   ]
 }

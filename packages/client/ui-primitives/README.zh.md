@@ -4,6 +4,10 @@
 
 纯 React 原子组件（零 cordis）：StateDot、DisclosureRow、ic_ds_* 图标、Button/Pill/Menu/Modal/Input、Toast 短时横幅、OnboardingSurface 首次使用接管层（portal 到 body 的遮罩加不透明展示层，在且仅在自身生命周期内保持 `#root` 为 `inert`）、markdown 家族（MessageText/MarkdownText/JsonBlock）、只读 JsonTree 检查器、`useAnchoredMaxHeight` 钩子（把底部锚定的浮层高度收敛到锚点上方的视口空间，并在 resize、scroll 与调用方提供的依赖变化时重新测量）、`useAnchoredPosition` 钩子（让固定定位的浮动面板跟住锚点：测量、偏移、按视口边距钳制，并在捕获阶段滚动、窗口缩放与面板自身尺寸变化时重新定位）、TerminalBlock、DiffBlock、ReadBlock、SearchBlock，以及 WebBlock。
 
+## 表单控件
+
+`Button` 提供清晰的键盘焦点环、按下反馈，以及遵循减少动态效果偏好的颜色过渡。`Input` 使用 36px 包裹层，并提供聚焦轮廓与可读的占位文字。在粗精度指针下，两者最小高度均为 44px；按钮最小宽度也为 44px，输入文字增至 16px。
+
 ## 应用标志
 
 `BrandLogo` 将 `/icon.png` 渲染为正方形图片，默认尺寸为 24 像素。Web 应用在该 URL 提供仓库中的 `icon.png`。图片仅作装饰，无障碍标签由宿主提供。
@@ -39,6 +43,8 @@
 ## Web 检索
 
 `WebBlock` 渲染一次已完成的 web 检索，用一个组件绘制 `web` 渲染意图的两种 kind（由 `kind` 判别）。`search` 在有序引用列表上方显示可选的提供方回答（通过 `MarkdownText`）：每个 source 是一个安全外链，以其标题为标签，或以其主机名为标签，当 URL 无法解析或没有主机名（`file:`/`data:` URL）时回退到原始 URL，因此标签绝不为空；其下渲染 snippet 与发布日期。只有 http(s) URL 会成为锚点（设置 `target`/`rel`）——这是 `MarkdownText` 对不受信任链接所用 allowlist 的 http(s) 子集（该 allowlist 还允许 `mailto:`，此处排除）；任何其他 URL 渲染为纯文本。整份列表渲染在一个定高滚动容器里（`max-height: 320px`、`overflow-y: auto`），因此超出该高度的列表在原地纵向滚动，而不是把卡片撑高；`<li value>` 固定每个 source 的引用编号，从 1 起连续，而不依赖 `<ol>` 的隐式计数。当一次 search 合法地返回无 answer 且无 source 时，卡片显示一个明确的空状态提示，而不是空的 `<ol>`（chat 行不呈现原始 result content）。`fetch` 显示一个紧凑摘要：带链接的最终 URL 及其 HTTP 状态。两者都会标记一次被截断的检索。原理：[Web result 卡片笔记](../../../.agents/notes/implemented/feature/2026-07-30-web-result-card-frontend.zh.md)与[来源滚动笔记](../../../.agents/notes/implemented/feature/2026-08-03-web-search-source-scroll.zh.md)。
+
+共享按钮与输入框使用主题提供的紧凑控件圆角。侧栏和空会话标题中的装饰性应用图案使用主题定义的浅色底板，确保深色图案在两套配色中均可辨认。
 
 ## 模型体验
 

@@ -6,6 +6,10 @@
 
 `WorkbenchAgents.snapshot()` 读取目录、工作负载、运行时可用性、并发限制和所选历史。`command()` 提供创建、版本校验保存、复制、归档、恢复、任务提交、配置草稿设计、停止与重试。后续编辑不改变执行记录的身份和捕获配置。原生提供方持有持久化、调度、会话日志与卸载过程。
 
+结构化 `TaskBrief` 随运行保存目标、背景、文件声明、验收标准和限制。`TaskPreflight` 返回依赖问题、执行者版本、未检查的 MCP 名称和可选精确提示词预览。`TaskRequestId` 使结构化提交幂等。`AgentRunQuery` 和 `AgentRunPage` 提供有界脱敏摘要，`AgentRunPosition` 先按待处理、再按执行更新时间倒序排列；`AgentRunRevision` 拒绝运行提交变更或宿主重启后的旧续页。摘要的 `updatedAt` 来自创建、开始和结束时间。`AgentRunSummary` 不包含捕获定义或候选配置，可在单次检查中包含脱敏配置。运行保留可选提交信息、修改来源和持久化结束序号。交付检查与独立验收参见[工作中心](work-center.zh.md)。
+
+`AgentRunQuery` 在分页前按 `agentId` 及包含起点的 `createdFrom`／不包含终点的 `createdBefore` 提交时间筛选，与执行更新时间排序相互独立。
+
 ## WorkbenchAgentId
 
 稳定且带品牌类型的工作成员身份，与预设标识分开。
@@ -41,6 +45,8 @@
 ## AgentCommand
 
 创建和保存接收配置；复制提供新名称；归档和保存要求版本；执行和设计提供工作区与请求；停止和重试引用既有执行。
+
+`retry` 还要求调用方持有的 `TaskRequestId` 和已确认的当前 `expectedRevision`。`AgentRun.retryRequest` 持久化关联请求与捕获配置版本。
 
 ## AgentReceipt
 
@@ -91,6 +97,27 @@ abstract runtimes(): Promise<AgentRuntime[]>
  * @returns user-invocable skill summaries without creating an agent or session.
  */
 abstract capabilities(workspaceId: WorkspaceId): Promise<AgentCapabilities>
+
+/**
+ * Read a bounded cross-identity history page, excluding captured credentials.
+ * @param request - generation-scoped attention/update cursor, optional workspace, and explicit page limit.
+ * @returns detached run summaries and continuation position.
+ */
+abstract queryRuns(request: AgentRunQuery): Promise<AgentRunPage>
+
+/**
+ * Read one committed run without captured credentials.
+ * @param id - original execution identity.
+ * @returns detached run summary; unknown identities reject.
+ */
+abstract inspectRun(id: AgentRunId): Promise<AgentRunSummary>
+
+/**
+ * Check current task dependencies without executing work or probing MCP.
+ * @param request - selected identity and workspace.
+ * @returns timestamped issues, captured revision, and unchecked MCP names.
+ */
+abstract preflight(request: { id: WorkbenchAgentId; workspaceId: WorkspaceId; brief?: TaskBrief }): Promise<TaskPreflight>
 ```
 
 Types: [WorkspaceId](workspace.zh.md)

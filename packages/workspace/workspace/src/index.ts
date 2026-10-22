@@ -39,15 +39,16 @@ export function WorkspaceId(id: string): WorkspaceId {
 }
 
 /**
- * An archiveSession request named a session neither live nor in session
+ * An archive or restore request named a session neither live nor in session
  * persistence — a definite miss only; storage faults propagate as themselves.
  */
 export class WorkspaceUnknownSessionError extends Error {
   /**
    * @param sessionId - The unknown session id.
+   * @param operation - requested archive membership change.
    */
-  constructor(readonly sessionId: SessionId) {
-    super(`cannot archive session '${sessionId}': live sessions and session persistence hold no such session`)
+  constructor(readonly sessionId: SessionId, operation: 'archive' | 'restore' = 'archive') {
+    super(`cannot ${operation} session '${sessionId}': live sessions and session persistence hold no such session`)
     this.name = 'WorkspaceUnknownSessionError'
   }
 }
@@ -227,7 +228,7 @@ export class WorkspaceRegistry extends Service {
   /**
    * The registry-global archive set: sessions hidden from every grouping
    * surface. Archiving never touches workspace accounting — an archived
-   * session keeps its `sessionIds` slot so unarchiving restores its position.
+   * session keeps its `sessionIds` slot so restoration preserves its position.
    * @returns the archived session ids in archive order.
    */
   get archivedSessionIds(): readonly SessionId[] {
@@ -251,6 +252,21 @@ export class WorkspaceRegistry extends Service {
       }
       const state = this.requireState()
       await this.setState({ ...state, archivedSessionIds: [...state.archivedSessionIds, sessionId] })
+    })
+  }
+
+  /**
+   * Remove archive membership while preserving workspace accounting and logs.
+   * A known session already outside the archive resolves without writing.
+   * @param sessionId - session to restore.
+   * @returns resolution after the membership change is durable.
+   */
+  restoreSession(sessionId: SessionId): Promise<void> {
+    return this.enqueueOperation(async () => {
+      if (!(await this.sessionKnown(sessionId))) throw new WorkspaceUnknownSessionError(sessionId, 'restore')
+      const state = this.requireState()
+      if (!state.archivedSessionIds.includes(sessionId)) return
+      await this.setState({ ...state, archivedSessionIds: state.archivedSessionIds.filter(id => id !== sessionId) })
     })
   }
 

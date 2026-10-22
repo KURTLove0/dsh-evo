@@ -39,6 +39,13 @@
   ],
   "references": [
     { "path": "./packages/client/ui-workbench-agent" },
+    { "path": "./packages/client/ui-work-center" },
+    { "path": "./packages/client/ui-capability-health" },
+    { "path": "./packages/client/ui-work-templates" },
+    { "path": "./packages/client/ui-work-artifacts" },
+    { "path": "./packages/client/ui-work-knowledge" },
+    { "path": "./packages/client/ui-work-triggers" },
+    { "path": "./packages/client/ui-work-remote" },
     // Shared leaf: web e2e boots the real host webserver (fixture + real-host
     // smoke policy). webserver has zero workspace deps and no cordis merge,
     // so it cannot drag host-side Context augmentation into this program.

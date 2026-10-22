@@ -1,0 +1,10 @@
+{
+  "target": "workflow",
+  "rule": "on-settled",
+  "inputs": {
+    "report": "Original input"
+  },
+  "paused": true,
+  "admittedRuns": 1,
+  "nativeStatus": "succeeded"
+}

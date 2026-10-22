@@ -114,5 +114,7 @@
       "startedAt": 2
     }
   ],
-  "outputs": {}
+  "outputs": {},
+  "rerunOf": "original-run",
+  "retryRequest": "retry-request"
 }

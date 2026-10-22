@@ -201,6 +201,20 @@ flowchart LR
   svc_businessWorkflows["ctx.businessWorkflows<br/>Business-workflow pipeline seam"]
   pkg_business_workflow_local["business-workflow-local"]
   pkg_tool_business_workflow["tool-business-workflow"]
+  pkg_capability_health["capability-health"]
+  svc_capabilityHealth["ctx.capabilityHealth<br/>Configuration observations and temporary MCP probes"]
+  pkg_work_remote["work-remote"]
+  svc_remoteWork["ctx.remoteWork<br/>Authenticated native remote execution"]
+  pkg_work_triggers["work-triggers"]
+  svc_workTriggers["ctx.workTriggers<br/>Durable native trigger admissions"]
+  pkg_work_knowledge["work-knowledge"]
+  svc_workKnowledge["ctx.workKnowledge<br/>Explicit project knowledge"]
+  pkg_work_artifacts["work-artifacts"]
+  svc_workArtifacts["ctx.workArtifacts<br/>Explicit project-file snapshots"]
+  pkg_work_templates["work-templates"]
+  svc_workTemplates["ctx.workTemplates<br/>Private versioned work templates"]
+  pkg_work_center["work-center"]
+  svc_workCenter["ctx.workCenter<br/>Work directory and human delivery assessment"]
   pkg_workbench_agent["workbench-agent"]
   svc_workbenchAgents["ctx.workbenchAgents<br/>Independent workbench agents"]
   svc_workflowWorkbench["ctx.workflowWorkbench<br/>Workspace workflow workbench"]
@@ -230,6 +244,7 @@ flowchart LR
   pkg_business_workflow --> svc_workflowWorkbench
   pkg_business_workflow_local --> svc_businessWorkflows
   pkg_business_workflow_local --> svc_workflowWorkbench
+  pkg_capability_health --> svc_capabilityHealth
   pkg_code_runtime --> svc_codeRuntime
   pkg_code_runtime_worker --> svc_codeRuntime
   pkg_commands --> svc_commands
@@ -320,6 +335,12 @@ flowchart LR
   pkg_web_search_exa --> svc_web
   pkg_web_search_perplexity --> svc_web
   pkg_webserver --> svc_webServer
+  pkg_work_artifacts --> svc_workArtifacts
+  pkg_work_center --> svc_workCenter
+  pkg_work_knowledge --> svc_workKnowledge
+  pkg_work_remote --> svc_remoteWork
+  pkg_work_templates --> svc_workTemplates
+  pkg_work_triggers --> svc_workTriggers
   pkg_workbench_agent --> svc_workbenchAgents
   pkg_workflow --> svc_workflowEngine
   pkg_workflow_worker_thread --> svc_workflowEngine
@@ -338,6 +359,7 @@ flowchart LR
   svc_attachments --> pkg_llm_pi_ai
   svc_authorization --> pkg_llm_pi_ai
   svc_businessWorkflows --> pkg_tool_business_workflow
+  svc_capabilityHealth --> pkg_capability_health
   svc_clientModules --> pkg_hmr
   svc_codeRuntime --> pkg_tools
   svc_compaction --> pkg_compaction_basic
@@ -361,6 +383,7 @@ flowchart LR
   svc_llm --> pkg_agent_loop
   svc_llm --> pkg_compaction_basic
   svc_lsp --> pkg_tool_lsp
+  svc_remoteWork --> pkg_work_remote
   svc_sandbox --> pkg_bash_sandbox
   svc_sandbox --> pkg_terminal_bash
   svc_sandboxPolicy --> pkg_bash_sandbox
@@ -438,6 +461,11 @@ flowchart LR
   svc_webServer --> pkg_connection
   svc_webServer --> pkg_hmr
   svc_webServer --> pkg_modules
+  svc_workArtifacts --> pkg_work_artifacts
+  svc_workCenter --> pkg_work_center
+  svc_workKnowledge --> pkg_work_knowledge
+  svc_workTemplates --> pkg_work_templates
+  svc_workTriggers --> pkg_work_triggers
   svc_workbenchAgents --> pkg_workbench_agent
   svc_workflowEngine --> pkg_tool_ralph
   svc_workflowEngine --> pkg_tool_workflow
@@ -504,6 +532,13 @@ flowchart LR
 | `ctx.clientModules` | `core` | `modules` | - | `hmr` | - | 通过增量 `dsh.client` 扫描组合 __DSH_BOOT__ 入口图，提供插件组合包，并通知重建／图变更订阅方。 |
 | `ctx.workflowEngine` | `seam` | [`workflow`](../packages/workflow/workflow) | [`workflow-worker-thread`](../packages/workflow/workflow-worker-thread) | [`tool-workflow`](../packages/workflow/tool-workflow), [`tool-ralph`](../packages/workflow/tool-ralph) | - | 每个上下文使用一个引擎，与 bash 相同，且没有具名提供方注册表；通用工作流与固定 Ralph 消费方启动运行，其中的 agent() 调用通过 ctx.subagents 扇出。 |
 | `ctx.businessWorkflows` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`tool-business-workflow`](../packages/business/tool-business-workflow) | - | 每个上下文一个运行时，持有 clarify/compose/verify 阶段机；模型经工具撰写需求与编排草稿，验证试运行经 ctx.subagents 把每个步骤委托给全新子代理。 |
+| `ctx.capabilityHealth` | `seam` | [`capability-health`](../packages/business/capability-health) | [`capability-health`](../packages/business/capability-health) | [`capability-health`](../packages/business/capability-health) | - | 读取配置而不提交模型输入，并拥有有界的临时初始化与 ping 检测；保留检测标识可恢复结果而不重新提交。 |
+| `ctx.remoteWork` | `seam` | [`work-remote`](../packages/business/work-remote) | [`work-remote`](../packages/business/work-remote) | [`work-remote`](../packages/business/work-remote) | - | 在已认证的原生分发前固定接收 Host 与主体；持久请求标识恢复不确定的接收结果，执行凭据仍由远端持有。 |
+| `ctx.workTriggers` | `seam` | [`work-triggers`](../packages/business/work-triggers) | [`work-triggers`](../packages/business/work-triggers) | [`work-triggers`](../packages/business/work-triggers) | - | 原子保留固定原生请求及下一名义时刻；交接不确定性、执行结果及通知已读状态相互独立。 |
+| `ctx.workKnowledge` | `seam` | [`work-knowledge`](../packages/business/work-knowledge) | [`work-knowledge`](../packages/business/work-knowledge) | [`work-knowledge`](../packages/business/work-knowledge) | - | 可撤销文件授权、不可变解码文本、字面行检索和写入日志的引用工具。 |
+| `ctx.workArtifacts` | `seam` | [`work-artifacts`](../packages/business/work-artifacts) | [`work-artifacts`](../packages/business/work-artifacts) | [`work-artifacts`](../packages/business/work-artifacts) | - | Retains immutable file bytes with execution and accepted-review provenance; current-file comparisons are explicit observations. |
+| `ctx.workTemplates` | `seam` | [`work-templates`](../packages/business/work-templates) | [`work-templates`](../packages/business/work-templates) | [`work-templates`](../packages/business/work-templates) | - | 保留不可变的私有内容版本；明确复用时创建经过检查的任务简报或独立工作流草稿。 |
+| `ctx.workCenter` | `seam` | [`work-center`](../packages/business/work-center) | [`work-center`](../packages/business/work-center) | [`work-center`](../packages/business/work-center) | - | 合并有界执行来源查询，并将完整检查证据与版本化人工决策原子保存。 |
 | `ctx.workbenchAgents` | `seam` | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | [`workbench-agent`](../packages/business/workbench-agent) | - | 稳定工作成员身份、配置和执行历史与插件预设分开保存；原生提供方持有排队任务、会话日志以及供用户检查的 AI 配置草稿。 |
 | `ctx.workflowWorkbench` | `seam` | [`business-workflow`](../packages/business/business-workflow) | [`business-workflow-local`](../packages/business/business-workflow-local) | [`business-workflow-local`](../packages/business/business-workflow-local) | - | 工作空间定义和不可变发布版本独立于会话记录；提供方拥有基于会话日志的运行，其 Remote 消费方向浏览器提供管理、校验和检查能力。 |
 | `ctx.lsp` | `seam` | [`lsp`](../packages/lsp/lsp) | `lsp-local` | [`tool-lsp`](../packages/lsp/tool-lsp) | - | 提供方注册与选择，加上恰好四种操作的标准化查询执行；该 seam 不提供协议逃生口，后端必须转换为标准化请求和结果。 |

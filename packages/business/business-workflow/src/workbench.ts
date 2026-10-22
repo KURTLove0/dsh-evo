@@ -2,11 +2,16 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import type {
   WorkflowCommand,
+  WorkflowCatalogEntry,
   WorkflowId,
   WorkflowReceipt,
   WorkflowValidation,
   WorkflowDefinition,
   WorkflowWorkbenchSnapshot,
+  WorkflowRunId,
+  WorkflowRun,
+  WorkflowRunQuery,
+  WorkflowRunPage,
 } from './workbench-types.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -28,6 +33,24 @@ export abstract class WorkflowWorkbench extends Service {
    * @returns committed state and server-authorized presets.
    */
   abstract snapshot(id?: WorkflowId): Promise<WorkflowWorkbenchSnapshot>
+  /**
+   * Read saved workflow identities without graphs or execution history.
+   * @returns committed names, workspaces, and archive flags.
+   */
+  abstract catalog(): Promise<WorkflowCatalogEntry[]>
+
+  /**
+   * Read bounded run summaries across workflows without loading selected history.
+   * @param request - explicit limit, optional workspace, and generation-scoped waiting/update cursor.
+   * @returns detached committed summaries and continuation.
+   */
+  abstract queryRuns(request: WorkflowRunQuery): Promise<WorkflowRunPage>
+  /**
+   * Read one committed execution and its captured publication.
+   * @param id - original run identity.
+   * @returns detached execution, rejecting unknown identities.
+   */
+  abstract inspectRun(id: WorkflowRunId): Promise<WorkflowRun>
 
   /**
    * Apply a management action independently from the caller's conversation.

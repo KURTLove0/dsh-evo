@@ -25,6 +25,8 @@ import type {
 } from './shell-contract.ts'
 import { SettingsRoot } from './SettingsRoot.tsx'
 import { ConfigNav } from './ConfigNav.tsx'
+import { SettingsPanel } from './navigation.ts'
+export type { SettingsPanel } from './navigation.ts'
 import type { ConfigNavInjected } from './ConfigNav.tsx'
 import { CloseLabel, HeaderContent } from './chrome.tsx'
 import { GeneralSection } from './GeneralSection.tsx'
@@ -129,6 +131,10 @@ export function apply(ctx: ClientContext): void {
   // Sidebar config nav → panel: one pending section per request; the panel
   // consumes it on the render that acts, so a re-open never rides a stale one.
   const panelRequests = createSnapshotStore<{ section: string | null }>({ section: null })
+  const navigation = new SettingsPanel(ctx, (section) => {
+    if (!sectionsSource.getSnapshot().some(row => row.id === section)) throw new Error(`Settings section ${section} is unavailable.`)
+    panelRequests.update((state) => { state.section = section })
+  })
   const shellInjected = (): SettingsRootInjected => ({
     hooks: {
       sections: sectionsSource,
@@ -175,8 +181,8 @@ export function apply(ctx: ClientContext): void {
   // Runtimes / Statistics / Settings module rows, above the foot's trigger.
   const configInjected = (): ConfigNavInjected => ({
     hooks: { sections: sectionsSource },
-    request: (section: string) => { panelRequests.update((s) => { s.section = section }) },
-    t: t as ConfigNavInjected['t'],
+    request: (section: string) => { navigation.open(section) },
+    t,
   })
   ctx.slots.inject('sidebar.config', () => ctx.slots.register({
     name: 'sidebar.config',

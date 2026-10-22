@@ -31,8 +31,8 @@ function mount(
     useSessions: bindSnapshotSelector(sessions), useWorkspaces: selector => selector({ items: noWorkspace ? [] : [{ workspaceId: 'workspace', title: 'Project', path: '/project', sessionIds: [] }, { workspaceId: 'other', title: 'Other project', path: '/other', sessionIds: [] }] } as never),
     t: key => en[key as keyof typeof en], command, closePage, openSession, select, refresh, capabilities, runtimes,
   }
-  render(<AgentPage {...props} />)
-  return { directory, view, commands, command, closePage, openSession, select, refresh, sessions, capabilities, runtimes }
+  const rendered = render(<AgentPage {...props} />)
+  return { directory, view, commands, command, closePage, openSession, select, refresh, sessions, capabilities, runtimes, props, rendered }
 }
 const detail = () => within(screen.getByRole('region', { name: 'Reviewer' }))
 
@@ -470,9 +470,61 @@ describe('independent agent workbench', () => {
     fireEvent.click(screen.getByRole('button', { name: en.stop }))
     await waitFor(() => { expect(ui.commands[0]).toEqual({ kind: 'stop', runId: 'running' }) })
     fireEvent.click(screen.getByRole('button', { name: en.retry }))
-    await waitFor(() => { expect(ui.commands[1]).toEqual({ kind: 'retry', runId: 'failed' }) })
+    expect(ui.commands).toHaveLength(1)
+    expect(screen.getByText(en.retryWarning)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.confirmRetry }))
+    await waitFor(() => { expect(ui.commands[1]).toMatchObject({ kind: 'retry', runId: 'failed', expectedRevision: agent.revision }) })
+    const submitted = ui.commands[1]
+    expect(submitted?.kind === 'retry' && typeof submitted.requestId).toBe('string')
     act(() => { ui.directory.set({ ...ui.directory.getSnapshot(), error: 'Offline' }) })
     expect(screen.getByText('Offline')).toBeTruthy()
+  })
+  it('retains a submitted retry across remounts and recovers its exact identity after configuration changes', async () => {
+    const configured = { ...agent, mcpServers: [{ name: 'CRM', transport: 'streamable-http' as const, url: 'https://example.com', headers: [{ name: 'Token', value: 'secret' }] }] }
+    const ui = mount({ agents: [configured], runs: [{ id: 'failed' as never, agentId: id, workspaceId: 'workspace' as never,
+      sessionId: 'session' as never, prompt: 'Retry me', createdAt: 1, status: 'failed' }] })
+    fireEvent.click(detail().getByRole('tab', { name: en.runs }))
+    fireEvent.click(screen.getByRole('button', { name: en.retry }))
+    expect(screen.getByText(en.retryNotCaptured)).toBeTruthy()
+    expect(screen.getByRole('dialog').textContent).not.toContain('secret')
+    const request = ui.view.store.getSnapshot().retry!.request
+    ui.command.mockRejectedValueOnce(new Error('Response lost'))
+    fireEvent.click(screen.getByRole('button', { name: en.confirmRetry }))
+    fireEvent.click(screen.getAllByRole('button', { name: en.closeRetry })[0]!)
+    await screen.findAllByText('Response lost')
+    ui.rendered.unmount()
+    act(() => { ui.directory.set({ ...ui.directory.getSnapshot(), agents: [] }) })
+    render(<AgentPage {...ui.props} />)
+    expect(screen.getAllByText(en.retryNotCaptured)).toHaveLength(2)
+    expect(screen.getByText(en.retryChanged)).toBeTruthy()
+    expect(screen.getByText(en.retryPending)).toBeTruthy()
+    fireEvent.click(screen.getAllByRole('button', { name: en.closeRetry })[1]!)
+    fireEvent.click(screen.getByRole('button', { name: en.pendingRetry }))
+    fireEvent.click(screen.getByRole('button', { name: en.recoverRetry }))
+    await waitFor(() => { expect(ui.command).toHaveBeenLastCalledWith(request) })
+    await waitFor(() => { expect(ui.view.store.getSnapshot().retry).toBeNull() })
+  })
+  it('requires a fresh configuration before first admission and retains a closed unsubmitted request', () => {
+    const ui = mount({ runs: [{ id: 'failed' as never, agentId: id, workspaceId: 'workspace' as never,
+      sessionId: 'session' as never, prompt: 'Retry me', createdAt: 1, status: 'failed' }] })
+    fireEvent.click(detail().getByRole('tab', { name: en.runs }))
+    fireEvent.click(screen.getByRole('button', { name: en.retry }))
+    const original = ui.view.store.getSnapshot().retry!.request
+    fireEvent.click(screen.getAllByRole('button', { name: en.closeRetry })[0]!)
+    act(() => {
+      ui.directory.set({ ...ui.directory.getSnapshot(), agents: [{ ...agent, revision: 3 }] })
+    })
+    fireEvent.click(screen.getByRole('button', { name: en.retry }))
+    expect(ui.view.store.getSnapshot().retry!.request).toEqual(original)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: en.confirmRetry }).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: en.discardRetry }))
+    expect(ui.view.store.getSnapshot().retry).toBeNull()
+    act(() => { ui.view.actions.retryOpen(true); ui.view.actions.retrySubmitted(); ui.view.actions.retryClear('other') })
+    expect(ui.view.store.getSnapshot().retry).toBeNull()
+    act(() => { ui.view.actions.retry(original); ui.view.actions.retryClear('other') })
+    expect(ui.view.store.getSnapshot().retry?.request).toEqual(original)
+    act(() => { ui.view.actions.retryClear(original.requestId) })
+    expect(ui.view.store.getSnapshot().retry).toBeNull()
   })
 })
 

@@ -39,6 +39,8 @@ export class WorkspaceManager {
   // Full-snapshot state (list response / unary response / changed frame all
   // carry the complete set), so deltas never merge — installs replace.
   private archivedSessionIds: readonly SessionId[] = []
+  private archiveTail: Promise<void> = Promise.resolve()
+  private archiveObservation = 0
   private state: WorkspaceListSnapshot['state'] = 'idle'
   private phase: WorkspaceListPhase = 'pending'
   private error: RpcError | null = null
@@ -225,10 +227,28 @@ export class WorkspaceManager {
    * @param sessionId - session to archive.
    * @returns the wire result.
    */
-  async archiveSession(sessionId: SessionId): Promise<RpcResult<{ archivedSessionIds: SessionId[] }>> {
-    const { result } = await this.api.workspace.archiveSession({ sessionId })
-    if (result.ok) this.installArchived(result.value.archivedSessionIds)
-    return result
+  archiveSession(sessionId: SessionId): Promise<RpcResult<{ archivedSessionIds: SessionId[] }>> {
+    return this.changeArchive('archiveSession', sessionId)
+  }
+
+  /**
+   * Restore archive membership and publish only a current unary acknowledgment.
+   * @param sessionId - session to restore.
+   * @returns the wire result; newer Host observations outrank an older response.
+   */
+  restoreSession(sessionId: SessionId): Promise<RpcResult<{ archivedSessionIds: SessionId[] }>> {
+    return this.changeArchive('restoreSession', sessionId)
+  }
+
+  private changeArchive(method: 'archiveSession' | 'restoreSession', sessionId: SessionId): Promise<RpcResult<{ archivedSessionIds: SessionId[] }>> {
+    const task = this.archiveTail.then(async () => {
+      const observed = this.archiveObservation
+      const { result } = await this.api.workspace[method]({ sessionId })
+      if (result.ok && observed === this.archiveObservation) this.installArchived(result.value.archivedSessionIds)
+      return result
+    })
+    this.archiveTail = task.then(() => {}, () => {})
+    return task
   }
 
   /**
@@ -287,6 +307,7 @@ export class WorkspaceManager {
    * positional comparison is exact, not merely heuristic.
    */
   private installArchived(archivedSessionIds: readonly SessionId[]): void {
+    this.archiveObservation++
     if (this.refreshFrames !== null) this.archivedSupersedesRefresh = true
     if (archivedSessionIds.length === this.archivedSessionIds.length
       && archivedSessionIds.every((id, index) => id === this.archivedSessionIds[index])) return

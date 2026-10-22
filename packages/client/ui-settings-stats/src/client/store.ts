@@ -99,7 +99,7 @@ export class StatsSettingsStore {
         s.status = 'ready'
         s.error = null
         s.sessions = items.length
-        s.started = items.filter(item => item.blank === false).length
+        s.started = items.filter(item => !item.blank).length
         s.usage = sumUsage(items.map(item => item.projections?.values.tokenUsage))
       })
     } catch (error) {

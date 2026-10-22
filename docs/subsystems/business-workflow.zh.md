@@ -12,7 +12,9 @@ Service Definition：[dsh-business-workflow](../../packages/business/business-wo
 
 `WorkflowWorkbench` 在会话流水线之外提供工作空间独立目录。[浏览器安全类型](../../packages/business/business-workflow/src/workbench-types.ts)区分 `WorkflowDocument`（草稿与修订号）、`WorkflowVersion`（不可变发布版本）、`WorkflowRun`（固定版本、输入、执行配置、输出与断言）、`WorkflowAttempt`（节点实际执行背景）及 `WorkflowOperation`（带来源修订号的 AI 候选）。Agent 和人工确认节点复用下文明确的依赖与输入来源规则。
 
-`command` 支持 create/save/publish/archive/generate/start/verify/cancel/decide。保存和发布携带 `expectedRevision`，人工决策携带 `runId` 与 `attemptId`。`snapshot` 读取已提交目录和选中记录历史，`validate` 报告需求与流程图问题。存储、取消、恢复和资源限制见[持久化提供方](../../packages/business/business-workflow-local/README.zh.md#持久化工作台入口)。
+`command` 支持 create/save/publish/archive/generate/start/verify/cancel/decide。保存和发布携带 `expectedRevision`，人工决策携带 `runId` 与 `attemptId`。`snapshot` 读取已提交目录和选中记录历史，`validate` 报告需求与流程图问题。存储、取消、恢复和资源限制见[持久化提供方](../../packages/business/business-workflow-local/README.zh.md)。
+
+`WorkflowRunQuery` 在分页前筛选有界 `WorkflowRunSummary` 摘要，`WorkflowRunPosition` 和 `WorkflowRunPage` 先列等待运行，再按检查点 `updatedAt` 和标识倒序排列。`WorkflowRunRevision` 拒绝运行提交变更或宿主重启后的旧续页。摘要暴露精确等待尝试，不包含完整发布定义或输出正文。`WorkflowRequestId` 支持重启后幂等启动。运行可捕获明确的修改意见，写入新节点的已记录输入。[工作中心](work-center.zh.md)保存独立人工决策并请求新执行，不编辑原发布版本。
 
 ## 阶段联合
 
@@ -113,6 +115,10 @@ interface VerificationReport {
 
 失败是携带机器可路由错误码的 `BusinessWorkflowError` —— `REQUIREMENT_INVALID`（畸形提交）、`COMPOSITION_INVALID`、`UNKNOWN_WORKFLOW`、`STAGE_VIOLATION`（记录当前阶段不接纳的操作）、`CAPACITY`、`ABORTED` —— 而结构缺陷与验证失败是普通结果，从不是错误。
 
+`WorkflowRun.retryRequest` 标识显式完整重试，`rerunOf` 指向独立来源。`WorkflowCommand.retry` 保留原始不可变发布版本、输入、反馈、路由与验证用例。[提供方](../../packages/business/business-workflow-local/README.zh.md#durable-workbench-entry)负责准入与重启恢复。
+
+`WorkflowCatalogEntry` 仅包含已保存标识、名称、工作区及归档状态。`WorkflowRunQuery` 在分页前按工作流标识和提交时间范围筛选。运行摘要从记录派生首节点开始时间和终止检查点时间，不改变持久化记录。
+
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 
 <a id="cordis-surface"></a>
@@ -195,6 +201,26 @@ Providers persist before returning receipts and own work beyond any client conne
 abstract snapshot(id?: WorkflowId): Promise<WorkflowWorkbenchSnapshot>
 
 /**
+ * Read saved workflow identities without graphs or execution history.
+ * @returns committed names, workspaces, and archive flags.
+ */
+abstract catalog(): Promise<WorkflowCatalogEntry[]>
+
+/**
+ * Read bounded run summaries across workflows without loading selected history.
+ * @param request - explicit limit, optional workspace, and generation-scoped waiting/update cursor.
+ * @returns detached committed summaries and continuation.
+ */
+abstract queryRuns(request: WorkflowRunQuery): Promise<WorkflowRunPage>
+
+/**
+ * Read one committed execution and its captured publication.
+ * @param id - original run identity.
+ * @returns detached execution, rejecting unknown identities.
+ */
+abstract inspectRun(id: WorkflowRunId): Promise<WorkflowRun>
+
+/**
  * Apply a management action independently from the caller's conversation.
  * @param request - full command; edits require the currently committed revision.
  * @returns affected identities after persistence; background work remains service-owned.
@@ -208,6 +234,8 @@ abstract command(request: WorkflowCommand): Promise<WorkflowReceipt>
  */
 abstract validate(definition: WorkflowDefinition): WorkflowValidation
 ```
+
+Types: [WorkflowRun](workflow.zh.md)
 
 Source: [`packages/business/business-workflow/src/workbench.ts`](../../packages/business/business-workflow/src/workbench.ts)
 

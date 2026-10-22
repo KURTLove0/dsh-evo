@@ -1,0 +1,17 @@
+- region "Registered files":
+  - heading "Registered files" [level=2]
+  - paragraph: Showing 3 registered files
+  - list:
+    - listitem:
+      - button "data.bin {{workspace}} Latest version v1 · Current-file registration Agent · Artifact producer" [pressed]:
+        - strong: data.bin
+        - text: {{workspace}} Latest version v1 · Current-file registration Agent · Artifact producer
+    - listitem:
+      - button "terminal.txt {{workspace}} Latest version v1 · Current-file registration Agent · Artifact producer":
+        - strong: terminal.txt
+        - text: {{workspace}} Latest version v1 · Current-file registration Agent · Artifact producer
+    - listitem:
+      - button "report.html {{workspace}} Latest version v2 · Current-file registration Agent · Artifact producer":
+        - strong: report.html
+        - text: {{workspace}} Latest version v2 · Current-file registration Agent · Artifact producer
+  - button "Register from Work Center"

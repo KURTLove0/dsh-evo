@@ -22,6 +22,8 @@ The shared sidebar projection hides rows whose durable Session summary has `orig
 
 Session navigation returns the main column from an open module page to the conversation.
 
+The **Archived sessions** page lists the registry-global archive set using existing session metadata and workspace accounting. Title/ID and workspace filters retain their controls across page remounts; the configured session search result limit bounds rendered rows. Missing metadata keeps its ID visible. Disconnection or unavailable baselines disable restoration and retain last-known rows. Restore changes membership only, preserves logs and workspace order, and leaves the current selection unchanged; completion moves keyboard focus to the confirmation message. Refresh reloads workspace/archive observations without reading transcripts.
+
 ## Model Experience
 
 None, as the picker is browser chrome; nothing here reaches a model request.
@@ -33,6 +35,6 @@ None; this package neither assembles nor sends a provider request.
 ## Known Limitations and Deferred Work
 
 - **No fuzzy content search or event deep links** — the content backend uses literal token/phrase matching, and selecting a result opens the Session rather than the matching event.
-- **No Session deletion or unarchive control** — sessions can be archived, but archived sessions have no viewing or unarchive surface, and Workspace registration deletion does not delete Sessions.
+- **No Session deletion** — archive and restore preserve logs; deleting a Workspace registration does not delete Sessions.
 - **Pending user interaction is not aggregated into collapsed groups** — a waiting row inside a collapsed group lights no group-header indicator and becomes visible only after that group is expanded.
 - **Native folder selection depends on the local Host carrier** — under the `-native` composition, in-process or remote browser deployments cannot open a local operating-system dialog; platform failures are shown in a retryable modal. Remote-capable picking is the `-browse` composition's in-app flow.

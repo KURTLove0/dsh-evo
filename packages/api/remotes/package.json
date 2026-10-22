@@ -65,10 +65,17 @@
     "@deepseek-ai/dsh-typert-registry": "workspace:^",
     "@deepseek-ai/dsh-business-workflow": "workspace:^",
     "@deepseek-ai/dsh-business-workflow-local": "workspace:^",
-    "@deepseek-ai/dsh-workbench-agent": "workspace:^"
+    "@deepseek-ai/dsh-workbench-agent": "workspace:^",
+    "@deepseek-ai/dsh-work-center": "workspace:^",
+    "@deepseek-ai/dsh-work-templates": "workspace:^",
+    "@deepseek-ai/dsh-capability-health": "workspace:^",
+    "@deepseek-ai/dsh-work-artifacts": "workspace:^",
+    "@deepseek-ai/dsh-work-remote": "workspace:^",
+    "@deepseek-ai/dsh-work-knowledge": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "workspace:^"
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-work-triggers": "workspace:^"
   },
   "scripts": {
     "bundle": "tsdown",

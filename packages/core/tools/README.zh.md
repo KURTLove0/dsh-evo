@@ -130,6 +130,10 @@ ctx.tools.register(defineTool({
 
 agent loop 将连续的 `parallel` 调用归入有界滚动池，并把每个 `exclusive` 调用视为顺序屏障。只有分发／主体会重叠；策略、持久结果和上下文仍保持模型顺序。Code Mode 绑定通过桥接层自己的池复用同一套分类。[并行工具调用 Agent Note](../../../.agents/notes/implemented/feature/2026-07-10-parallel-tool-call-execution.zh.md) 规定已交付声明及其原理。
 
+## 策略诊断码
+
+执行前拒绝在结构化 `error.info` 中携带 `ToolPolicyError` 与 `TOOL_DENIED`，执行后结果拦截使用 `TOOL_RESULT_BLOCKED`。既有面向模型的反馈仍保留在工具结果正文中。稳定错误码支持从持久化会话中识别策略事实，无须解释人类可读措辞；它们不证明该工具观察导致整个运行失败。
+
 ## 模型体验
 
 ### 普通工具 schema

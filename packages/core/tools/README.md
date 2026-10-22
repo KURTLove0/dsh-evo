@@ -128,6 +128,10 @@ Under `code` — not `both` — the transport is also the only entry the model m
 
 The agent loop groups consecutive `parallel` calls into a bounded rolling pool and treats each `exclusive` call as an ordering barrier. Only dispatch/body overlaps; policy, durable results, and context retain model order. Code Mode bindings reuse the same classification through the bridge's own pool. The [parallel tool-call Agent Note](../../../.agents/notes/implemented/feature/2026-07-10-parallel-tool-call-execution.md) owns the shipped declarations and rationale.
 
+## Policy diagnostic codes
+
+A pre-execution denial carries structured `error.info` with `ToolPolicyError` and `TOOL_DENIED`; a post-execution result block uses `TOOL_RESULT_BLOCKED`. Existing model-facing feedback remains the tool result content. These stable codes distinguish policy facts in durable transcripts without interpreting human-readable wording. They do not establish that a tool observation caused the whole run to fail.
+
 ## Model Experience
 
 ### Normal tool schemas

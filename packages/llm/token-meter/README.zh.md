@@ -21,6 +21,10 @@ fold 跟踪完整请求标头快照、步骤边界、表层追加与替换、成
 
 用量计量会求和不重叠的输入、cache-read、cache-write 与输出 bucket；不会再次添加推理（reasoning）。每次成功调用都会记录一个 assistant 锚点，包括无内容调用。显式的空 `sourceEventSeqs` 列表表示已知空提供方流；遗留记录缺少该列表时，fold 会保守地将持久 assistant 输出视为提供方输出。
 
+## 所选区间用量
+
+`measureReportedUsage(events)` 折叠调用方选定的单个已验证会话有序区间，复用会话用量投影的替换规则，返回四个互斥用量桶、已记录模型请求头数量及报告用量的步骤数。调用方负责区间归属和来源可用性。零报告步骤表示缺少用量证据，不代表零消耗。辅助函数不估算缺失报告，不检查其他会话，也不承诺账单完整性。纯 `./types` 入口在测量和投影类型之外导出结果 `ReportedTokenUsage`。
+
 ## 会话投影
 
 当组合提供 `ctx.sessionProjections` 时，token-meter 会通过一个可选子 fiber 注册三个单元。

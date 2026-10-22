@@ -26,9 +26,10 @@ function buildChildEnv(extra: Record<string, string>): Record<string, string> {
  * Create an MCP transport from the resolved plugin config.
  *
  * @param config - Resolved plugin config discriminated on `transport`.
+ * @param quiet - suppress child stderr for a metadata-only connection probe.
  * @returns A connected-ready MCP Transport (stdio or Streamable HTTP).
  */
-export function createTransport(config: Config): Transport {
+export function createTransport(config: Config, quiet = false): Transport {
   switch (config.transport) {
     case 'stdio':
       return new StdioClientTransport({
@@ -36,6 +37,7 @@ export function createTransport(config: Config): Transport {
         args: config.args,
         env: buildChildEnv(config.env),
         cwd: config.cwd,
+        ...(quiet ? { stderr: 'ignore' as const } : {}),
       })
     case 'streamable-http':
       // The MCP SDK's StreamableHTTPClientTransport has optional callback

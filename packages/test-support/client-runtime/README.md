@@ -10,6 +10,8 @@ Local DOM snapshots: `declare(children)` registers an auto frame whose per-key `
 
 Not part of the product plugin graph (no `dsh.client`); feature packages depend on it in `devDependencies` only.
 
+The workspace double records `restoreSession` and `refresh`. Default restoration removes archive membership without selecting a session; either action can use a test-owned asynchronous stub.
+
 ## Model Experience
 
 None, as this package is browser-side test infrastructure; nothing here reaches a model request.

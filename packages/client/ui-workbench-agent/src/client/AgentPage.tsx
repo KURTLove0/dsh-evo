@@ -53,6 +53,14 @@ export function AgentPage(props: AgentPageProps) {
     })
     return () => { active = false }
   }, [props.runtimes, runtimeSelectionKey])
+  const retry = view.retry
+  const retryRun = data.runs.find(run => run.id === retry?.request.runId)
+  const retryAgent = data.agents.find(agent => agent.id === retryRun?.agentId)
+  const retryConfiguration = (agent: WorkbenchAgent) => ({
+    revision: agent.revision, name: agent.name, runtime: agent.runtime, model: agent.model,
+    instructions: agent.instructions, skills: agent.skills,
+    mcpServers: agent.mcpServers.map(server => ({ name: server.name, transport: server.transport })), concurrency: agent.concurrency,
+  })
   const editorDraft = view.draft
   const query = view.query.trim().toLocaleLowerCase()
   const workload = (id: WorkbenchAgent['id']) => data.workloads.find(row => row.agentId === id)
@@ -176,6 +184,8 @@ export function AgentPage(props: AgentPageProps) {
           sessions={new Set(Object.values(sessions.byId).map(session => session.id))} query={view.runQuery} status={view.runStatus}
           busy={busy} archived={selected.archived} runtimeAvailable={runtimeAvailable} t={t}
           search={actions.runQuery} filter={actions.runStatus}
+          retry={(run) => { actions.retry({ kind: 'retry', runId: run.id, expectedRevision: selected.revision,
+            requestId: crypto.randomUUID() as Extract<AgentCommand, { kind: 'retry' }>['requestId'] }) }}
           command={(command) => { void perform(command) }} openSession={props.openSession}
           review={(definition) => { actions.edit({ id: selected.id, revision: selected.revision, definition }) }}
         />}
@@ -211,6 +221,22 @@ export function AgentPage(props: AgentPageProps) {
         <label>{t('copyName')}<input autoFocus required value={copy.name} onChange={(event) => { setCopy({ ...copy, name: event.target.value }) }} /></label>
         <Button type="submit" disabled={busy}>{t('confirmCopy')}</Button>
       </form>}
+    </Modal>
+    {retry === null ? null : <Button variant="outline" onClick={() => { actions.retryOpen(true) }}>{t('pendingRetry')}</Button>}
+    <Modal open={retry?.open === true} onClose={() => { if (!busy) actions.retryOpen(false) }} title={t('fullRetry')} description={t('retryWarning')} closeLabel={t('closeRetry')}>
+      {retry === null ? null : <>
+        <p>{t('retryOf')}: <code>{retry.request.runId}</code> · {t('revision')} {retry.request.expectedRevision}</p>
+        {retryAgent?.revision === retry.request.expectedRevision ? null : <p role="status">{t('retryChanged')}</p>}
+        <div className={css.retryConfigs}><section><h3>{t('retryOriginal')}</h3><pre className={css.instructions}>{retryRun?.definition === undefined ? t('retryNotCaptured') : JSON.stringify(retryConfiguration(retryRun.definition), null, 2)}</pre></section><section><h3>{t('retryCurrent')}</h3><pre className={css.instructions}>{retryAgent === undefined ? t('retryNotCaptured') : JSON.stringify(retryConfiguration(retryAgent), null, 2)}</pre></section></div>
+        <p>{t('retryConnections')}</p>
+        {retry.submitted ? <p role="status">{t('retryPending')}</p> : null}
+        {error === null ? null : <p role="alert" className={css.error}>{error}</p>}
+        <div className={css.actions}><Button disabled={busy || (!retry.submitted &&
+          (retryAgent === undefined || retryAgent.archived || retryAgent.revision !== retry.request.expectedRevision))} onClick={() => {
+          actions.retrySubmitted()
+          void perform(retry.request, () => { actions.retryClear(retry.request.requestId) })
+        }}>{t(retry.submitted ? 'recoverRetry' : 'confirmRetry')}</Button><Button variant="outline" disabled={busy} onClick={() => { actions.retryOpen(false) }}>{t('closeRetry')}</Button><Button variant="outline" disabled={busy} onClick={() => { actions.retryClear() }}>{t('discardRetry')}</Button></div>
+      </>}
     </Modal>
     <Modal open={archiving !== null} onClose={() => { if (!busy) setArchiving(null) }} title={t('archive')} description={t('archiveHint')} closeLabel={t('cancel')}>
       {archiving === null ? null : <Button disabled={busy} onClick={() => {
